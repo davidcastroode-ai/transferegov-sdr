@@ -177,6 +177,7 @@ def main(saida):
     for n in fora:
         del conv[n]
     escopo = set(proposta)
+    gravar(saida, 'instrumentos_outros_orgaos.csv', ['nr_instrumento', 'ug_emitente', 'id_proposta'], [{'nr_instrumento': n, 'ug_emitente': '', 'id_proposta': ''} for n in fora])
     log(f'instrumentos de outros órgãos retirados: {len(fora)} ({", ".join(fora[:20])}) · ficam {len(conv)}')
 
     # 4. emendas
