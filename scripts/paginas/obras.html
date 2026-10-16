@@ -1,0 +1,158 @@
+<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Esboço · Obras</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet"><style>
+body{margin:0;background:transparent;font-family:Barlow,Arial,sans-serif;color:#1d2b33}
+.topo{margin:0 20px;padding:14px 26px;border-radius:0 0 18px 18px;background:linear-gradient(100deg,#1f6b3a,#2fae5c 55%,#57dd84);color:#fff;display:flex;justify-content:space-between;align-items:center}.topo h1{margin:0;font-size:28px;letter-spacing:4px}
+.wrap{max-width:1400px;margin:0 auto;padding:0 4px}
+.menu{display:flex;background:#1f4e79;border-radius:12px;overflow:hidden;margin-bottom:8px}.menu a{flex:1;text-align:center;color:#d6e4f0;padding:11px 6px;font-weight:600;font-size:14px}.menu a.on{background:#fff;color:#1f4e79;box-shadow:inset 0 -3px 0 #2fae5c}
+.sub{display:flex;gap:8px;justify-content:center;margin-bottom:14px;flex-wrap:wrap}.sub a{padding:6px 14px;border-radius:20px;border:1px solid #b9c7d3;background:#fff;color:#1f4e79;font-size:13px;font-weight:600}.sub a.on{background:#1f4e79;color:#fff;border-color:#1f4e79}
+.nota{background:#fff8e1;border:1px solid #e6cf7a;border-radius:12px;padding:9px 14px;font-size:13px;margin-bottom:14px}
+.card{background:#fff;border-radius:14px;padding:14px 16px;box-shadow:0 4px 14px rgba(20,40,60,.07);margin-bottom:14px}.card h3{margin:0 0 2px;font-size:16px}.card p.d{margin:0 0 10px;font-size:12.5px;color:#66727c}
+.filtros{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px 14px}@media(max-width:900px){.filtros{grid-template-columns:1fr 1fr}}
+.filtros label{font-size:12px;font-weight:600;color:#3a4a55;display:flex;flex-direction:column;gap:3px}.filtros select{width:100%;min-width:0;font:inherit;font-size:13px;padding:5px 8px;border:1px solid #c9d3db;border-radius:8px;background:#f6f8fa}.filtros select.ativo{border-color:#1f4e79;background:#e3edf7;font-weight:600}
+.btn{margin-top:10px;background:#1f4e79;color:#fff;border:0;border-radius:8px;padding:8px 40px;font:inherit;font-weight:600;cursor:pointer}
+.novo{display:inline-block;background:#2fae5c;color:#fff;font-size:10px;border-radius:6px;padding:0 5px;margin-left:4px;vertical-align:middle}
+.kp{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:14px}@media(max-width:900px){.kp{grid-template-columns:1fr 1fr}}
+.k{background:#fff;border-radius:14px;padding:12px 14px;box-shadow:0 4px 14px rgba(20,40,60,.07)}.k span{font-size:12px;color:#66727c}.k b{display:block;font-size:26px;color:#1f4e79}.k small{font-size:12px;color:#7b8790}.k.dest{background:#1f4e79}.k.dest span,.k.dest small{color:#d6e4f0}.k.dest b{color:#fff}.k.red b{color:#c0392b}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px}@media(max-width:900px){.g2{grid-template-columns:1fr}}
+.hb{display:grid;grid-template-columns:190px 1fr 46px 38px;gap:8px;align-items:center;font-size:13px;margin:6px 0;cursor:pointer;border-radius:6px}.hb:hover{background:#f2f6f9}.hb.sel{background:#e3edf7;font-weight:600}
+.hb div{background:#eef2f5;border-radius:5px;height:14px;overflow:hidden}.hb div i{display:block;height:100%}.hb b{text-align:right}.hb em{font-style:normal;color:#7b8790;font-size:12px}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px}
+.anos{display:flex;align-items:flex-end;gap:6px;height:190px;padding-top:20px;overflow-x:auto}.ano{flex:1;min-width:34px;display:flex;flex-direction:column;align-items:center;cursor:pointer;height:100%;justify-content:flex-end;border-radius:6px}.ano:hover,.ano.sel{background:#e3edf7}
+.ano .cols{display:flex;gap:2px;align-items:flex-end;height:100%;width:100%;justify-content:center}.ano .cols i{width:12px;border-radius:3px 3px 0 0}.ano small{font-size:11px;color:#4a5a66;margin-top:3px}.ano em{font-style:normal;font-size:10.5px;color:#1f4e79;font-weight:700}
+.leg{font-size:12px;color:#66727c;display:flex;gap:14px;margin-top:6px}.leg i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:-1px}
+.mapa svg{width:100%;max-height:470px;display:block}.uf{stroke:#fff;stroke-width:1;cursor:pointer}.uf:hover{stroke:#1f4e79;stroke-width:2}.uf.sel{stroke:#c0392b;stroke-width:2.5}.rot{font-size:11px;font-weight:700;fill:#0b2545;opacity:.5;text-anchor:middle;pointer-events:none}.pt{stroke:#fff;stroke-width:.8;opacity:.9}
+.comp .b div{height:20px;background:#eef2f5;border-radius:6px;overflow:hidden;margin:4px 0 2px}.comp .b i{display:block;height:100%}.comp small{color:#66727c}
+table{width:100%;border-collapse:collapse;font-size:12.5px}th{background:#1f4e79;color:#fff;text-align:left;padding:6px 7px;font-weight:600}td{padding:6px 7px;border-bottom:1px solid #e3e8ec;vertical-align:middle}td small{display:block;color:#7b8790;font-size:11px}.n{text-align:right;white-space:nowrap}
+tr.lin{cursor:pointer}tr.lin:hover td{background:#f2f6f9}tr.lin td:first-child::before{content:'▸ ';color:#1f4e79}tr.lin.aberto td:first-child::before{content:'▾ '}tr.lin.aberto td{background:#e3edf7}
+.dbar div{display:grid;grid-template-columns:42px 1fr 34px;gap:5px;align-items:center;font-size:11px;color:#66727c}.dbar i{display:block;height:8px;border-radius:4px}.dbar b{color:#1d2b33;text-align:right}
+.tag{display:inline-block;padding:1px 8px;border-radius:10px;font-size:11px;font-weight:600;color:#fff}
+.ficha{background:#f7fafc;border-left:4px solid #1f4e79;padding:12px 16px}.ficha h4{margin:0 0 8px;font-size:15px}.fg{display:grid;grid-template-columns:repeat(4,1fr);gap:8px 16px;font-size:12.5px}@media(max-width:900px){.fg{grid-template-columns:1fr 1fr}}.fg span{display:block;font-size:10.5px;color:#7b8790;text-transform:uppercase;letter-spacing:.5px}
+.crit{margin:10px 0;padding:7px 10px;border-radius:8px;background:#fff;border:1px solid #e3e8ec;font-size:12.5px}
+.tl{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}.tl div{background:#fff;border:1px solid #d6e0e8;border-radius:8px;padding:5px 9px;font-size:11.5px}.tl b{color:#1f4e79}
+.busca{font:inherit;padding:6px 10px;border:1px solid #c9d3db;border-radius:8px;width:280px;margin-bottom:8px}
+.pag{display:flex;gap:8px;justify-content:flex-end;align-items:center;font-size:12.5px;margin-top:8px}.pag button{border:1px solid #c9d3db;background:#fff;border-radius:6px;padding:3px 10px;cursor:pointer}
+a.lk{color:#1f4e79;font-weight:600}
+</style></head><body>
+<div class="wrap">
+<div class="nota"><b>Obras</b> dos instrumentos da SDR · Transferegov + Obrasgov, carga de __DATA__ · filtros, cliques nos gráficos e no mapa filtram a tela · clique na linha para abrir a ficha da obra. Paralisada: critério provisório (sem medição há mais de 120 dias) até o robô juntar 120 dias de histórico; depois, Lei 14.719/2023.</div>
+<section class="card"><div class="filtros" id="filtros"></div><button class="btn" id="limpar">Limpar filtros</button> <span id="contagem" style="font-size:13px;color:#66727c;margin-left:12px"></span></section>
+<div class="kp" id="kp"></div>
+<section class="card"><h3>Obras por ano da proposta</h3><p class="d">valor de repasse e desembolsado · nº de obras em cima · clique para filtrar</p><div class="anos" id="anos"></div><div class="leg"><span><i style="background:#1f4e79"></i>Repasse</span><span><i style="background:#2fae5c"></i>Desembolsado</span></div></section>
+<div class="g2">
+<section class="card"><h3>Situação da obra</h3><p class="d">clique para filtrar</p><div id="sit"></div>
+<h3 style="margin-top:16px">Físico × financeiro</h3><p class="d">quanto da obra foi executado frente ao que já foi liberado</p><div class="comp" id="comp"></div></section>
+<section class="card"><h3>Distribuição por objeto resumido</h3><p class="d">objeto agrupado pelo tipo de obra · clique para filtrar</p><div id="obj"></div></section>
+</div>
+<section class="card"><h3>Mapa das obras</h3><p class="d">cor do estado: nº de obras · pontos: municípios (vermelho = tem obra paralisada, laranja = inacabada, verde = em andamento, cinza = não iniciada, azul = finalizada) · clique no estado para filtrar</p>
+<div class="g2" style="grid-template-columns:3fr 2fr"><div class="mapa" id="mapa"></div><div><h3 style="font-size:14px">Obras por UF</h3><div id="ufs"></div></div></div></section>
+<section class="card"><h3>Obras paralisadas com recurso já liberado</h3><p class="d" id="parD"></p><div id="par"></div></section>
+<section class="card"><h3>Vigência vence em até 180 dias com obra abaixo de 80%</h3><p class="d" id="vencD"></p><div id="venc"></div></section>
+<section class="card"><h3>Todas as obras</h3><p class="d">clique na linha para abrir a ficha da obra</p><input class="busca" id="busca" placeholder="Buscar nº, município, proponente, objeto…"><div id="todas"></div></section>
+</div>
+<script>__MAPA__
+const D = __DADOS__;
+const HOJE = new Date(); HOJE.setHours(0,0,0,0);
+const COR = {'Não iniciada':'#9aa6af','Em andamento':'#2e8a57','Paralisada':'#c0392b','Inacabada':'#e67e22','Finalizada':'#1f4e79'};
+const ORD = ['Não iniciada','Em andamento','Paralisada','Inacabada','Finalizada'];
+const OBJCOR = ['#1f4e79','#2e8a57','#c0392b','#e67e22','#7d3c98','#16a085','#d4ac0d','#5d6d7e','#a04000','#2874a6','#839192','#b03a2e'];
+const dt = s => { if(!s) return null; let m = s.match(/^(\d{2})\/(\d{2})\/(\d{4})/); if(m) return new Date(+m[3],m[2]-1,+m[1]); m = s.match(/^(\d{4})-(\d{2})-(\d{2})/); return m ? new Date(+m[1],m[2]-1,+m[3]) : null; };
+const br = s => { const d = dt(s); return d ? d.toLocaleDateString('pt-BR') : '—'; };
+D.forEach(o => { const f = dt(o.fv); o.dv = f ? Math.round((f-HOJE)/864e5) : null;
+  o.fx = o.dv===null ? '(sem data)' : o.dv<0 ? 'Vencida' : o.dv<=90 ? 'Até 90 dias' : o.dv<=180 ? '91 a 180 dias' : o.dv<=365 ? '181 a 365 dias' : 'Mais de 1 ano'; });
+const FIL = [['parl','Parlamentar'],['ano','Ano da proposta'],['mod','Modalidade'],['si','Situação do instrumento'],['so','Situação da obra',1],
+  ['uf','UF'],['ug','UG executora'],['objr','Objeto resumido',1],['tp','Tipo de parlamentar'],['fx','Vencimento da vigência'],
+  ['nj','Natureza jurídica'],['prop','Proponente'],['emp','Empresa (CNPJ)',1],['sm','Situação da medição',1],['munN','Município']];
+const SEL = {si:'Em execução'};
+const esc = s => String(s??'').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fm = v => v>=1e9 ? (v/1e9).toFixed(2).replace('.',',')+' Bi' : v>=1e6 ? (v/1e6).toFixed(2).replace('.',',')+' Mi' : (v/1e3).toFixed(1).replace('.',',')+' Mil';
+const pct = v => v.toFixed(1).replace('.',',')+'%';
+function filtrar(exceto){ return D.filter(o => FIL.every(([k]) => k===exceto || !SEL[k] || String(o[k])===SEL[k])); }
+function desenharFiltros(){
+  document.getElementById('filtros').innerHTML = FIL.map(([k,n,novo]) => {
+    const vals = [...new Set(filtrar(k).map(o => String(o[k])))].sort((a,b) => k==='ano' ? b.localeCompare(a) : a.localeCompare(b,'pt'));
+    return `<label><span>${n}${novo?'<span class="novo">novo</span>':''}</span><select data-k="${k}" class="${SEL[k]?'ativo':''}"><option value="">Todos</option>${vals.map(v => `<option ${SEL[k]===v?'selected':''}>${esc(v)}</option>`).join('')}</select></label>`; }).join('');
+}
+function hbar(lista, campo, cor, tot){
+  const mx = Math.max(1,...lista.map(x => x[1]));
+  return lista.map(([k,v],i) => `<div class="hb ${SEL[campo]===k?'sel':''}" data-k="${campo}" data-v="${esc(k)}"><span>${cor.dot?`<i class="dot" style="background:${cor(k,i)}"></i>`:''}${esc(k)}</span><div><i style="width:${v/mx*100}%;background:${cor(k,i)}"></i></div><b>${v}</b><em>${tot?Math.round(v/tot*100)+'%':''}</em></div>`).join('');
+}
+const conta = (L,k) => { const c = {}; L.forEach(o => c[o[k]] = (c[o[k]]||0)+1); return Object.entries(c).sort((a,b) => b[1]-a[1]); };
+const barra = o => `<div class="dbar"><div><span>físico</span><i style="width:${Math.min(100,o.pf)}%;background:#2e8a57"></i><b>${Math.round(o.pf)}%</b></div><div><span>financ.</span><i style="width:${Math.min(100,o.pd)}%;background:#1f4e79"></i><b>${Math.round(o.pd)}%</b></div></div>`;
+const objLoc = o => `${esc(o.obj.length>60?o.obj.slice(0,60)+'…':o.obj)}<small>${esc(o.munN)}/${o.uf} · UG ${o.ug} · <span class="tag" style="background:${COR[o.so]}">${o.so}</span></small>`;
+const ABERTO = new Set(), PAG = {};
+function ficha(o){
+  const med = o.med.length ? o.med.map(m => `<div><b>Medição ${m[0]}</b> · ${esc(m[1])}<br>${br(m[2])} → ${br(m[3])}</div>`).join('') : '<div>nenhuma medição registrada no Obrasgov</div>';
+  return `<div class="ficha"><h4>Instrumento ${o.n} · ${esc(o.prop)}</h4>
+  <div class="fg">
+   <div><span>Proposta</span>${esc(o.np)||'—'}</div><div><span>Modalidade</span>${esc(o.mod)}</div><div><span>Situação do instrumento</span>${esc(o.si)}</div><div><span>Vigência até</span>${br(o.fv)}${o.dv!==null?` (${o.dv<0?'vencida há '+(-o.dv):'faltam '+o.dv} dias)`:''}</div>
+   <div><span>Parlamentar</span>${esc(o.parl)}${o.emd?' · emenda '+esc(o.emd):''}</div><div><span>Programa</span>${esc(o.prog)||'—'}</div><div><span>Objeto resumido</span>${esc(o.objr)}</div><div><span>Notas de empenho (Transferegov)</span>${esc(o.ne)||'—'}</div>
+   <div><span>Repasse</span>R$ ${o.rep.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div><div><span>Desembolsado</span>R$ ${o.des.toLocaleString('pt-BR',{minimumFractionDigits:2})} (${pct(o.pd)})</div><div><span>Valor da obra (contrato)</span>R$ ${o.vo.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div><div><span>Executado (medido)</span>R$ ${o.vr.toLocaleString('pt-BR',{minimumFractionDigits:2})} (${pct(o.pf)})</div>
+   <div><span>Empresa (CNPJ)</span>${esc(o.emp)||'—'}</div><div><span>Início da obra</span>${br(o.io)}</div><div><span>Última medição</span>${o.nm?'nº '+o.nm+' · '+esc(o.sm)+' · até '+br(o.um):'—'}</div><div><span>Dias sem medição</span>${o.dsm||'—'}</div>
+  </div>
+  <div class="crit"><span class="tag" style="background:${COR[o.so]}">${o.so}</span> &nbsp;${esc(o.cr)}</div>
+  ${barra(o)}
+  <div style="margin-top:10px;font-size:12px;font-weight:600">Linha do tempo das medições (últimas 6)</div><div class="tl">${med}</div>
+  <div style="margin-top:10px;font-size:12.5px"><b>Objeto completo:</b> ${esc(o.obj)}</div>
+  <div style="margin-top:8px"><a class="lk" href="${esc(o.link)}" target="_blank">Abrir no Transferegov ↗</a> &nbsp; <span style="font-size:12px;color:#7b8790"></span><button type="button" class="btn" style="margin:0 0 0 8px;padding:5px 14px" data-fichacompleta="${esc(o.n)}">Ficha completa do instrumento ›</button></div></div>`;
+}
+function tabela(id, L, cols, porPag){
+  const p = PAG[id]||0, ini = p*porPag, pg = L.slice(ini, ini+porPag), nc = cols.length;
+  return `<table><tr>${cols.map(c => `<th class="${c[2]||''}">${c[0]}</th>`).join('')}</tr>${pg.map(o => `<tr class="lin ${ABERTO.has(id+o.n)?'aberto':''}" data-ab="${id+o.n}">${cols.map(c => `<td class="${c[2]||''}">${c[1](o)}</td>`).join('')}</tr>${ABERTO.has(id+o.n)?`<tr><td colspan="${nc}" style="padding:0">${ficha(o)}</td></tr>`:''}`).join('')}</table>
+  ${L.length>porPag?`<div class="pag">${ini+1}–${Math.min(L.length,ini+porPag)} de ${L.length} <button data-pg="${id}" data-d="-1" ${p?'':'disabled'}>‹</button><button data-pg="${id}" data-d="1" ${ini+porPag<L.length?'':'disabled'}>›</button></div>`:''}`;
+}
+let MUN = null;
+function mapa(L){
+  if(!MUN){ MUN = new Map(); MUN_BR.split(';').forEach(l => { const [uf,n,x,y] = l.split('|'); MUN.set(uf+'|'+n,[+x,+y]); }); }
+  const porUF = {}, pts = new Map();
+  L.forEach(o => { porUF[o.uf] = (porUF[o.uf]||0)+1; const nm = o.mun.replace(/['\-]/g,' ').replace(/\s+/g,' ').trim(); const c = MUN.get(o.uf+'|'+nm); if(!c) return;
+    const p = pts.get(o.uf+nm) || {x:c[0],y:c[1],n:0,s:{},nome:o.munN,uf:o.uf}; p.n++; p.s[o.so]=(p.s[o.so]||0)+1; pts.set(o.uf+nm,p); });
+  const mx = Math.max(1,...Object.values(porUF));
+  const est = Object.entries(MAPA_BR.ufs).map(([uf,d]) => `<path class="uf ${SEL.uf===uf?'sel':''}" d="${d}" data-k="uf" data-v="${uf}" style="fill:${porUF[uf]?`color-mix(in srgb,#1f4e79 ${Math.round((.1+.6*Math.sqrt(porUF[uf]/mx))*100)}%,#eef1ee)`:'#eef1f4'}"><title>${uf}: ${porUF[uf]||0} obras</title></path>`).join('');
+  const rot = Object.entries(MAPA_BR.centro).map(([uf,[x,y]]) => `<text class="rot" x="${x}" y="${y}">${uf}</text>`).join('');
+  const prio = ['Paralisada','Inacabada','Em andamento','Não iniciada','Finalizada'];
+  const ps = [...pts.values()].sort((a,b) => b.n-a.n).map(p => { const s = prio.find(k => p.s[k]); return `<circle class="pt" cx="${p.x}" cy="${p.y}" r="${(2.2+1.3*Math.sqrt(p.n)).toFixed(1)}" fill="${COR[s]}"><title>${p.nome}/${p.uf}: ${p.n} obra(s) · ${Object.entries(p.s).map(([k,v]) => k+' '+v).join(', ')}</title></circle>`; }).join('');
+  return `<svg viewBox="0 0 ${MAPA_BR.w} ${MAPA_BR.h}">${est}${rot}${ps}</svg>`;
+}
+function render(){
+  desenharFiltros();
+  const L = filtrar(), tot = L.length;
+  document.getElementById('contagem').textContent = `${tot} obras no recorte`;
+  const rep = L.reduce((s,o)=>s+o.rep,0), des = L.reduce((s,o)=>s+o.des,0);
+  const cm = L.filter(o => o.vo>0), vo = cm.reduce((s,o)=>s+o.vo,0);
+  const pf = vo ? cm.reduce((s,o)=>s+o.pf*o.vo,0)/vo : 0, pfin = cm.reduce((s,o)=>s+o.rep,0) ? cm.reduce((s,o)=>s+o.des,0)/cm.reduce((s,o)=>s+o.rep,0)*100 : 0;
+  const par = L.filter(o => o.so==='Paralisada').sort((a,b) => b.des-a.des);
+  document.getElementById('kp').innerHTML = `<div class="k dest"><span>Obras</span><b>${tot.toLocaleString('pt-BR')}</b><small>${par.length} paralisadas</small></div>
+   <div class="k"><span>Valor de repasse</span><b>${fm(rep)}</b><small>desembolsado ${fm(des)}</small></div>
+   <div class="k"><span>Execução física</span><b>${pct(pf)}</b><small>ponderada pelo valor da obra</small></div>
+   <div class="k"><span>Execução financeira</span><b>${pct(pfin)}</b><small>desembolsado / repasse</small></div>
+   <div class="k red"><span>Liberado em obras paralisadas</span><b>${fm(par.reduce((s,o)=>s+o.des,0))}</b><small>${par.length} obras</small></div>`;
+  const anos = {}; L.forEach(o => { const a = anos[o.ano] || (anos[o.ano] = {n:0,r:0,d:0}); a.n++; a.r+=o.rep; a.d+=o.des; });
+  const ks = Object.keys(anos).filter(Boolean).sort(), mr = Math.max(1,...ks.map(k => anos[k].r));
+  document.getElementById('anos').innerHTML = ks.map(k => `<div class="ano ${SEL.ano===k?'sel':''}" data-k="ano" data-v="${k}" title="${k}: ${anos[k].n} obras · repasse ${fm(anos[k].r)} · desembolsado ${fm(anos[k].d)}"><em>${anos[k].n}</em><div class="cols"><i style="height:${anos[k].r/mr*100}%;background:#1f4e79"></i><i style="height:${anos[k].d/mr*100}%;background:#2fae5c"></i></div><small>${k}</small></div>`).join('');
+  const cs = Object.fromEntries(conta(L,'so')), sitC = (k) => COR[k]; sitC.dot = 1;
+  document.getElementById('sit').innerHTML = hbar(ORD.filter(k => cs[k]).map(k => [k,cs[k]]), 'so', sitC, tot);
+  document.getElementById('comp').innerHTML = `<div class="b"><small>Execução física</small><div><i style="width:${pf}%;background:#2e8a57"></i></div><b>${pct(pf)}</b></div><div class="b"><small>Execução financeira</small><div><i style="width:${pfin}%;background:#1f4e79"></i></div><b>${pct(pfin)}</b></div>
+   <p class="d" style="margin-top:8px">Financeiro 30 pontos ou mais acima do físico: <b style="color:#c0392b">${L.filter(o => o.vo>0 && o.pd-o.pf>=30).length}</b> obras</p>`;
+  document.getElementById('obj').innerHTML = hbar(conta(L,'objr'), 'objr', (k,i) => OBJCOR[i%OBJCOR.length], tot);
+  document.getElementById('mapa').innerHTML = mapa(L);
+  document.getElementById('ufs').innerHTML = hbar(conta(L,'uf').slice(0,14), 'uf', () => '#1f4e79', tot);
+  document.getElementById('parD').textContent = `${par.length} obras · ordenadas pelo valor desembolsado · clique na linha para abrir a ficha`;
+  document.getElementById('par').innerHTML = tabela('par', par, [['Instrumento',o=>o.n],['Objeto / local',objLoc],['Físico × financeiro',barra],['Sem medição',o=>o.dsm?o.dsm+' dias':'—','n'],['Desembolsado',o=>fm(o.des),'n'],['Fim vigência',o=>br(o.fv),'n']], 8);
+  const venc = L.filter(o => o.dv!==null && o.dv>=0 && o.dv<=180 && o.pf<80).sort((a,b) => a.dv-b.dv);
+  document.getElementById('vencD').textContent = `${venc.length} obras · avaliar prorrogação`;
+  document.getElementById('venc').innerHTML = tabela('venc', venc, [['Instrumento',o=>o.n],['Objeto / local',objLoc],['Físico × financeiro',barra],['Fim vigência',o=>br(o.fv)+`<small>faltam ${o.dv} dias</small>`,'n'],['Repasse',o=>fm(o.rep),'n']], 8);
+  const q = document.getElementById('busca').value.trim().toUpperCase();
+  const todas = q ? L.filter(o => (o.n+' '+o.munN+' '+o.prop+' '+o.obj+' '+o.parl).toUpperCase().includes(q)) : L;
+  document.getElementById('todas').innerHTML = tabela('todas', todas, [['Instrumento',o=>o.n+`<small>proposta ${esc(o.np)}</small>`],['Objeto / local',objLoc],['Parlamentar',o=>esc(o.parl)],['Físico × financeiro',barra],['Repasse',o=>fm(o.rep),'n'],['Fim vigência',o=>br(o.fv),'n']], 15);
+}
+document.addEventListener('change', e => { const k = e.target.dataset.k; if(!k) return; if(e.target.value) SEL[k] = e.target.value; else delete SEL[k]; for(const p in PAG) PAG[p]=0; render(); });
+document.addEventListener('click', e => {
+  const fc = e.target.closest('[data-fichacompleta]'); if(fc){ try{ parent.abrirFichaInst(fc.dataset.fichacompleta); }catch(x){} return; }
+  const pg = e.target.closest('[data-pg]'); if(pg){ PAG[pg.dataset.pg] = (PAG[pg.dataset.pg]||0) + +pg.dataset.d; render(); return; }
+  const ab = e.target.closest('[data-ab]'); if(ab && !e.target.closest('a')){ const k = ab.dataset.ab; ABERTO.has(k) ? ABERTO.delete(k) : ABERTO.add(k); render(); return; }
+  const f = e.target.closest('[data-k][data-v]'); if(f){ const k = f.dataset.k, v = f.dataset.v; SEL[k]===v ? delete SEL[k] : SEL[k] = v; for(const p in PAG) PAG[p]=0; render(); }
+});
+document.getElementById('limpar').onclick = () => { for(const k in SEL) delete SEL[k]; render(); };
+document.getElementById('busca').oninput = () => { PAG.todas = 0; render(); };
+render();
+</script></body></html>

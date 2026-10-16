@@ -1,0 +1,146 @@
+<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Esboço · Prestação de contas</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">__CSS__
+<style>.sub a{cursor:pointer}.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}@media(max-width:900px){.g3{grid-template-columns:1fr}}
+.pend{border:2px dashed #e6cf7a;background:#fffdf3;box-shadow:none}.pend .kk{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-top:8px}.pend .kk div{background:#fff;border-radius:10px;padding:8px;text-align:center;font-size:12px;color:#7b8790}.pend .kk b{display:block;font-size:18px;color:#c3ccd3}
+.tabs{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap}.tabs a{padding:5px 12px;border-radius:16px;background:#eef2f5;font-size:12.5px;font-weight:600;color:#1f4e79;cursor:pointer}.tabs a.on{background:#1f4e79;color:#fff}</style></head><body>
+<div class="wrap">
+<nav class="sub" id="sub"><a data-aba="pc" class="on">Prestação de contas</a><a data-aba="tce">Omissão / rejeição (risco de TCE)</a></nav>
+<div class="nota" id="nota"></div>
+<section class="card"><div class="filtros" id="filtros"></div><button class="btn" id="limpar">Limpar filtros</button> <span id="contagem" style="font-size:13px;color:#66727c;margin-left:12px"></span></section>
+<div class="kp" id="kp"></div>
+<section class="card pend"><h3>Contas contábeis do SIAFI <span class="novo" style="background:#c8870f">depende de você</span></h3><p class="d">Igual ao Power BI: a comprovar, a aprovar, impugnados, inadimplência efetiva, inadimplência suspensa e devolvido. Esses saldos não vêm do Transferegov; vêm do SIAFI (contas de controle de transferências). Se você extrair do Tesouro Gerencial por instrumento, o painel preenche estes cartões.</p>
+<div class="kk"><div><b>—</b>A comprovar</div><div><b>—</b>A aprovar</div><div><b>—</b>Impugnados</div><div><b>—</b>Inadimp. efetiva</div><div><b>—</b>Inadimp. suspensa</div><div style="border:1px solid #2e8a57"><b id="devol" style="color:#2e8a57">—</b>Devolvido <small style="display:block;color:#2e8a57">já vem do Transferegov</small></div></div></section>
+<div class="g2">
+<section class="card"><h3>Fase da prestação de contas</h3><p class="d">clique para filtrar</p><div id="fase"></div></section>
+<section class="card"><h3>Tempo desde o fim da vigência</h3><p class="d">há quanto tempo o instrumento encerrou · clique para filtrar</p><div class="anos" id="tempo" style="height:170px"></div></section>
+</div>
+<section class="card"><h3>Instrumentos por ano de encerramento da vigência</h3><p class="d">desembolsado e saldo a cancelar (empenhado não desembolsado) · nº de instrumentos em cima · clique para filtrar</p><div class="anos" id="anos"></div><div class="leg"><span><i style="background:#1f4e79"></i>Desembolsado</span><span><i style="background:#c0392b"></i>Empenhado não desembolsado</span></div></section>
+<section class="card"><h3>Mapa</h3><p class="d">cor do estado: nº de instrumentos · pontos: municípios (vermelho = prazo vencido/rejeitada, laranja = em complementação, azul = em análise, cinza = aguardando no prazo) · clique no estado para filtrar</p>
+<div class="g2" style="grid-template-columns:3fr 2fr"><div class="mapa" id="mapa"></div><div><h3 style="font-size:14px">Por UF</h3><div id="ufs"></div></div></div></section>
+<section class="card"><h3>Pontos de atenção</h3><p class="d">clique na linha para abrir a ficha</p>
+<div class="tabs" id="tabs"></div><div id="lista"></div></section>
+<section class="card"><h3>Todos os instrumentos em prestação de contas</h3><p class="d">clique na linha para abrir a ficha</p><input class="busca" id="busca" placeholder="Buscar nº, município, proponente, objeto…"><div id="todas"></div></section>
+</div>
+<script>__MAPA__
+const D = __DADOS__;
+const FCOR = {'Em processo de TCE':'#111','Encerrada (já foi rejeitada/inadimplente)':'#8e7cc3','Aguardando PC · no prazo':'#9aa6af','Aguardando PC · prazo vencido':'#c0392b','Enviada para análise':'#3a6f9f','Em análise':'#1f4e79','Em complementação':'#e67e22','Iniciada por antecipação':'#2e8a57','Rejeitada':'#7b241c','Inadimplente':'#4a235a'};
+const FORD = Object.keys(FCOR), TCE = new Set(['Em processo de TCE','Aguardando PC · prazo vencido','Rejeitada','Inadimplente','Encerrada (já foi rejeitada/inadimplente)']), HIST = 'Encerrada (já foi rejeitada/inadimplente)';
+const FX = ['Ainda vigente','Até 1 ano','1 a 2 anos','2 a 3 anos','3 a 5 anos','Mais de 5 anos'];
+D.forEach(o => { if(o.tce) o.fase = 'Em processo de TCE'; const a = o.dfv; o.tempo = a===null ? '(sem data)' : a<0 ? 'Ainda vigente' : a<=365 ? 'Até 1 ano' : a<=730 ? '1 a 2 anos' : a<=1095 ? '2 a 3 anos' : a<=1825 ? '3 a 5 anos' : 'Mais de 5 anos';
+  o.anoFim = (o.fv||'').slice(-4); o.canc = Math.max(0, o.emp-o.des); o.temSaldo = o.sc>0 ? 'Com saldo em conta' : 'Sem saldo em conta'; o.aba = TCE.has(o.fase) ? 'tce' : 'pc'; });
+const FIL = [['parl','Parlamentar'],['ano','Ano da proposta'],['mod','Modalidade'],['fase','Fase da prestação de contas',1],['ug','UG'],
+  ['uf','UF'],['tempo','Tempo desde o fim da vigência',1],['anoFim','Ano do fim da vigência',1],['tp','Tipo de parlamentar'],['temSaldo','Saldo em conta',1],
+  ['nj','Natureza jurídica'],['prop','Proponente'],['munN','Município']];
+const SEL = {}; let ABA = 'pc';
+const esc = s => String(s??'').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fm = v => v>=1e9 ? (v/1e9).toFixed(2).replace('.',',')+' Bi' : v>=1e6 ? (v/1e6).toFixed(2).replace('.',',')+' Mi' : (v/1e3).toFixed(1).replace('.',',')+' Mil';
+const R = v => 'R$ '+v.toLocaleString('pt-BR',{minimumFractionDigits:2});
+const base = () => D.filter(o => ABA==='tce' ? o.aba==='tce' : o.fase!==HIST);
+function filtrar(exceto){ return base().filter(o => FIL.every(([k]) => k===exceto || !SEL[k] || String(o[k])===SEL[k])); }
+function desenharFiltros(){
+  document.getElementById('filtros').innerHTML = FIL.map(([k,n,novo]) => {
+    const vals = [...new Set(filtrar(k).map(o => String(o[k])))].sort((a,b) => /ano/.test(k) ? b.localeCompare(a) : a.localeCompare(b,'pt'));
+    return `<label><span>${n}${novo?'<span class="novo">novo</span>':''}</span><select data-k="${k}" class="${SEL[k]?'ativo':''}"><option value="">Todos</option>${vals.map(v => `<option ${SEL[k]===v?'selected':''}>${esc(v)}</option>`).join('')}</select></label>`; }).join('');
+}
+function hbar(lista, campo, cor, tot, dot){
+  const mx = Math.max(1,...lista.map(x => x[1]));
+  return lista.map(([k,v],i) => `<div class="hb ${SEL[campo]===k?'sel':''}" data-k="${campo}" data-v="${esc(k)}"><span>${dot?`<i class="dot" style="background:${cor(k,i)}"></i>`:''}${esc(k)}</span><div><i style="width:${v/mx*100}%;background:${cor(k,i)}"></i></div><b>${v}</b><em>${tot?Math.round(v/tot*100)+'%':''}</em></div>`).join('');
+}
+const conta = (L,k) => { const c = {}; L.forEach(o => c[o[k]] = (c[o[k]]||0)+1); return Object.entries(c).sort((a,b) => b[1]-a[1]); };
+const tag = o => `<span class="tag" style="background:${FCOR[o.fase]}">${o.fase}</span>`;
+const objLoc = o => `${esc(o.obj.length>60?o.obj.slice(0,60)+'…':o.obj)}<small>${esc(o.munN)}/${o.uf} · UG ${o.ug} · ${tag(o)}</small>`;
+const tempoTxt = o => o.dfv===null ? '—' : o.dfv<0 ? 'vigente' : (o.dfv>=365 ? (o.dfv/365).toFixed(1).replace('.',',')+' anos' : o.dfv+' dias');
+const ABERTO = new Set(), PAG = {};
+function ficha(o){
+  const nes = (o.ne||'').split(/[;,| ]+/).filter(Boolean);
+  return `<div class="ficha"><h4>Instrumento ${o.n} · ${esc(o.prop)}</h4>
+  <div class="fg">
+   <div><span>Proposta</span>${esc(o.np)||'—'}</div><div><span>Modalidade</span>${esc(o.mod)}</div><div><span>Situação no Transferegov</span>${esc(o.sit)}${o.sub?' · '+esc(o.sub):''}</div><div><span>Parlamentar</span>${esc(o.parl)}${o.emd?' · emenda '+esc(o.emd):''}</div>
+   <div><span>Fim da vigência</span>${esc(o.fv)||'—'} (${tempoTxt(o)})</div><div><span>Limite para prestar contas</span>${esc(o.lim)||'—'}${o.dlim>0&&/^Aguardando/.test(o.fase)?` <b style="color:#c0392b">vencido há ${o.dlim} dias</b>`:''}</div><div><span>Último desembolso</span>${esc(o.ultd)||'—'}</div><div><span>Programa</span>${esc(o.prog)||'—'}</div>
+   <div><span>Repasse</span>${R(o.rep)}</div><div><span>Desembolsado</span>${R(o.des)}</div><div><span>Contrapartida ingressada</span>${R(o.cp)}</div><div><span>Rendimento de aplicação</span>${R(o.rend)}</div>
+   <div><span>Empenhado</span>${R(o.emp)}</div><div><span>Empenhado não desembolsado</span><b style="color:${o.canc?'#c0392b':'inherit'}">${R(o.canc)}</b></div><div><span>Saldo em conta</span><b style="color:${o.sc?'#c0392b':'inherit'}">${R(o.sc)}</b></div><div><span>Notas de empenho</span>${nes.length?nes.join(' · '):'—'}</div>
+   <div><span>Devolvido ao Tesouro</span>${R(o.dt)}</div><div><span>Devolvido pelo convenente</span>${R(o.dc)}</div><div><span>Inadimplente desde</span>${o.inad?`<b style="color:#c0392b">${esc(o.inad)}</b>`:'—'}</div><div><span>Prestação de contas rejeitada em</span>${o.rej?`<b style="color:#c0392b">${esc(o.rej)}</b>`:'—'}</div>
+  </div>
+  <div class="crit">${tag(o)} &nbsp;${o.fase==='Em processo de TCE'?'Instrumento com TCE em andamento registrada no Transferegov.':o.fase==='Inadimplente'?'Convenente registrado como inadimplente: caminho para a TCE se não regularizar.':o.fase==='Rejeitada'?'Prestação de contas rejeitada: cobrar devolução e, sem regularização, instaurar TCE.':o.fase===HIST?'Já esteve rejeitada/inadimplente e hoje está encerrada: confira se a TCE foi instaurada e concluída (e-TCE).':o.fase==='Aguardando PC · prazo vencido'?'O prazo para o convenente prestar contas venceu e ela não foi apresentada (omissão): notificar e, se não regularizar, instaurar TCE.':o.canc?'Há empenho não desembolsado: com o instrumento encerrado, esse saldo deve ser cancelado (no painel cruza com o RAP do Tesouro para mostrar o saldo real da nota).':'Acompanhar a análise.'}</div>
+  <div style="margin-top:10px;font-size:12px;font-weight:600">Histórico de situação no Transferegov (últimas mudanças)</div><div class="tl">${(o.tl||[]).map(x => `<div style="${/REJEIT|INADIMPL/i.test(x[1])?'border-color:#c0392b;color:#c0392b':''}"><b>${esc(x[0])}</b><br>${esc(x[1])}</div>`).join('') || '<div>sem histórico</div>'}</div>
+  <div style="margin-top:8px;font-size:12.5px"><b>Objeto:</b> ${esc(o.obj)}</div>
+  <div style="margin-top:8px"><a class="lk" href="${esc(o.link)}" target="_blank">Abrir no Transferegov ↗</a> <button type="button" class="btn" style="margin:0 0 0 8px;padding:5px 14px" data-fichacompleta="${esc(o.n)}">Ficha completa do instrumento ›</button></div></div>`;
+}
+function tabela(id, L, cols, porPag){
+  const p = PAG[id]||0, ini = p*porPag, pg = L.slice(ini, ini+porPag), nc = cols.length;
+  if(!L.length) return '<p class="d">nenhum instrumento neste recorte</p>';
+  return `<table><tr>${cols.map(c => `<th class="${c[2]||''}">${c[0]}</th>`).join('')}</tr>${pg.map(o => `<tr class="lin ${ABERTO.has(id+o.n)?'aberto':''}" data-ab="${id+o.n}">${cols.map(c => `<td class="${c[2]||''}">${c[1](o)}</td>`).join('')}</tr>${ABERTO.has(id+o.n)?`<tr><td colspan="${nc}" style="padding:0">${ficha(o)}</td></tr>`:''}`).join('')}</table>
+  ${L.length>porPag?`<div class="pag">${ini+1}–${Math.min(L.length,ini+porPag)} de ${L.length} <button data-pg="${id}" data-d="-1" ${p?'':'disabled'}>‹</button><button data-pg="${id}" data-d="1" ${ini+porPag<L.length?'':'disabled'}>›</button></div>`:''}`;
+}
+let MUN = null;
+function mapa(L){
+  if(!MUN){ MUN = new Map(); MUN_BR.split(';').forEach(l => { const [uf,n,x,y] = l.split('|'); MUN.set(uf+'|'+n,[+x,+y]); }); }
+  const porUF = {}, pts = new Map();
+  L.forEach(o => { porUF[o.uf] = (porUF[o.uf]||0)+1; const nm = o.mun.replace(/['\-]/g,' ').replace(/\s+/g,' ').trim(); const c = MUN.get(o.uf+'|'+nm); if(!c) return;
+    const p = pts.get(o.uf+nm) || {x:c[0],y:c[1],n:0,s:{},nome:o.munN,uf:o.uf}; p.n++; p.s[o.fase]=(p.s[o.fase]||0)+1; pts.set(o.uf+nm,p); });
+  const mx = Math.max(1,...Object.values(porUF));
+  const est = Object.entries(MAPA_BR.ufs).map(([uf,d]) => `<path class="uf ${SEL.uf===uf?'sel':''}" d="${d}" data-k="uf" data-v="${uf}" style="fill:${porUF[uf]?`color-mix(in srgb,#1f4e79 ${Math.round((.1+.6*Math.sqrt(porUF[uf]/mx))*100)}%,#eef1ee)`:'#eef1f4'}"><title>${uf}: ${porUF[uf]||0} instrumentos</title></path>`).join('');
+  const rot = Object.entries(MAPA_BR.centro).map(([uf,[x,y]]) => `<text class="rot" x="${x}" y="${y}">${uf}</text>`).join('');
+  const cor = p => (p.s['Aguardando PC · prazo vencido']||p.s['Rejeitada']||p.s['Inadimplente']) ? '#c0392b' : p.s['Em complementação'] ? '#e67e22' : (p.s['Em análise']||p.s['Enviada para análise']) ? '#3a6f9f' : '#9aa6af';
+  const ps = [...pts.values()].sort((a,b) => b.n-a.n).map(p => `<circle class="pt" cx="${p.x}" cy="${p.y}" r="${(2.2+1.3*Math.sqrt(p.n)).toFixed(1)}" fill="${cor(p)}"><title>${p.nome}/${p.uf}: ${p.n} · ${Object.entries(p.s).map(([k,v]) => k+' '+v).join(', ')}</title></circle>`).join('');
+  return `<svg viewBox="0 0 ${MAPA_BR.w} ${MAPA_BR.h}">${est}${rot}${ps}</svg>`;
+}
+let LISTA = 'omissao';
+function render(){
+  document.querySelectorAll('#sub a').forEach(a => a.classList.toggle('on', a.dataset.aba===ABA));
+  document.getElementById('nota').innerHTML = ABA==='pc'
+    ? '<b>Prestação de contas</b> · instrumentos da SDR que ainda não tiveram a prestação de contas concluída/aprovada · Transferegov, carga de __DATA__ · clique na linha para abrir a ficha.'
+    : '<b>Risco de TCE</b>: instrumentos com o prazo de prestar contas vencido sem apresentação (omissão), prestação de contas rejeitada ou convenente inadimplente. São os casos que, sem regularização, levam à Tomada de Contas Especial. O Transferegov marca "Em processo de TCE" na subsituação (hoje nenhum instrumento da SDR) e o histórico mostra quem já foi rejeitado ou inadimplente. A fase no TCU fica no e-TCE.';
+  desenharFiltros();
+  const L = filtrar(), tot = L.length, s = k => L.reduce((a,o)=>a+o[k],0);
+  document.getElementById('contagem').textContent = `${tot} instrumentos no recorte`;
+  const om = L.filter(o => o.fase==='Aguardando PC · prazo vencido');
+  const fila = L.filter(o => o.fase==='Enviada para análise'||o.fase==='Em análise');
+  if(ABA==='tce'){ const c = k => L.filter(o => o.fase===k), v = a => fm(a.reduce((x,o)=>x+o.des,0));
+   const g = [['Em processo de TCE','no Transferegov (subsituação)'],['Inadimplente','convenente inadimplente hoje'],['Rejeitada','prestação de contas rejeitada'],['Aguardando PC · prazo vencido','omissão: não prestou contas'],[HIST,'já foi rejeitada/inadimplente e depois encerrou']];
+   document.getElementById('kp').innerHTML = g.map(([k,d],i) => `<div class="k ${i===0?'dest':i<4?'red':''}" data-k="fase" data-v="${k}" style="cursor:pointer"><span>${k==='Aguardando PC · prazo vencido'?'Prazo vencido sem prestar contas':k===HIST?'Já foi rejeitada / inadimplente':k}</span><b>${c(k).length}</b><small>${d} · ${v(c(k))}</small></div>`).join('');
+  } else
+  document.getElementById('kp').innerHTML = `<div class="k dest"><span>${ABA==='pc'?'Em prestação de contas':'Em risco de TCE'}</span><b>${tot.toLocaleString('pt-BR')}</b><small>desembolsado ${fm(s('des'))}</small></div>
+   <div class="k"><span>Na fila de análise</span><b>${fila.length.toLocaleString('pt-BR')}</b><small>${fm(fila.reduce((a,o)=>a+o.des,0))} · ${fila.filter(o=>o.dfv>730).length} há mais de 2 anos</small></div>
+   <div class="k red"><span>Prazo vencido sem prestar contas</span><b>${om.length}</b><small>${fm(om.reduce((a,o)=>a+o.des,0))} desembolsado</small></div>
+   <div class="k red"><span>Empenhado não desembolsado</span><b>${fm(s('canc'))}</b><small>${L.filter(o=>o.canc>0).length} instrumentos · saldo a cancelar</small></div>
+   <div class="k"><span>Saldo parado em conta</span><b>${fm(s('sc'))}</b><small>${L.filter(o=>o.sc>0).length} instrumentos · rendimento ${fm(s('rend'))}</small></div>`;
+  document.getElementById('devol').textContent = fm(s('dt'));
+  const cf = Object.fromEntries(conta(L,'fase'));
+  document.getElementById('fase').innerHTML = hbar(FORD.filter(k => cf[k]).map(k => [k,cf[k]]), 'fase', k => FCOR[k], tot, 1);
+  const ct = Object.fromEntries(conta(L,'tempo')), mt = Math.max(1,...Object.values(ct));
+  document.getElementById('tempo').innerHTML = FX.map(k => `<div class="ano ${SEL.tempo===k?'sel':''}" data-k="tempo" data-v="${k}" title="${k}: ${ct[k]||0}"><em>${ct[k]||0}</em><div class="cols"><i style="width:34px;height:${(ct[k]||0)/mt*100}%;background:${k==='Mais de 5 anos'||k==='3 a 5 anos'?'#c0392b':'#1f4e79'}"></i></div><small>${k}</small></div>`).join('');
+  const anos = {}; L.forEach(o => { const a = anos[o.anoFim] || (anos[o.anoFim] = {n:0,d:0,c:0}); a.n++; a.d+=o.des; a.c+=o.canc; });
+  const ks = Object.keys(anos).filter(Boolean).sort(), mr = Math.max(1,...ks.map(k => anos[k].d));
+  document.getElementById('anos').innerHTML = ks.map(k => `<div class="ano ${SEL.anoFim===k?'sel':''}" data-k="anoFim" data-v="${k}" title="${k}: ${anos[k].n} instrumentos · desembolsado ${fm(anos[k].d)} · empenhado não desembolsado ${fm(anos[k].c)}"><em>${anos[k].n}</em><div class="cols"><i style="height:${anos[k].d/mr*100}%;background:#1f4e79"></i><i style="height:${anos[k].c/mr*100}%;background:#c0392b"></i></div><small>${k}</small></div>`).join('');
+  document.getElementById('mapa').innerHTML = mapa(L);
+  document.getElementById('ufs').innerHTML = hbar(conta(L,'uf').slice(0,14), 'uf', () => '#1f4e79', tot);
+  const LIS = {
+    omissao:['Prazo vencido sem prestar contas', om.sort((a,b)=>b.des-a.des), [['Instrumento',o=>o.n],['Objeto / local',objLoc],['Limite p/ prestar contas',o=>esc(o.lim)+`<small>vencido há ${o.dlim} dias</small>`,'n'],['Desembolsado',o=>fm(o.des),'n']]],
+    fila:['Mais antigas na fila de análise', fila.slice().sort((a,b)=>b.dfv-a.dfv), [['Instrumento',o=>o.n],['Objeto / local',objLoc],['Fim da vigência',o=>esc(o.fv)+`<small>há ${tempoTxt(o)}</small>`,'n'],['Desembolsado',o=>fm(o.des),'n']]],
+    canc:['Empenho a cancelar', L.filter(o=>o.canc>0).sort((a,b)=>b.canc-a.canc), [['Instrumento',o=>o.n],['Objeto / local',objLoc],['Empenhado',o=>fm(o.emp),'n'],['Desembolsado',o=>fm(o.des),'n'],['Não desembolsado',o=>`<b style="color:#c0392b">${fm(o.canc)}</b>`,'n']]],
+    saldo:['Saldo parado em conta', L.filter(o=>o.sc>0).sort((a,b)=>b.sc-a.sc), [['Instrumento',o=>o.n],['Objeto / local',objLoc],['Fim da vigência',o=>esc(o.fv),'n'],['Saldo em conta',o=>`<b style="color:#c0392b">${fm(o.sc)}</b>`,'n'],['Rendimento',o=>fm(o.rend),'n']]],
+    complem:['Em complementação', L.filter(o=>o.fase==='Em complementação').sort((a,b)=>b.des-a.des), [['Instrumento',o=>o.n],['Objeto / local',objLoc],['Fim da vigência',o=>esc(o.fv),'n'],['Desembolsado',o=>fm(o.des),'n']]]};
+  if(ABA==='tce'){ LIS.omissao[0]='Prazo vencido sem prestar contas'; const cl = [['Instrumento',o=>o.n],['Objeto / local',objLoc],['Inadimplente desde / rejeitada em',o=>(o.inad||o.rej||'—')+'','n'],['Desembolsado',o=>fm(o.des),'n']];
+   for(const k of ['canc','saldo','complem','fila']) delete LIS[k];
+   LIS.tce=['Em processo de TCE', L.filter(o=>o.fase==='Em processo de TCE'), cl]; LIS.inad=['Inadimplentes', L.filter(o=>o.fase==='Inadimplente').sort((a,b)=>b.des-a.des), cl]; LIS.rej=['Rejeitadas', L.filter(o=>o.fase==='Rejeitada').sort((a,b)=>b.des-a.des), cl]; LIS.hist=['Já foram rejeitadas/inadimplentes', L.filter(o=>o.fase===HIST).sort((a,b)=>b.des-a.des), cl];
+   if(!LIS[LISTA]) LISTA='omissao'; } else if(!LIS[LISTA]) LISTA='omissao';
+  document.getElementById('tabs').innerHTML = Object.entries(LIS).map(([k,v]) => `<a data-lista="${k}" class="${LISTA===k?'on':''}">${v[0]} (${v[1].length})</a>`).join('');
+  const [_, LL, cols] = LIS[LISTA]; document.getElementById('lista').innerHTML = tabela('l'+LISTA, LL, cols, 8);
+  const q = document.getElementById('busca').value.trim().toUpperCase();
+  const todas = (q ? L.filter(o => (o.n+' '+o.munN+' '+o.prop+' '+o.obj+' '+o.parl).toUpperCase().includes(q)) : L).slice().sort((a,b)=>b.des-a.des);
+  document.getElementById('todas').innerHTML = tabela('todas', todas, [['Instrumento',o=>o.n+`<small>proposta ${esc(o.np)}</small>`],['Objeto / local',objLoc],['Parlamentar',o=>esc(o.parl)],['Fim da vigência',o=>esc(o.fv)+`<small>${tempoTxt(o)}</small>`,'n'],['Desembolsado',o=>fm(o.des),'n']], 15);
+}
+document.addEventListener('change', e => { const k = e.target.dataset.k; if(!k) return; if(e.target.value) SEL[k] = e.target.value; else delete SEL[k]; for(const p in PAG) PAG[p]=0; render(); });
+document.addEventListener('click', e => {
+  const fc = e.target.closest('[data-fichacompleta]'); if(fc){ try{ parent.abrirFichaInst(fc.dataset.fichacompleta); }catch(x){} return; }
+  const ab0 = e.target.closest('[data-aba]'); if(ab0){ ABA = ab0.dataset.aba; for(const k in SEL) delete SEL[k]; LISTA = 'omissao'; render(); return; }
+  const li = e.target.closest('[data-lista]'); if(li){ LISTA = li.dataset.lista; render(); return; }
+  const pg = e.target.closest('[data-pg]'); if(pg){ PAG[pg.dataset.pg] = (PAG[pg.dataset.pg]||0) + +pg.dataset.d; render(); return; }
+  const ab = e.target.closest('[data-ab]'); if(ab && !e.target.closest('a')){ const k = ab.dataset.ab; ABERTO.has(k) ? ABERTO.delete(k) : ABERTO.add(k); render(); return; }
+  const f = e.target.closest('[data-k][data-v]'); if(f){ const k = f.dataset.k, v = f.dataset.v; SEL[k]===v ? delete SEL[k] : SEL[k] = v; for(const p in PAG) PAG[p]=0; render(); }
+});
+document.getElementById('limpar').onclick = () => { for(const k in SEL) delete SEL[k]; render(); };
+document.getElementById('busca').oninput = () => { PAG.todas = 0; render(); };
+render();
+</script></body></html>
