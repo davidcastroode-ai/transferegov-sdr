@@ -319,6 +319,8 @@ def main(saida):
                  'Rendimento Aplicação', 'Saldo em conta', 'Execução Financeira', 'Último Pagamento', 'Sem Desembolso']
     plan = []
     for r in inst:
+        if r['assinado'] != 'SIM':   # a planilha Parcerias só tem instrumentos assinados; os não assinados ficam nas propostas
+            continue
         ids = [x for x in r['id_programa'].split(' | ') if x]
         emexec = r['situacao'] == 'Em execução'
         d = int(r['dias_sem_desembolso']) if r['dias_sem_desembolso'] else None
