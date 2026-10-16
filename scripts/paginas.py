@@ -136,6 +136,38 @@ def main(pasta):
     with open(os.path.join(pasta, 'pagina_prestacao.html'), 'w', encoding='utf-8') as fh:
         fh.write(montar('prestacao.html', pcs, data_carga))
     print(f'pagina_prestacao.html · {len(pcs)} instrumentos', flush=True)
+    propostas(pasta, data_carga)
+
+
+def propostas(pasta, data_carga):
+    import glob
+    hoje = datetime.date.today()
+    anomin = hoje.year - 3
+    dic, rows, anos = {}, [], collections.defaultdict(lambda: [0, 0])
+
+    def ix(k, v):
+        d = dic.setdefault(k, {})
+        if v not in d:
+            d[v] = len(d)
+        return d[v]
+    for arq in sorted(glob.glob(os.path.join(pasta, 'propostas_por_ano', '*.csv'))):
+        for r in ler(os.path.dirname(arq), os.path.basename(arq)):
+            a = r.get('ano_proposta', '')
+            cel = r.get('celebrada') == 'SIM'
+            anos[a][0] += 1
+            anos[a][1] += 1 if cel else 0
+            if not a.isdigit() or int(a) < anomin:
+                continue
+            rows.append([int(a), ix('s', r['situacao_proposta']), ix('m', r['modalidade']), ix('u', r['uf']), ix('g', (r['programa'] or '')[:120]),
+                         ix('p', r['parlamentar']), ix('t', r['tipo_parlamentar']), ix('j', r['natureza_juridica']), 1 if cel else 0,
+                         round(f(r['valor_repasse_proposta'])), round(f(r['valor_global_proposta'])), r['nr_proposta'], r['nr_instrumento'],
+                         ix('r', r['proponente']), ix('c', r['municipio']), int(r['id_proposta'] or 0), r['nr_emenda'], (r['objeto'] or '')[:220],
+                         r.get('ug_emitente', ''), r.get('inicio_vigencia_proposta', ''), r.get('fim_vigencia_proposta', ''), r.get('cnpj_proponente', '')])
+    dados = {'d': {k: list(v) for k, v in dic.items()}, 'r': rows, 'anos': [[a, n, c] for a, (n, c) in sorted(anos.items()) if a.isdigit()], 'anomin': anomin}
+    h = montar('propostas.html', dados, data_carga).replace('__ANOMIN__', str(anomin))
+    with open(os.path.join(pasta, 'pagina_propostas.html'), 'w', encoding='utf-8') as fh:
+        fh.write(h)
+    print(f'pagina_propostas.html · {len(rows)} propostas desde {anomin} · {sum(n for n, c in anos.values())} no total', flush=True)
 
 
 if __name__ == '__main__':

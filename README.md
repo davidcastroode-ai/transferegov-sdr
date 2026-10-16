@@ -24,7 +24,7 @@ dados abertos do Transferegov (Discricionárias e Legais).
 | `historico_situacao.csv` | mudança de situação | histórico de situações de cada instrumento (mostra quando ficou inadimplente, por exemplo) |
 | `planilha_parcerias.csv` | instrumento assinado | mesmas colunas (A:AH) e mesma ordem da planilha Parcerias; é o que o Apps Script da planilha usa para atualizar e acrescentar instrumentos novos |
 | `painel_empenhos.csv` | nota de empenho | versão leve das notas (instrumento, NE, UG, data, tipo, valor) usada na ficha do painel |
-| `pagina_obras.html` · `pagina_prestacao.html` | página | telas prontas (dados embutidos) que o Painel SDR abre nas abas Obras e Prestação de contas da Parceria SDR |
+| `pagina_obras.html` · `pagina_prestacao.html` · `pagina_propostas.html` | página | telas prontas (dados embutidos) que o Painel SDR abre nas abas Obras, Prestação de contas e Propostas da Parceria SDR |
 | `instrumentos_outros_orgaos.csv` | instrumento | instrumentos com UG da SDR mas concedente de outro ministério (o script da planilha apaga essas linhas) |
 | `resumo_fisico_financeiro.csv` | instrumento | resumo físico-financeiro das obras |
 | `emendas.csv` | emenda × proposta | parlamentar, nº da emenda, valores |
