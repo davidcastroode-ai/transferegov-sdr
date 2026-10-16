@@ -16,7 +16,7 @@ BASE = 'https://api-publica.transferegov.gestao.gov.br/downloads/dadosgov/'
 UGS_SDR = ['130010', '130141', '135098', '420013', '130255']
 ARQUIVOS = ['siconv_convenio', 'siconv_programa_proposta', 'siconv_programa', 'siconv_proposta', 'siconv_emenda',
             'siconv_empenho', 'siconv_desembolso', 'siconv_termo_aditivo', 'siconv_prorroga_oficio', 'data_carga_siconv',
-            'siconv_dados_obrasgov_geral', 'siconv_acomp_obras_contratos_medicoes_modulo_empresas', 'siconv_acomp_obras_valores_itens_medicao_modulo_empresas', 'siconv_resumo_fisico_financeiro']
+            'siconv_dados_obrasgov_geral', 'siconv_acomp_obras_contratos_medicoes_modulo_empresas', 'siconv_acomp_obras_valores_itens_medicao_modulo_empresas', 'siconv_resumo_fisico_financeiro', 'siconv_historico_situacao']
 TMP = os.environ.get('FONTE_LOCAL') or '/tmp/transferegov'
 csv.field_size_limit(10**9)
 LOG = []
@@ -191,6 +191,14 @@ def main(saida):
     cab_des, desembolsos = do_conv('siconv_desembolso')
     cab_ta, aditivos = do_conv('siconv_termo_aditivo')
     cab_pr, prorrogas = do_conv('siconv_prorroga_oficio')
+    cab_hs, historico = do_conv('siconv_historico_situacao')
+    # histórico: primeira vez que o instrumento ficou INADIMPLENTE e a sequência de situações
+    inad_c, hist_c = {}, {}
+    for h in historico:
+        n, s, d = h['NR_CONVENIO'], (h.get('HISTORICO_SIT') or '').strip(), data(h.get('DIA_HISTORICO_SIT'))
+        hist_c.setdefault(n, []).append((d or datetime.date.min, s))
+        if 'INADIMPL' in s.upper() and d and (n not in inad_c or d < inad_c[n]):
+            inad_c[n] = d
 
     def por_conv(lista):
         g = {}
@@ -274,6 +282,11 @@ def main(saida):
             'dias_sem_desembolso': str((hoje - ult).days) if ult else '',
             'qtd_aditivos': str(len(ta_c.get(n, []))),
             'qtd_prorrogacoes': str(len(pr_c.get(n, []))),
+            'saldo_devolvido_tesouro': v2(num(c.get('VL_SALDO_REMAN_TESOURO'))),
+            'saldo_devolvido_convenente': v2(num(c.get('VL_SALDO_REMAN_CONVENENTE'))),
+            'em_processo_tce': 'SIM' if 'TCE' in (c.get('SUBSITUACAO_CONV', '') or '').upper() else 'NÃO',
+            'inadimplente_desde': br(inad_c.get(n)),
+            'ultima_mudanca_situacao': br(max(hist_c[n])[0]) if hist_c.get(n) else '',
             'notas_empenho': ' | '.join(nes),
             'qtd_notas_empenho': str(len(nes)),
         }
@@ -286,7 +299,7 @@ def main(saida):
     leve = ['nr_instrumento', 'ug_emitente', 'ano', 'situacao', 'situacao_contratacao', 'clausula_suspensiva_ate', 'fim_vigencia',
             'limite_prestacao_contas', 'nr_processo', 'modalidade', 'proponente', 'uf', 'municipio', 'natureza_juridica', 'tipo_parlamentar',
             'valor_repasse', 'valor_desembolsado', 'valor_a_desembolsar', 'ultimo_desembolso', 'dias_sem_desembolso', 'qtd_aditivos',
-            'qtd_prorrogacoes', 'notas_empenho', 'saldo_em_conta', 'objeto']
+            'qtd_prorrogacoes', 'notas_empenho', 'saldo_em_conta', 'subsituacao', 'em_processo_tce', 'inadimplente_desde', 'objeto']
     gravar(saida, 'painel_instrumentos.csv', leve, [{**r, 'objeto': r['objeto'][:160]} for r in inst])
 
     # 7. propostas (todas do escopo, celebradas ou não)
@@ -319,6 +332,7 @@ def main(saida):
     gravar(saida, 'desembolsos.csv', cab_des or ['NR_CONVENIO'], desembolsos)
     gravar(saida, 'aditivos.csv', cab_ta or ['NR_CONVENIO'], aditivos)
     gravar(saida, 'prorrogacoes.csv', cab_pr or ['NR_CONVENIO'], prorrogas)
+    gravar(saida, 'historico_situacao.csv', cab_hs or ['NR_CONVENIO'], historico)
     gravar(saida, 'emendas.csv', meta['cabecalhos'].get('emenda') or ['ID_PROPOSTA'], emendas)
 
     # obras (Obrasgov / acompanhamento de obras): filtra pelo nº do instrumento ou pelo ID da proposta, o que o arquivo tiver

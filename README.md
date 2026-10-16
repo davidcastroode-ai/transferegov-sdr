@@ -21,6 +21,7 @@ dados abertos do Transferegov (Discricionárias e Legais).
 | `obras.csv` | obra | dados do Obrasgov das obras dos instrumentos (situação da obra, execução física) |
 | `painel_obras.csv` | instrumento com obra | situação da obra calculada (não iniciada, em andamento, paralisada, inacabada, finalizada), % físico, medições, vigência e valores |
 | `historico_obras.csv` | dia × obra | fotografia diária do % físico (até 400 dias), usada no critério de obra paralisada da Lei 14.719/2023 |
+| `historico_situacao.csv` | mudança de situação | histórico de situações de cada instrumento (mostra quando ficou inadimplente, por exemplo) |
 | `resumo_fisico_financeiro.csv` | instrumento | resumo físico-financeiro das obras |
 | `emendas.csv` | emenda × proposta | parlamentar, nº da emenda, valores |
 | `atualizacao.json` | — | data da carga do Transferegov, hora da geração, contagens e registro da execução |
