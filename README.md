@@ -11,7 +11,8 @@ dados abertos do Transferegov (Discricionárias e Legais).
 | Arquivo | Uma linha por | Conteúdo |
 |---|---|---|
 | `instrumentos.csv` | instrumento | situação, vigência, prestação de contas, valores, a desembolsar, último desembolso, dias sem desembolso, notas de empenho, aditivos, prorrogações + dados da proposta, programa e emenda |
-| `propostas.csv` | proposta | todas as propostas dos programas da SDR (celebradas ou não), com proponente, objeto, valores, emenda e o instrumento gerado |
+| `propostas.csv` | proposta | propostas dos últimos anos (desde o ano atual − 3) dos programas da SDR, celebradas ou não, com proponente, objeto, valores, emenda e o instrumento gerado |
+| `propostas_por_ano/propostas_AAAA.csv` | proposta | todas as propostas, um arquivo por ano (2008 em diante) |
 | `empenhos.csv` | nota de empenho | notas de empenho dos instrumentos (nº da NE, tipo, UG, PI, PTRES, valor) |
 | `desembolsos.csv` | desembolso | cada liberação de recurso |
 | `aditivos.csv` | termo aditivo | aditivos dos instrumentos |

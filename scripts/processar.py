@@ -294,7 +294,18 @@ def main(saida):
                     'celebrada': 'SIM' if c.get('IND_ASSINADO') == 'SIM' else 'NÃO'})
         props.append(reg)
     props.sort(key=lambda r: (r['ano_proposta'] or '0000', r['nr_proposta']), reverse=True)
-    gravar(saida, 'propostas.csv', list(props[0].keys()) if props else [], props)
+    campos_prop = list(props[0].keys()) if props else []
+    # o arquivo completo passa de 100 MB (limite do GitHub): um arquivo por ano + "propostas.csv" com os anos recentes
+    ano_min = hoje.year - 3
+    gravar(saida, 'propostas.csv', campos_prop, [r for r in props if (r['ano_proposta'] or '0') >= str(ano_min)])
+    por_ano = {}
+    for r in props:
+        por_ano.setdefault(r['ano_proposta'] or 'sem_ano', []).append(r)
+    os.makedirs(os.path.join(saida, 'propostas_por_ano'), exist_ok=True)
+    for ano, lista in sorted(por_ano.items()):
+        gravar(saida, os.path.join('propostas_por_ano', f'propostas_{ano}.csv'), campos_prop, lista)
+    meta['propostas_por_ano'] = {ano: {'total': len(l), 'celebradas': sum(1 for r in l if r['celebrada'] == 'SIM')} for ano, l in sorted(por_ano.items())}
+    meta['propostas_csv_desde'] = ano_min
 
     # 8. tabelas de detalhe (colunas originais do Transferegov)
     gravar(saida, 'empenhos.csv', cab_emp or ['NR_CONVENIO'], empenhos)
