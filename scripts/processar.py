@@ -321,6 +321,19 @@ def main(saida):
     gravar(saida, 'prorrogacoes.csv', cab_pr or ['NR_CONVENIO'], prorrogas)
     gravar(saida, 'emendas.csv', meta['cabecalhos'].get('emenda') or ['ID_PROPOSTA'], emendas)
 
+    # obras (Obrasgov / módulo de empresas): filtra pelos instrumentos ou propostas da SDR, qualquer que seja a coluna de ligação
+    for nome, arq in [('siconv_dados_obrasgov_geral', 'obras.csv'), ('siconv_acomp_obras_contratos_medicoes_modulo_empresas', 'obras_medicoes.csv'),
+                      ('siconv_resumo_fisico_financeiro', 'resumo_fisico_financeiro.csv')]:
+        cab, it = linhas(nome)
+        meta['cabecalhos'][nome.replace('siconv_', '')] = cab
+        if not cab:
+            continue
+        cc = [c for c in cab if c in ('NR_CONVENIO', 'NR_INSTRUMENTO', 'NUMERO_INSTRUMENTO', 'NUM_INSTRUMENTO', 'NR_CONVENIO_SICONV')]
+        cp = [c for c in cab if c in ('ID_PROPOSTA', 'NR_PROPOSTA_SICONV')]
+        out = [r for r in it if any(r.get(c) in conv for c in cc) or any(r.get(c) in prop_do_conv for c in cp)]
+        log(f'{nome}: {len(out)} linhas da SDR (ligação por {", ".join(cc + cp) or "nenhuma coluna conhecida"})')
+        gravar(saida, arq, cab, out)
+
     # obras (Obrasgov / acompanhamento de obras): filtra pelo nº do instrumento ou pelo ID da proposta, o que o arquivo tiver
     def obras_de(nome, saida_nome):
         cab, it = linhas(nome)
