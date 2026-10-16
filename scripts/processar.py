@@ -322,6 +322,8 @@ def main(saida):
     gravar(saida, 'emendas.csv', meta['cabecalhos'].get('emenda') or ['ID_PROPOSTA'], emendas)
 
     # obras (Obrasgov / acompanhamento de obras): filtra pelo nº do instrumento ou pelo ID da proposta, o que o arquivo tiver
+    OBRAS_LINHAS = {}
+
     def obras_de(nome, saida_nome):
         cab, it = linhas(nome)
         meta['cabecalhos'][nome.replace('siconv_', '')] = cab
@@ -333,11 +335,103 @@ def main(saida):
         out = [r for r in it if (ci and r.get(ci) in conv) or (cp and r.get(cp) in prop_do_conv)]
         log(f'{nome}: {len(out)} linhas da SDR (chave: {ci or cp})')
         gravar(saida, saida_nome, cab, out)
+        OBRAS_LINHAS[saida_nome] = out
         return len(out)
     n_obras = obras_de('siconv_dados_obrasgov_geral', 'obras.csv')
     n_med = obras_de('siconv_acomp_obras_contratos_medicoes_modulo_empresas', 'obras_medicoes.csv')
     n_itm = obras_de('siconv_acomp_obras_valores_itens_medicao_modulo_empresas', 'obras_itens_medicao.csv')
     n_rff = obras_de('siconv_resumo_fisico_financeiro', 'resumo_fisico_financeiro.csv')
+
+    # ---- painel de obras: 1 linha por instrumento com obra, situação calculada e histórico diário do % físico ----
+    inst_por_num = {r['nr_instrumento']: r for r in inst}
+    conv_da_prop = {p: n for p, n in prop_do_conv.items()}
+    ob = {}
+    for r in OBRAS_LINHAS.get('obras.csv', []):
+        n = str(r.get('NR_INSTRUMENTO', '')).strip()
+        if n in conv:
+            ob.setdefault(n, {})['link_transparencia'] = r.get('LINK_TRANSPARENCIA', '')
+            ob[n]['id_projeto_investimento'] = r.get('ID_PROJETO_INVESTIMENTO', '')
+    for r in OBRAS_LINHAS.get('resumo_fisico_financeiro.csv', []):
+        n = conv_da_prop.get(r.get('ID_PROPOSTA'))
+        if n:
+            o = ob.setdefault(n, {})
+            o['valor_obra'] = num(r.get('VALOR_TOTAL_RESUMO_FISICO_FINANCEIRO'))
+            o['valor_realizado'] = num(r.get('VALOR_REALIZADO_RESUMO_FISICO_FINANCEIRO'))
+            o['pct_fisico'] = num(r.get('PERCENTUAL_EXECUCAO_RESUMO_FISICO_FINANCEIRO'))
+    for r in OBRAS_LINHAS.get('obras_medicoes.csv', []):
+        n = conv_da_prop.get(r.get('ID_PROPOSTA'))
+        if not n:
+            continue
+        o = ob.setdefault(n, {})
+        nr = int(num(r.get('NUMERO_MEDICAO_ACOMPANHAMENTO_OBRA')))
+        if nr >= o.get('_nr', -1):
+            o['_nr'] = nr
+            o['nr_medicao'] = str(nr)
+            o['situacao_medicao'] = r.get('SITUACAO_MEDICAO_ACOMPANHAMENTO_OBRA', '')
+            o['fim_ultima_medicao'] = br(data(r.get('DATA_FIM_MEDICAO_OBJETO_ACOMPANHAMENTO_OBRA')))
+            o['dias_sem_medicao'] = r.get('QTD_DIAS_SEM_MEDICAO_ACOMPANHAMENTO_OBRA', '')
+            o['inicio_obra'] = br(data(r.get('DATA_INICIO_OBRA_CONTRATO_ACOMPANHAMENTO_OBRA')))
+            o['cnpj_empresa'] = r.get('CNPJ_FORNECEDOR_CONTRATO_ACOMPANHAMENTO_OBRA', '')
+    # histórico do % físico (guardado de um dia para o outro; arquivo anterior vem pela variável HIST_ANTERIOR)
+    hist, hoje_txt = [], hoje.strftime('%Y-%m-%d')
+    ant = os.environ.get('HIST_ANTERIOR')
+    if ant and os.path.exists(ant):
+        with open(ant, encoding='utf-8') as f:
+            hist = [r for r in csv.DictReader(f) if r.get('data') != hoje_txt]
+    for n, o in ob.items():
+        if 'pct_fisico' in o:
+            hist.append({'data': hoje_txt, 'nr_instrumento': n, 'pct_fisico': f"{o['pct_fisico']:.2f}", 'valor_realizado': v2(o.get('valor_realizado', 0))})
+    limite = (hoje - datetime.timedelta(days=400)).strftime('%Y-%m-%d')
+    hist = [r for r in hist if r['data'] >= limite]
+    gravar(saida, 'historico_obras.csv', ['data', 'nr_instrumento', 'pct_fisico', 'valor_realizado'], sorted(hist, key=lambda r: (r['nr_instrumento'], r['data'])))
+    dias_hist = len(set(r['data'] for r in hist))
+    serie = {}
+    for r in hist:
+        serie.setdefault(r['nr_instrumento'], []).append((r['data'], float(r['pct_fisico'] or 0)))
+
+    def evolucao(n, dias):
+        pts = sorted(serie.get(n, []))
+        if not pts:
+            return None
+        alvo = (hoje - datetime.timedelta(days=dias)).strftime('%Y-%m-%d')
+        antes = [p for d, p in pts if d <= alvo]
+        return None if not antes else pts[-1][1] - antes[-1]
+
+    painel_obras = []
+    for n, o in ob.items():
+        i = inst_por_num.get(n, {})
+        pct = o.get('pct_fisico')
+        fim = data(i.get('fim_vigencia'))
+        dsm = int(num(o.get('dias_sem_medicao'))) if o.get('dias_sem_medicao') not in (None, '') else None
+        e120, e365 = evolucao(n, 120), evolucao(n, 365)
+        if pct is not None and pct >= 99.995:
+            sit, crit = 'Finalizada', '100% de execução física'
+        elif fim and fim < hoje:
+            sit, crit = 'Inacabada', 'vigência vencida e obra não concluída (Lei 14.719/2023, art. 2º, II)'
+        elif (pct or 0) == 0 and not o.get('nr_medicao'):
+            sit, crit = 'Não iniciada', 'sem medição e sem execução física'
+        elif (e120 is not None and e120 < 5) or (e365 is not None and e365 < 15):
+            sit, crit = 'Paralisada', 'evolução física < 5% em 120 dias ou < 15% em 365 dias (Lei 14.719/2023, art. 2º, I, c)'
+        elif e120 is None and dsm is not None and dsm > 120:
+            sit, crit = 'Paralisada', f'sem medição há {dsm} dias (critério provisório até completar 120 dias de histórico)'
+        else:
+            sit, crit = 'Em andamento', ''
+        painel_obras.append({
+            'nr_instrumento': n, 'situacao_obra': sit, 'criterio': crit,
+            'pct_fisico': f"{pct:.2f}" if pct is not None else '', 'valor_obra': v2(o.get('valor_obra', 0)), 'valor_realizado': v2(o.get('valor_realizado', 0)),
+            'evolucao_120d': f'{e120:.2f}' if e120 is not None else '', 'evolucao_365d': f'{e365:.2f}' if e365 is not None else '',
+            'nr_medicao': o.get('nr_medicao', ''), 'situacao_medicao': o.get('situacao_medicao', ''), 'fim_ultima_medicao': o.get('fim_ultima_medicao', ''),
+            'dias_sem_medicao': '' if dsm is None else str(dsm), 'inicio_obra': o.get('inicio_obra', ''), 'cnpj_empresa': o.get('cnpj_empresa', ''),
+            'situacao_instrumento': i.get('situacao', ''), 'ug_emitente': i.get('ug_emitente', ''), 'modalidade': i.get('modalidade', ''),
+            'fim_vigencia': i.get('fim_vigencia', ''), 'valor_repasse': i.get('valor_repasse', ''), 'valor_desembolsado': i.get('valor_desembolsado', ''),
+            'pct_desembolsado': i.get('pct_desembolsado', ''), 'proponente': i.get('proponente', ''), 'uf': i.get('uf', ''), 'municipio': i.get('municipio', ''),
+            'cod_ibge': i.get('cod_ibge', ''), 'parlamentar': i.get('parlamentar', ''), 'objeto': (i.get('objeto', '') or '')[:200],
+            'id_projeto_investimento': o.get('id_projeto_investimento', ''), 'link_transparencia': o.get('link_transparencia', ''),
+        })
+    painel_obras.sort(key=lambda r: r['nr_instrumento'], reverse=True)
+    gravar(saida, 'painel_obras.csv', list(painel_obras[0].keys()) if painel_obras else ['nr_instrumento'], painel_obras)
+    meta['obras_dias_de_historico'] = dias_hist
+    meta['obras_por_situacao'] = {k: sum(1 for r in painel_obras if r['situacao_obra'] == k) for k in ('Não iniciada', 'Em andamento', 'Paralisada', 'Inacabada', 'Finalizada')}
 
     meta['contagens'] = {'obras': n_obras, 'obras_medicoes': n_med, 'obras_itens_medicao': n_itm, 'resumo_fisico_financeiro': n_rff, 'instrumentos': len(inst), 'propostas': len(props), 'empenhos': len(empenhos),
                          'desembolsos': len(desembolsos), 'aditivos': len(aditivos), 'prorrogacoes': len(prorrogas),

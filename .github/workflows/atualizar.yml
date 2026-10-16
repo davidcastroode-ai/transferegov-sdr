@@ -23,8 +23,13 @@ jobs:
         with:
           python-version: '3.12'
 
+      - name: Recuperar o histórico das obras (dia anterior)
+        run: curl -sfL "https://raw.githubusercontent.com/${{ github.repository }}/dados/historico_obras.csv" -o /tmp/historico_obras.csv || echo "sem histórico anterior"
+
       - name: Baixar e filtrar os dados da SDR
         run: python scripts/processar.py saida
+        env:
+          HIST_ANTERIOR: /tmp/historico_obras.csv
 
       - name: Publicar na branch "dados"
         run: |
