@@ -16,7 +16,7 @@ BASE = 'https://api-publica.transferegov.gestao.gov.br/downloads/dadosgov/'
 UGS_SDR = ['130010', '130141', '135098', '420013', '130255']
 ARQUIVOS = ['siconv_convenio', 'siconv_programa_proposta', 'siconv_programa', 'siconv_proposta', 'siconv_emenda',
             'siconv_empenho', 'siconv_desembolso', 'siconv_termo_aditivo', 'siconv_prorroga_oficio', 'data_carga_siconv',
-            'siconv_dados_obrasgov_geral', 'siconv_acomp_obras_contratos_medicoes_modulo_empresas', 'siconv_acomp_obras_valores_itens_medicao_modulo_empresas']
+            'siconv_dados_obrasgov_geral', 'siconv_acomp_obras_contratos_medicoes_modulo_empresas', 'siconv_acomp_obras_valores_itens_medicao_modulo_empresas', 'siconv_resumo_fisico_financeiro']
 TMP = os.environ.get('FONTE_LOCAL') or '/tmp/transferegov'
 csv.field_size_limit(10**9)
 LOG = []
@@ -191,14 +191,6 @@ def main(saida):
     cab_des, desembolsos = do_conv('siconv_desembolso')
     cab_ta, aditivos = do_conv('siconv_termo_aditivo')
     cab_pr, prorrogas = do_conv('siconv_prorroga_oficio')
-    # obras (Obrasgov): coluna do instrumento pode ter nome diferente
-    cab_ob, it = linhas('siconv_dados_obrasgov_geral')
-    meta['cabecalhos']['obrasgov'] = cab_ob
-    col_inst = next((c for c in (cab_ob or []) if c in ('NR_CONVENIO', 'NR_INSTRUMENTO', 'NUMERO_INSTRUMENTO', 'INSTRUMENTO')), None) \
-        or next((c for c in (cab_ob or []) if 'CONVENIO' in c or 'INSTRUMENTO' in c), None)
-    obras = [r for r in it if col_inst and str(r.get(col_inst, '')).strip() in conv]
-    meta['obras_coluna_instrumento'] = col_inst
-    log(f'obras (Obrasgov): coluna {col_inst} · {len(obras)} linhas da SDR')
 
     def por_conv(lista):
         g = {}
@@ -327,21 +319,7 @@ def main(saida):
     gravar(saida, 'desembolsos.csv', cab_des or ['NR_CONVENIO'], desembolsos)
     gravar(saida, 'aditivos.csv', cab_ta or ['NR_CONVENIO'], aditivos)
     gravar(saida, 'prorrogacoes.csv', cab_pr or ['NR_CONVENIO'], prorrogas)
-    gravar(saida, 'obras.csv', cab_ob or ['NR_CONVENIO'], obras)
     gravar(saida, 'emendas.csv', meta['cabecalhos'].get('emenda') or ['ID_PROPOSTA'], emendas)
-
-    # obras (Obrasgov / módulo de empresas): filtra pelos instrumentos ou propostas da SDR, qualquer que seja a coluna de ligação
-    for nome, arq in [('siconv_dados_obrasgov_geral', 'obras.csv'), ('siconv_acomp_obras_contratos_medicoes_modulo_empresas', 'obras_medicoes.csv'),
-                      ('siconv_resumo_fisico_financeiro', 'resumo_fisico_financeiro.csv')]:
-        cab, it = linhas(nome)
-        meta['cabecalhos'][nome.replace('siconv_', '')] = cab
-        if not cab:
-            continue
-        cc = [c for c in cab if c in ('NR_CONVENIO', 'NR_INSTRUMENTO', 'NUMERO_INSTRUMENTO', 'NUM_INSTRUMENTO', 'NR_CONVENIO_SICONV')]
-        cp = [c for c in cab if c in ('ID_PROPOSTA', 'NR_PROPOSTA_SICONV')]
-        out = [r for r in it if any(r.get(c) in conv for c in cc) or any(r.get(c) in prop_do_conv for c in cp)]
-        log(f'{nome}: {len(out)} linhas da SDR (ligação por {", ".join(cc + cp) or "nenhuma coluna conhecida"})')
-        gravar(saida, arq, cab, out)
 
     # obras (Obrasgov / acompanhamento de obras): filtra pelo nº do instrumento ou pelo ID da proposta, o que o arquivo tiver
     def obras_de(nome, saida_nome):
@@ -359,10 +337,11 @@ def main(saida):
     n_obras = obras_de('siconv_dados_obrasgov_geral', 'obras.csv')
     n_med = obras_de('siconv_acomp_obras_contratos_medicoes_modulo_empresas', 'obras_medicoes.csv')
     n_itm = obras_de('siconv_acomp_obras_valores_itens_medicao_modulo_empresas', 'obras_itens_medicao.csv')
+    n_rff = obras_de('siconv_resumo_fisico_financeiro', 'resumo_fisico_financeiro.csv')
 
-    meta['contagens'] = {'obras': n_obras, 'obras_medicoes': n_med, 'obras_itens_medicao': n_itm, 'instrumentos': len(inst), 'propostas': len(props), 'empenhos': len(empenhos),
+    meta['contagens'] = {'obras': n_obras, 'obras_medicoes': n_med, 'obras_itens_medicao': n_itm, 'resumo_fisico_financeiro': n_rff, 'instrumentos': len(inst), 'propostas': len(props), 'empenhos': len(empenhos),
                          'desembolsos': len(desembolsos), 'aditivos': len(aditivos), 'prorrogacoes': len(prorrogas),
-                         'emendas': len(emendas), 'obras': len(obras), 'programas': len(progs_sdr)}
+                         'emendas': len(emendas), 'programas': len(progs_sdr)}
     meta['log'] = LOG
     with open(os.path.join(saida, 'atualizacao.json'), 'w', encoding='utf-8') as f:
         json.dump(meta, f, ensure_ascii=False, indent=1)
