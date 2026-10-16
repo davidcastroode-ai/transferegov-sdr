@@ -8,11 +8,11 @@
 .anos .ano.velho{cursor:default}.anos .ano.velho:hover{background:none}
 </style></head><body>
 <div class="wrap">
-<div class="nota" id="nota"></div>
+<div class="nota" id="nota"></div><p class="d" id="stAnos" style="margin:-6px 0 10px 4px"></p>
 <section class="card"><div class="filtros" id="filtros"></div><button class="btn" id="limpar">Limpar filtros</button> <span id="contagem" style="font-size:13px;color:#66727c;margin-left:12px"></span></section>
 <div class="kp" id="kp"></div>
 <section class="card"><h3>Caminho da proposta</h3><p class="d">do cadastro até virar instrumento · clique numa etapa para filtrar</p><div class="funil" id="funil"></div><div class="funil-rej" id="rej"></div></section>
-<section class="card"><h3>Propostas por ano</h3><p class="d">todas as propostas dos programas da SDR desde 2008 · azul = total, verde = celebradas · nº em cima · clique num ano recente para filtrar (lista detalhada: __ANOMIN__ em diante)</p><div class="anos" id="anos"></div><div class="leg"><span><i style="background:#1f4e79"></i>Propostas</span><span><i style="background:#2fae5c"></i>Celebradas</span></div></section>
+<section class="card"><h3>Propostas por ano</h3><p class="d">todas as propostas dos programas da SDR desde 2008 · azul = total, verde = celebradas · nº em cima · clique num ano para filtrar</p><div class="anos" id="anos"></div><div class="leg"><span><i style="background:#1f4e79"></i>Propostas</span><span><i style="background:#2fae5c"></i>Celebradas</span></div></section>
 <div class="g2">
 <section class="card"><h3>Situação no Transferegov</h3><p class="d">clique para filtrar</p><div id="sit"></div></section>
 <section class="card"><h3>Programas</h3><p class="d">os 12 com mais propostas · clique para filtrar</p><div id="prog"></div></section>
@@ -26,7 +26,6 @@
 </div>
 <script>__MAPA__
 const P = __DADOS__;
-const DIC = P.d, ROWS = P.r;
 // colunas de cada linha
 const C = {ano:0, s:1, m:2, u:3, g:4, p:5, t:6, j:7, cel:8, vr:9, vg:10, np:11, ni:12, r:13, c:14, id:15, em:16, ob:17, ug:18, vi:19, vf:20, cn:21};
 const GRUPO = s => /REJEIT|ELIMINAD/i.test(s) ? 'Rejeitada' : /CADASTRAD/i.test(s) ? 'Cadastrada' : /COMPLEMENTA[CÇ][AÃ]O$/i.test(s) && !/ENVIAD|AN[AÁ]LISE/i.test(s) ? 'Em complementação'
@@ -35,13 +34,33 @@ const ETAPAS = ['Cadastrada','Enviada / em análise','Em complementação','Apro
 const ECOR = {'Cadastrada':'#9aa6af','Enviada / em análise':'#3a6f9f','Em complementação':'#e67e22','Aprovada':'#1f4e79','Celebrada':'#2e8a57','Rejeitada':'#c0392b','(sem situação)':'#bbb'};
 let EQ = null;   // dados da equipe 420013 (planilha de Propostas, lida pelo painel)
 const chaveProp = t => { const m = String(t||'').match(/(\d{1,7})\s*\/\s*(\d{4})/); return m ? (+m[1])+'/'+m[2] : ''; };
-const D = ROWS.map(r => {
+const BASE = 'https://raw.githubusercontent.com/davidcastroode-ai/transferegov-sdr/dados/propostas_pag/';
+const decodificar = pk => { const DIC = pk.d; return pk.r.map(r => {
   const sit = DIC.s[r[C.s]] || '';
   const o = {ano:String(r[C.ano]||''), sit, grupo: r[C.cel] ? 'Celebrada' : GRUPO(sit), mod:DIC.m[r[C.m]]||'', uf:DIC.u[r[C.u]]||'', prog:DIC.g[r[C.g]]||'(sem programa)',
     parl:DIC.p[r[C.p]]||'(sem parlamentar)', tp:DIC.t[r[C.t]]||'(sem emenda)', nj:DIC.j[r[C.j]]||'', cel:r[C.cel] ? 'Sim' : 'Não', vr:r[C.vr], vg:r[C.vg], np:r[C.np], ni:r[C.ni],
     prop:DIC.r[r[C.r]]||'', mun:DIC.c[r[C.c]]||'', id:r[C.id], em:r[C.em], ob:r[C.ob], ug:r[C.ug]||'', vi:r[C.vi]||'', vf:r[C.vf]||'', cnpj:r[C.cn]||''};
-  o.k = chaveProp(o.np); o.munN = o.mun; o.equipe = '(atualizar)';
-  return o; });
+  o.k = chaveProp(o.np); o.munN = o.mun; o.equipe = EQ && EQ.has(o.k) ? 'Sim' : '(atualizar)';
+  return o; }); };
+const D = decodificar(P);
+// anos anteriores: carregados em seguida, um arquivo por ano (2008 em diante)
+const CARREGADOS = new Set(), FALHOU = [];
+let _rT = null; const renderDepois = () => { clearTimeout(_rT); _rT = setTimeout(render, 250); };
+async function carregarAntigos(){
+  for(const a of (P.antigos||[]).slice().reverse()){
+    try{
+      const url = BASE + a + '.json';
+      const txt = parent.__tgGet ? await parent.__tgGet(url) : await (await fetch(url, {cache:'no-store'})).text();
+      decodificar(JSON.parse(txt)).forEach(o => D.push(o)); CARREGADOS.add(a);
+    }catch(e){ FALHOU.push(a); }
+    statusAnos(); renderDepois();
+  }
+}
+function statusAnos(){
+  const el = document.getElementById('stAnos'); if(!el) return;
+  const tot = (P.antigos||[]).length, ok = CARREGADOS.size;
+  el.innerHTML = ok + FALHOU.length < tot ? `⏳ carregando os anos anteriores (${ok} de ${tot})… a tela já funciona com o que foi lido` : FALHOU.length ? `⚠ não foi possível ler: ${FALHOU.join(', ')}` : `✓ todos os anos carregados (${P.anos[0][0]} a ${P.anos[P.anos.length-1][0]})`;
+}
 const FIL = [['ano','Ano da proposta'],['grupo','Etapa'],['sit','Situação no Transferegov'],['mod','Modalidade'],['prog','Programa'],
   ['parl','Parlamentar'],['tp','Tipo de parlamentar'],['uf','UF'],['nj','Natureza jurídica'],['cel','Celebrada'],['equipe','Equipe 420013',1],['ug','UG do instrumento'],['munN','Município'],['prop','Proponente']];
 const SEL = {};
@@ -106,9 +125,9 @@ function render(){
   document.getElementById('funil').innerHTML = ETAPAS.map(k => `<div class="${SEL.grupo===k?'sel':''}" data-k="grupo" data-v="${k}" style="background:${ECOR[k]}"><small>${k}</small><b>${(cg[k]||0).toLocaleString('pt-BR')}</b><small>${fm(L.filter(o=>o.grupo===k).reduce((a,o)=>a+o.vr,0))}</small></div>`).join('');
   document.getElementById('rej').innerHTML = `<span data-k="grupo" data-v="Rejeitada">✕ Rejeitadas / eliminadas: <b>${(cg['Rejeitada']||0).toLocaleString('pt-BR')}</b> (${fm(rej.reduce((a,o)=>a+o.vr,0))}) · clique para ver</span>`;
   // por ano: anos antigos vêm do resumo (todas as propostas), anos recentes do recorte
-  const A = {}; P.anos.forEach(([a,n,c]) => A[a] = {n, c, velho: +a < P.anomin});
+  const A = {}; P.anos.forEach(([a,n,c]) => A[a] = {n, c, velho: +a < P.anomin && !CARREGADOS.has(String(a))});
   const filtrosAtivos = Object.keys(SEL).filter(k => k!=='ano').length;
-  L.forEach(o => {}); const rec = {}; filtrar('ano').forEach(o => { const x = rec[o.ano] || (rec[o.ano] = {n:0,c:0}); x.n++; if(o.grupo==='Celebrada') x.c++; });
+  const rec = {}; filtrar('ano').forEach(o => { const x = rec[o.ano] || (rec[o.ano] = {n:0,c:0}); x.n++; if(o.grupo==='Celebrada') x.c++; });
   Object.keys(rec).forEach(a => A[a] = {...rec[a], velho:false});
   const ks = Object.keys(A).sort(), mx = Math.max(1,...ks.map(k => A[k].n));
   document.getElementById('anos').innerHTML = ks.map(k => `<div class="ano ${A[k].velho?'velho':''} ${SEL.ano===k?'sel':''}" ${A[k].velho?'':`data-k="ano" data-v="${k}"`} title="${k}: ${A[k].n.toLocaleString('pt-BR')} propostas · ${A[k].c.toLocaleString('pt-BR')} celebradas${A[k].velho?(filtrosAtivos?' (total do ano, sem os filtros)':'')+' · ano sem lista detalhada':''}"><em>${A[k].n>=1000?(A[k].n/1000).toFixed(1).replace('.',',')+' mil':A[k].n}</em><div class="cols"><i style="height:${A[k].n/mx*100}%;background:${A[k].velho?'#8fa9c4':'#1f4e79'}"></i><i style="height:${A[k].c/mx*100}%;background:#2fae5c"></i></div><small>${k}</small></div>`).join('');
@@ -131,9 +150,9 @@ function render(){
     EQ = new Map(); (lista||[]).forEach(e => { const k = chaveProp(e.num); if(k) EQ.set(k, e); });
     D.forEach(o => { o.equipe = EQ.has(o.k) ? 'Sim' : '(atualizar)'; });
   }catch(e){ EQ = new Map(); }
-  render();
+  render(); statusAnos(); carregarAntigos();
 })();
-document.getElementById('nota').innerHTML = '<b>Propostas</b> dos programas da SDR (concedente 22000 · MAPA), celebradas ou não · Transferegov, carga de __DATA__ · gráfico por ano desde 2008; lista detalhada a partir de __ANOMIN__ · as acompanhadas pela equipe da 420013 trazem os dados da planilha de Propostas.';
+document.getElementById('nota').innerHTML = '<b>Propostas</b> dos programas da SDR (concedente 22000 · MAPA), celebradas ou não · Transferegov, carga de __DATA__ · de 2008 até hoje (os anos antes de __ANOMIN__ são carregados logo depois de abrir) · as acompanhadas pela equipe da 420013 trazem os dados da planilha de Propostas.';
 document.addEventListener('change', e => { const k = e.target.dataset.k; if(!k) return; if(e.target.value) SEL[k] = e.target.value; else delete SEL[k]; for(const p in PAG) PAG[p]=0; render(); });
 document.addEventListener('click', e => {
   const fc = e.target.closest('[data-fichacompleta]'); if(fc){ try{ parent.abrirFichaInst(fc.dataset.fichacompleta); }catch(x){} return; }
