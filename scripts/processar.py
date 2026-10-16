@@ -295,6 +295,7 @@ def main(saida):
             'em_processo_tce': 'SIM' if 'TCE' in (c.get('SUBSITUACAO_CONV', '') or '').upper() else 'NÃO',
             'inadimplente_desde': br(inad_c.get(n)),
             'ultima_mudanca_situacao': br(max(hist_c[n])[0]) if hist_c.get(n) else '',
+            'ugs_empenho': ' | '.join(sorted(set(e.get('UG_EMITENTE', '') for e in emps if e.get('UG_EMITENTE')))),
             'notas_empenho': ' | '.join(nes),
             'qtd_notas_empenho': str(len(nes)),
         }
@@ -307,7 +308,7 @@ def main(saida):
     leve = ['nr_instrumento', 'ug_emitente', 'ano', 'situacao', 'situacao_contratacao', 'clausula_suspensiva_ate', 'fim_vigencia',
             'limite_prestacao_contas', 'nr_processo', 'modalidade', 'proponente', 'uf', 'municipio', 'natureza_juridica', 'tipo_parlamentar',
             'valor_repasse', 'valor_desembolsado', 'valor_a_desembolsar', 'ultimo_desembolso', 'dias_sem_desembolso', 'qtd_aditivos',
-            'qtd_prorrogacoes', 'notas_empenho', 'saldo_em_conta', 'subsituacao', 'em_processo_tce', 'inadimplente_desde', 'objeto']
+            'qtd_prorrogacoes', 'notas_empenho', 'saldo_em_conta', 'subsituacao', 'em_processo_tce', 'inadimplente_desde', 'ugs_empenho', 'objeto']
     gravar(saida, 'painel_instrumentos.csv', leve, [{**r, 'objeto': r['objeto'][:160]} for r in inst])
 
     # 6b. arquivo no formato da planilha "Parcerias" (mesmos nomes e ordem de colunas A:AH), usado pelo Apps Script da planilha
@@ -372,6 +373,11 @@ def main(saida):
 
     # 8. tabelas de detalhe (colunas originais do Transferegov)
     gravar(saida, 'empenhos.csv', cab_emp or ['NR_CONVENIO'], empenhos)
+    # versão leve das notas de empenho para a ficha do painel (nota exata de cada instrumento)
+    gravar(saida, 'painel_empenhos.csv', ['nr_instrumento', 'ne', 'ug', 'data', 'tipo', 'situacao', 'valor', 'ptres', 'pi'],
+           [{'nr_instrumento': e.get('NR_CONVENIO', ''), 'ne': e.get('NR_EMPENHO', ''), 'ug': e.get('UG_EMITENTE', ''), 'data': e.get('DATA_EMISSAO', ''),
+             'tipo': e.get('DESC_TIPO_NOTA', ''), 'situacao': e.get('DESC_SITUACAO_EMPENHO', ''), 'valor': v2(num(e.get('VALOR_EMPENHO'))),
+             'ptres': e.get('PTRES', ''), 'pi': e.get('PLANO_INTERNO', '')} for e in empenhos])
     gravar(saida, 'desembolsos.csv', cab_des or ['NR_CONVENIO'], desembolsos)
     gravar(saida, 'aditivos.csv', cab_ta or ['NR_CONVENIO'], aditivos)
     gravar(saida, 'prorrogacoes.csv', cab_pr or ['NR_CONVENIO'], prorrogas)
