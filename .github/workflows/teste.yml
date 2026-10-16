@@ -1,0 +1,16 @@
+name: Teste Transferegov
+on: workflow_dispatch
+jobs:
+  teste:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar arquivos do Transferegov
+        run: |
+          for f in siconv_convenio siconv_empenho siconv_proposta; do
+            echo "=================== $f"
+            curl -sS -L -o $f.zip -w "HTTP %{http_code} · %{size_download} bytes · %{time_total} s\n" \
+              https://api-publica.transferegov.gestao.gov.br/downloads/dadosgov/$f.zip || echo "FALHOU $f"
+            unzip -l $f.zip || echo "não é um zip válido"
+          done
+          echo "=================== primeiras linhas das propostas"
+          unzip -p siconv_proposta.zip | head -3
