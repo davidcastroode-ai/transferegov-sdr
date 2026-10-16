@@ -5,6 +5,7 @@
 .funil div b{display:block;font-size:22px}.funil div small{font-size:11.5px;opacity:.9}.funil div.sel{outline:3px solid #2fae5c}
 .funil-rej{margin-top:8px;font-size:13px;color:#7b241c;cursor:pointer}
 .fg .tag{display:inline-block;width:auto}.eq{display:inline-block;padding:1px 7px;border-radius:9px;font-size:10.5px;font-weight:700;background:#e3f6e8;color:#1f6b3a}.eq.at{background:#fff3e0;color:#a04000}
+.hb{grid-template-columns:minmax(150px,46%) 1fr 58px 36px}.hb .rot{white-space:normal;line-height:1.2;font-size:12.5px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .anos .ano.velho{cursor:default}.anos .ano.velho:hover{background:none}
 </style></head><body>
 <div class="wrap">
@@ -21,26 +22,31 @@
 <section class="card"><h3>Parlamentares</h3><p class="d">os 12 com mais propostas · clique para filtrar</p><div id="parl"></div></section>
 <section class="card"><h3>Mapa</h3><p class="d">cor do estado: nº de propostas · clique para filtrar</p><div class="mapa" id="mapa"></div></section>
 </div>
-<section class="card"><h3>Lista de propostas</h3><p class="d">clique na linha para abrir a ficha · coluna "Equipe": dados da planilha de Propostas da equipe da 420013; as demais ficam "(atualizar)"</p>
+<section class="card"><h3>Lista de propostas</h3><p class="d">clique na linha para abrir a ficha · coluna "Acompanhamento": técnico da equipe 420013 (planilha de Propostas) · "(atualizar)" = ação da 420013 que ainda não está na planilha · demais: UG/ação de quem acompanha</p>
 <input class="busca" id="busca" placeholder="Buscar nº, proponente, município, parlamentar, objeto…"><div id="lista"></div></section>
 </div>
 <script>__MAPA__
 const P = __DADOS__;
 // colunas de cada linha
-const C = {ano:0, s:1, m:2, u:3, g:4, p:5, t:6, j:7, cel:8, vr:9, vg:10, np:11, ni:12, r:13, c:14, id:15, em:16, ob:17, ug:18, vi:19, vf:20, cn:21};
+const C = {ano:0, s:1, m:2, u:3, g:4, p:5, t:6, j:7, cel:8, vr:9, vg:10, np:11, ni:12, r:13, c:14, id:15, em:16, ob:17, ug:18, vi:19, vf:20, cn:21, ac:22};
+const AC420 = ['215A','8593','214Z','00PN','8622','21B6','8606'];   // ações da 420013 (a 2000 é de várias UGs)
+const curtoSit = s => String(s||'').replace(/^Proposta\/Plano de Trabalho /,'').replace(/^Proposta Aprovada e Plano de Trabalho /,'Aprovada · PT ').replace(/^Proposta /,'').replace(/^./, c => c.toUpperCase());
 const GRUPO = s => /REJEIT|ELIMINAD/i.test(s) ? 'Rejeitada' : /CADASTRAD/i.test(s) ? 'Cadastrada' : /COMPLEMENTA[CÇ][AÃ]O$/i.test(s) && !/ENVIAD|AN[AÁ]LISE/i.test(s) ? 'Em complementação'
   : /APROVAD/i.test(s) && !/AN[AÁ]LISE|COMPLEMENTA/i.test(s) ? 'Aprovada' : s ? 'Enviada / em análise' : '(sem situação)';
 const ETAPAS = ['Cadastrada','Enviada / em análise','Em complementação','Aprovada','Celebrada'];
 const ECOR = {'Cadastrada':'#9aa6af','Enviada / em análise':'#3a6f9f','Em complementação':'#e67e22','Aprovada':'#1f4e79','Celebrada':'#2e8a57','Rejeitada':'#c0392b','(sem situação)':'#bbb'};
-let EQ = null;   // dados da equipe 420013 (planilha de Propostas, lida pelo painel)
+let EQ = null;
+// acompanhamento: equipe 420013 (planilha de Propostas) · ação da 420013 fora da planilha (atualizar) · demais UGs/ações
+function acomp(o){ o.equipe = EQ && EQ.has(o.k) ? 'Equipe 420013 (na planilha)' : o.ac420 ? 'Ação da 420013, fora da planilha (atualizar)' : 'Outras UGs / ações (20ZV, 2000…)'; }   // dados da equipe 420013 (planilha de Propostas, lida pelo painel)
 const chaveProp = t => { const m = String(t||'').match(/(\d{1,7})\s*\/\s*(\d{4})/); return m ? (+m[1])+'/'+m[2] : ''; };
 const BASE = 'https://raw.githubusercontent.com/davidcastroode-ai/transferegov-sdr/dados/propostas_pag/';
 const decodificar = pk => { const DIC = pk.d; return pk.r.map(r => {
   const sit = DIC.s[r[C.s]] || '';
   const o = {ano:String(r[C.ano]||''), sit, grupo: r[C.cel] ? 'Celebrada' : GRUPO(sit), mod:DIC.m[r[C.m]]||'', uf:DIC.u[r[C.u]]||'', prog:DIC.g[r[C.g]]||'(sem programa)',
     parl:DIC.p[r[C.p]]||'(sem parlamentar)', tp:DIC.t[r[C.t]]||'(sem emenda)', nj:DIC.j[r[C.j]]||'', cel:r[C.cel] ? 'Sim' : 'Não', vr:r[C.vr], vg:r[C.vg], np:r[C.np], ni:r[C.ni],
-    prop:DIC.r[r[C.r]]||'', mun:DIC.c[r[C.c]]||'', id:r[C.id], em:r[C.em], ob:r[C.ob], ug:r[C.ug]||'', vi:r[C.vi]||'', vf:r[C.vf]||'', cnpj:r[C.cn]||''};
-  o.k = chaveProp(o.np); o.munN = o.mun; o.equipe = EQ && EQ.has(o.k) ? 'Sim' : '(atualizar)';
+    prop:DIC.r[r[C.r]]||'', mun:DIC.c[r[C.c]]||'', id:r[C.id], em:r[C.em], ob:r[C.ob], ug:r[C.ug]||'', vi:r[C.vi]||'', vf:r[C.vf]||'', cnpj:r[C.cn]||'', acao:(DIC.a||[])[r[C.ac]]||'(sem ação)'};
+  o.ac420 = o.acao.split(' | ').some(a => AC420.includes(a));
+  o.k = chaveProp(o.np); o.munN = o.mun; acomp(o);
   return o; }); };
 const D = decodificar(P);
 // anos anteriores: carregados em seguida, um arquivo por ano (2008 em diante)
@@ -62,7 +68,7 @@ function statusAnos(){
   el.innerHTML = ok + FALHOU.length < tot ? `⏳ carregando os anos anteriores (${ok} de ${tot})… a tela já funciona com o que foi lido` : FALHOU.length ? `⚠ não foi possível ler: ${FALHOU.join(', ')}` : `✓ todos os anos carregados (${P.anos[0][0]} a ${P.anos[P.anos.length-1][0]})`;
 }
 const FIL = [['ano','Ano da proposta'],['grupo','Etapa'],['sit','Situação no Transferegov'],['mod','Modalidade'],['prog','Programa'],
-  ['parl','Parlamentar'],['tp','Tipo de parlamentar'],['uf','UF'],['nj','Natureza jurídica'],['cel','Celebrada'],['equipe','Equipe 420013',1],['ug','UG do instrumento'],['munN','Município'],['prop','Proponente']];
+  ['parl','Parlamentar'],['tp','Tipo de parlamentar'],['uf','UF'],['nj','Natureza jurídica'],['cel','Celebrada'],['acao','Ação orçamentária',1],['equipe','Acompanhamento',1],['ug','UG do instrumento'],['munN','Município'],['prop','Proponente']];
 const SEL = {};
 const esc = s => String(s??'').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const fm = v => v>=1e9 ? (v/1e9).toFixed(2).replace('.',',')+' Bi' : v>=1e6 ? (v/1e6).toFixed(2).replace('.',',')+' Mi' : (v/1e3).toFixed(1).replace('.',',')+' Mil';
@@ -72,11 +78,11 @@ function desenharFiltros(){
   document.getElementById('filtros').innerHTML = FIL.map(([k,n,novo]) => {
     const base = filtrar(k), vals = [...new Set(base.map(o => String(o[k])))].sort((a,b) => k==='ano' ? b.localeCompare(a) : a.localeCompare(b,'pt'));
     const lim = vals.length > 1500 ? vals.slice(0,1500) : vals;
-    return `<label><span>${n}${novo?'<span class="novo">novo</span>':''}</span><select data-k="${k}" class="${SEL[k]?'ativo':''}"><option value="">Todos</option>${lim.map(v => `<option ${SEL[k]===v?'selected':''}>${esc(v)}</option>`).join('')}</select></label>`; }).join('');
+    return `<label><span>${n}${novo?'<span class="novo">novo</span>':''}</span><select data-k="${k}" class="${SEL[k]?'ativo':''}"><option value="">Todos</option>${lim.map(v => `<option value="${esc(v)}" ${SEL[k]===v?'selected':''}>${esc(k==='sit' ? curtoSit(v) : v)}</option>`).join('')}</select></label>`; }).join('');
 }
-function hbar(lista, campo, cor, tot, dot){
+function hbar(lista, campo, cor, tot, dot, rot){
   const mx = Math.max(1,...lista.map(x => x[1]));
-  return lista.map(([k,v],i) => `<div class="hb ${SEL[campo]===k?'sel':''}" data-k="${campo}" data-v="${esc(k)}" title="${esc(k)}"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${dot?`<i class="dot" style="background:${cor(k,i)}"></i>`:''}${esc(k)}</span><div><i style="width:${v/mx*100}%;background:${cor(k,i)}"></i></div><b>${v.toLocaleString('pt-BR')}</b><em>${tot?Math.round(v/tot*100)+'%':''}</em></div>`).join('');
+  return lista.map(([k,v],i) => `<div class="hb ${SEL[campo]===k?'sel':''}" data-k="${campo}" data-v="${esc(k)}" title="${esc(k)}"><span class="rot">${dot?`<i class="dot" style="background:${cor(k,i)}"></i>`:''}${esc(rot ? rot(k) : k)}</span><div><i style="width:${v/mx*100}%;background:${cor(k,i)}"></i></div><b>${v.toLocaleString('pt-BR')}</b><em>${tot?Math.round(v/tot*100)+'%':''}</em></div>`).join('');
 }
 const conta = (L,k) => { const c = {}; L.forEach(o => c[o[k]] = (c[o[k]]||0)+1); return Object.entries(c).sort((a,b) => b[1]-a[1]); };
 const ABERTO = new Set(), PAG = {};
@@ -89,9 +95,9 @@ function ficha(o){
    <div><span>Situação no Transferegov</span>${esc(o.sit)}</div><div><span>Etapa</span>${tag(o)}</div><div><span>Modalidade</span>${esc(o.mod)}</div><div><span>Natureza jurídica</span>${esc(o.nj)||'—'}</div>
    <div><span>Programa</span>${esc(o.prog)}</div><div><span>Parlamentar</span>${esc(o.parl)}${o.em?' · emenda '+esc(o.em):''}</div><div><span>Tipo</span>${esc(o.tp)}</div><div><span>Local</span>${esc(o.mun)}/${esc(o.uf)}</div>
    <div><span>Valor de repasse proposto</span>${R$(o.vr)}</div><div><span>Valor global</span>${R$(o.vg)}</div><div><span>Vigência proposta</span>${esc(o.vi)||'—'} a ${esc(o.vf)||'—'}</div><div><span>CNPJ</span>${esc(o.cnpj)||'—'}</div>
-   <div><span>Instrumento</span>${o.ni ? esc(o.ni)+(o.ug?' · UG '+esc(o.ug):'') : '— (não celebrada)'}</div>
+   <div><span>Ação orçamentária</span>${esc(o.acao)}</div><div><span>Instrumento</span>${o.ni ? esc(o.ni)+(o.ug?' · UG '+esc(o.ug):'') : '— (não celebrada)'}</div>
   </div>
-  <div class="crit"><b>Equipe 420013:</b> ${e ? `técnico <b>${esc(e.exec||'—')}</b> · situação interna <b>${esc(e.situ||'—')}</b>${e.depto && e.depto!=='(sem departamento)'?' · departamento '+esc(e.depto):''}${e.indicado?' · indicado '+R$(e.indicado):''}${e.obs?'<br>Obs.: '+esc(e.obs):''}` : '<span style="color:#a04000">(atualizar)</span> · esta proposta não está na planilha de Propostas da equipe'}</div>
+  <div class="crit">${e ? `<b>Equipe 420013:</b> técnico <b>${esc(e.exec||'—')}</b> · situação interna <b>${esc(e.situ||'—')}</b>${e.depto && e.depto!=='(sem departamento)'?' · departamento '+esc(e.depto):''}${e.indicado?' · indicado '+R$(e.indicado):''}${e.obs?'<br>Obs.: '+esc(e.obs):''}` : o.ac420 ? `<b>Ação ${esc(o.acao)} (420013):</b> <span style="color:#a04000">(atualizar)</span> · a proposta é de ação da 420013, mas não está na planilha de Propostas da equipe` : `<b>Acompanhamento:</b> ação ${esc(o.acao)}${o.ug?' · UG '+esc(o.ug):''} · fora da planilha da equipe 420013 (não é da 420013)`}</div>
   ${o.ob ? `<div style="font-size:12.5px"><b>Objeto:</b> ${esc(o.ob)}</div>` : ''}
   <div style="margin-top:8px"><a class="lk" href="${link}" target="_blank">Abrir no Transferegov ↗</a>
    ${o.ni ? ` <button type="button" class="btn" style="margin:0 0 0 8px;padding:5px 14px" data-fichacompleta="${esc(o.ni)}">Ficha do instrumento ${esc(o.ni)} ›</button>` : ''}
@@ -115,12 +121,12 @@ function render(){
   const L = filtrar(), tot = L.length, s = k => L.reduce((a,o) => a+o[k], 0);
   document.getElementById('contagem').textContent = `${tot.toLocaleString('pt-BR')} propostas no recorte`;
   const cel = L.filter(o => o.grupo==='Celebrada'), ana = L.filter(o => o.grupo==='Enviada / em análise' || o.grupo==='Em complementação'), apr = L.filter(o => o.grupo==='Aprovada'), rej = L.filter(o => o.grupo==='Rejeitada');
-  const eq = L.filter(o => o.equipe==='Sim');
+  const eq = L.filter(o => o.equipe==='Equipe 420013 (na planilha)'), eqAt = L.filter(o => o.equipe.startsWith('Ação da 420013'));
   document.getElementById('kp').innerHTML = `<div class="k dest"><span>Propostas</span><b>${tot.toLocaleString('pt-BR')}</b><small>repasse proposto ${fm(s('vr'))}</small></div>
    <div class="k"><span>Celebradas</span><b>${cel.length.toLocaleString('pt-BR')}</b><small>${tot?Math.round(cel.length/tot*100):0}% · ${fm(cel.reduce((a,o)=>a+o.vr,0))}</small></div>
    <div class="k"><span>Em análise / complementação</span><b>${ana.length.toLocaleString('pt-BR')}</b><small>${fm(ana.reduce((a,o)=>a+o.vr,0))}</small></div>
    <div class="k"><span>Aprovadas, ainda sem instrumento</span><b>${apr.length.toLocaleString('pt-BR')}</b><small>${fm(apr.reduce((a,o)=>a+o.vr,0))}</small></div>
-   <div class="k"><span>Acompanhadas pela equipe 420013</span><b>${EQ ? eq.length.toLocaleString('pt-BR') : '…'}</b><small>${EQ ? 'demais: (atualizar)' : 'lendo a planilha de Propostas…'}</small></div>`;
+   <div class="k"><span>Acompanhadas pela equipe 420013</span><b>${EQ ? eq.length.toLocaleString('pt-BR') : '…'}</b><small>${EQ ? eqAt.length.toLocaleString('pt-BR')+' de ações da 420013 fora da planilha (atualizar)' : 'lendo a planilha de Propostas…'}</small></div>`;
   const cg = Object.fromEntries(conta(L,'grupo'));
   document.getElementById('funil').innerHTML = ETAPAS.map(k => `<div class="${SEL.grupo===k?'sel':''}" data-k="grupo" data-v="${k}" style="background:${ECOR[k]}"><small>${k}</small><b>${(cg[k]||0).toLocaleString('pt-BR')}</b><small>${fm(L.filter(o=>o.grupo===k).reduce((a,o)=>a+o.vr,0))}</small></div>`).join('');
   document.getElementById('rej').innerHTML = `<span data-k="grupo" data-v="Rejeitada">✕ Rejeitadas / eliminadas: <b>${(cg['Rejeitada']||0).toLocaleString('pt-BR')}</b> (${fm(rej.reduce((a,o)=>a+o.vr,0))}) · clique para ver</span>`;
@@ -131,7 +137,7 @@ function render(){
   Object.keys(rec).forEach(a => A[a] = {...rec[a], velho:false});
   const ks = Object.keys(A).sort(), mx = Math.max(1,...ks.map(k => A[k].n));
   document.getElementById('anos').innerHTML = ks.map(k => `<div class="ano ${A[k].velho?'velho':''} ${SEL.ano===k?'sel':''}" ${A[k].velho?'':`data-k="ano" data-v="${k}"`} title="${k}: ${A[k].n.toLocaleString('pt-BR')} propostas · ${A[k].c.toLocaleString('pt-BR')} celebradas${A[k].velho?(filtrosAtivos?' (total do ano, sem os filtros)':'')+' · ano sem lista detalhada':''}"><em>${A[k].n>=1000?(A[k].n/1000).toFixed(1).replace('.',',')+' mil':A[k].n}</em><div class="cols"><i style="height:${A[k].n/mx*100}%;background:${A[k].velho?'#8fa9c4':'#1f4e79'}"></i><i style="height:${A[k].c/mx*100}%;background:#2fae5c"></i></div><small>${k}</small></div>`).join('');
-  document.getElementById('sit').innerHTML = hbar(conta(L,'sit').slice(0,14), 'sit', k => ECOR[GRUPO(k)] || '#1f4e79', tot);
+  document.getElementById('sit').innerHTML = hbar(conta(L,'sit').slice(0,14), 'sit', k => ECOR[GRUPO(k)] || '#1f4e79', tot, false, curtoSit);
   document.getElementById('prog').innerHTML = hbar(conta(L,'prog').slice(0,12), 'prog', () => '#1f4e79', tot);
   document.getElementById('parl').innerHTML = hbar(conta(L,'parl').filter(([k]) => k!=='(sem parlamentar)').slice(0,12), 'parl', () => '#3a6f9f', tot);
   document.getElementById('mapa').innerHTML = mapa(L);
@@ -140,7 +146,7 @@ function render(){
   document.getElementById('lista').innerHTML = tabela('l', lista, [['Proposta',o=>`<b>${esc(o.np)}</b><small>${o.ni?'instrumento '+esc(o.ni):'—'}</small>`],
     ['Proponente / local',o=>`${esc(o.prop.length>50?o.prop.slice(0,50)+'…':o.prop)}<small>${esc(o.mun)}/${esc(o.uf)} · ${tag(o)}</small>`],
     ['Programa / parlamentar',o=>`${esc(o.prog.length>45?o.prog.slice(0,45)+'…':o.prog)}<small>${esc(o.parl)}</small>`],
-    ['Equipe',o=>o.equipe==='Sim'?`<span class="eq">${esc((EQ.get(o.k)||{}).exec||'420013')}</span>`:`<span class="eq at">${EQ?'(atualizar)':'…'}</span>`],
+    ['Acompanhamento',o=>o.equipe.startsWith('Equipe')?`<span class="eq">${esc((EQ.get(o.k)||{}).exec||'Equipe 420013')}</span>`:o.ac420?`<span class="eq at">${EQ?'(atualizar)':'…'}</span>`:`<small style="color:#4a5a66">${o.ug?'UG '+esc(o.ug):'ação '+esc(o.acao)}</small>`],
     ['Repasse proposto',o=>fm(o.vr),'n']], 15);
 }
 // dados da equipe: o painel (página pai) lê a planilha de Propostas da 420013
@@ -148,7 +154,7 @@ function render(){
   try{
     const lista = await parent.__propEquipe();
     EQ = new Map(); (lista||[]).forEach(e => { const k = chaveProp(e.num); if(k) EQ.set(k, e); });
-    D.forEach(o => { o.equipe = EQ.has(o.k) ? 'Sim' : '(atualizar)'; });
+    D.forEach(acomp);
   }catch(e){ EQ = new Map(); }
   render(); statusAnos(); carregarAntigos();
 })();

@@ -1,0 +1,217 @@
+<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Instrumentos vigentes</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">__CSS__
+<style>
+.grp{font-size:12px;font-weight:700;color:#1f4e79;text-transform:uppercase;letter-spacing:.6px;margin:2px 0 6px 2px}
+.kp.k4{grid-template-columns:repeat(4,1fr)}.kp.k6{grid-template-columns:repeat(6,1fr)}@media(max-width:900px){.kp.k4,.kp.k6{grid-template-columns:1fr 1fr}}
+.k b.s{font-size:20px}.k.amar b{color:#b7860b}.k.verde b{color:#2e8a57}
+.hb{grid-template-columns:minmax(150px,44%) 1fr 78px 36px}.hb .rot{white-space:normal;line-height:1.2;font-size:12.5px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.fg .tag{display:inline-block;width:auto}.mini{width:100%;font-size:11.5px;margin-top:4px}.mini th{background:#3a6f9f;padding:4px 6px}.mini td{padding:4px 6px}
+.bx{display:flex;gap:6px;align-items:flex-end;height:180px;padding-top:18px}.bx>div{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;cursor:pointer;border-radius:6px}.bx>div:hover,.bx>div.sel{background:#e3edf7}
+.bx i{width:60%;max-width:46px;border-radius:4px 4px 0 0;display:block}.bx small{font-size:11px;color:#4a5a66;margin-top:3px;text-align:center}.bx em{font-style:normal;font-size:11px;font-weight:700;color:#1f4e79}
+.pend{font-size:12px;color:#a04000}
+</style></head><body>
+<div class="wrap">
+<div class="nota" id="nota"></div>
+<section class="card"><div class="filtros" id="filtros"></div><button class="btn" id="limpar">Limpar filtros</button> <span id="contagem" style="font-size:13px;color:#66727c;margin-left:12px"></span></section>
+<div id="corpo"></div>
+<section class="card"><h3>Detalhamento dos instrumentos</h3><p class="d">clique na linha para abrir a ficha</p><input class="busca" id="busca" placeholder="Buscar nº, proponente, município, parlamentar, objeto…"><div id="lista"></div></section>
+</div>
+<script>__MAPA__
+const ABA = '__ABA__';
+const P = __DADOS__, D = P.linhas, ANO = P.meta.ano;
+const HOJE = new Date(); HOJE.setHours(0,0,0,0);
+const RPN = {'2':'RP 2 · Discricionária','6':'RP 6 · Emenda individual','7':'RP 7 · Emenda de bancada','8':'RP 8 · Emenda de comissão','9':'RP 9 · Emenda de relator','3':'RP 3 · PAC'};
+D.forEach(o => {
+  o.rpN = RPN[o.rp] || (o.rp ? 'RP '+o.rp : 'Não informado');
+  o.fx = o.dv===null ? '(sem data)' : o.dv<0 ? 'Vencida' : o.dv<=30 ? 'Até 30 dias' : o.dv<=60 ? '31 a 60 dias' : o.dv<=90 ? '61 a 90 dias' : o.dv<=180 ? '91 a 180 dias' : o.dv<=365 ? '181 a 365 dias' : 'Mais de 1 ano';
+  o.fxD = o.dsd===null ? 'Sem desembolso' : o.dsd<=90 ? 'Até 90 dias' : o.dsd<=180 ? '91 a 180 dias' : o.dsd<=365 ? '181 a 365 dias' : 'Mais de 365 dias';
+  o.fxP = o.dsp===null ? 'Sem pagamento' : o.dsp<=30 ? 'Até 30 dias' : o.dsp<=90 ? '31 a 90 dias' : o.dsp<=180 ? '91 a 180 dias' : o.dsp<=365 ? '181 a 365 dias' : 'Mais de 365 dias';
+  o.sE = null; o.sR = null; o.pS = null; o.tes = {};
+});
+const FX_V = ['Vencida','Até 30 dias','31 a 60 dias','61 a 90 dias','91 a 180 dias','181 a 365 dias','Mais de 1 ano'];
+const FX_D = ['Até 90 dias','91 a 180 dias','181 a 365 dias','Mais de 365 dias','Sem desembolso'];
+const FX_P = ['Até 30 dias','31 a 90 dias','91 a 180 dias','181 a 365 dias','Mais de 365 dias','Sem pagamento'];
+const FIL = [['parl','Parlamentar'],['ano','Ano da proposta'],['anoAss','Ano de assinatura'],['mod','Modalidade'],['sit','Situação do instrumento'],
+  ['uf','UF'],['ug','UG executora'],['prog','Programa'],['acao','Ação orçamentária'],['rpN','Resultado primário'],
+  ['tp','Tipo de parlamentar'],['nj','Natureza jurídica'],['objr','Objeto resumido'],['fx','Vencimento da vigência'],['prop','Proponente'],['munN','Município']];
+const SEL = {sit:'Em execução'};
+const esc = s => String(s??'').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fm = v => { const a = Math.abs(v||0), s = v<0?'−':''; return s+(a>=1e9 ? (a/1e9).toFixed(2).replace('.',',')+' Bi' : a>=1e6 ? (a/1e6).toFixed(2).replace('.',',')+' Mi' : (a/1e3).toFixed(1).replace('.',',')+' Mil'); };
+const R$ = v => 'R$ '+Number(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+const pct = (a,b) => b ? (a/b*100).toFixed(1).replace('.',',')+'%' : '—';
+const soma = (L,k) => L.reduce((a,o) => a+(o[k]||0), 0);
+const n = x => Number(x||0).toLocaleString('pt-BR');
+function filtrar(exceto){ return D.filter(o => FIL.every(([k]) => k===exceto || !SEL[k] || String(o[k])===SEL[k])); }
+function desenharFiltros(){
+  document.getElementById('filtros').innerHTML = FIL.map(([k,nm]) => {
+    const vals = [...new Set(filtrar(k).map(o => String(o[k])))].sort((a,b) => /ano/.test(k) ? b.localeCompare(a) : a.localeCompare(b,'pt'));
+    return `<label><span>${nm}</span><select data-k="${k}" class="${SEL[k]?'ativo':''}"><option value="">Todos</option>${vals.slice(0,1500).map(v => `<option value="${esc(v)}" ${SEL[k]===v?'selected':''}>${esc(v)}</option>`).join('')}</select></label>`; }).join('');
+}
+// barras horizontais: lista [[rótulo, valor, campo-filtro?]]; fmt para o número
+function hbar(lista, campo, cor, fmt, tot){
+  const mx = Math.max(1,...lista.map(x => Math.abs(x[1])));
+  return lista.map(([k,v],i) => `<div class="hb ${campo && SEL[campo]===k?'sel':''}" ${campo?`data-k="${campo}" data-v="${esc(k)}"`:''} title="${esc(k)}"><span class="rot">${esc(k)}</span><div><i style="width:${Math.abs(v)/mx*100}%;background:${typeof cor==='function'?cor(k,i):cor}"></i></div><b>${fmt?fmt(v):n(v)}</b><em>${tot?Math.round(v/tot*100)+'%':''}</em></div>`).join('');
+}
+function colunas(lista, campo, cor, fmt){
+  const mx = Math.max(1,...lista.map(x => x[1]));
+  return `<div class="bx">${lista.map(([k,v,c2]) => `<div class="${campo && SEL[campo]===k?'sel':''}" ${campo?`data-k="${campo}" data-v="${esc(k)}"`:''} title="${esc(k)}: ${fmt?fmt(v):n(v)}"><em>${fmt?fmt(v):n(v)}</em><i style="height:${Math.max(2,v/mx*100)}%;background:${c2||cor}"></i><small>${esc(k)}</small></div>`).join('')}</div>`;
+}
+const agrupar = (L, k, val) => { const m = {}; L.forEach(o => { const c = o[k]; m[c] = (m[c]||0) + (val ? val(o) : 1); }); return Object.entries(m).sort((a,b) => b[1]-a[1]); };
+const sec = (tit, desc, corpo, cls) => `<section class="card ${cls||''}"><h3>${tit}</h3><p class="d">${desc}</p>${corpo}</section>`;
+const kpi = (rot, val, sub, cls) => `<div class="k ${cls||''}"><span>${rot}</span><b>${val}</b><small>${sub||''}</small></div>`;
+let MUN = null;
+function mapa(L, corPt){
+  if(!MUN){ MUN = new Map(); MUN_BR.split(';').forEach(l => { const [uf,nm,x,y] = l.split('|'); MUN.set(uf+'|'+nm,[+x,+y]); }); }
+  const porUF = {}, pts = new Map();
+  L.forEach(o => { porUF[o.uf] = (porUF[o.uf]||0)+1; const nm = (o.mun||'').replace(/['\-]/g,' ').replace(/\s+/g,' ').trim(); const c = MUN.get(o.uf+'|'+nm); if(!c) return;
+    const p = pts.get(o.uf+nm) || {x:c[0],y:c[1],n:0,v:0,nome:o.munN,uf:o.uf,alerta:false}; p.n++; p.v += o.rep; if(corPt && corPt(o)) p.alerta = true; pts.set(o.uf+nm,p); });
+  const mx = Math.max(1,...Object.values(porUF));
+  const est = Object.entries(MAPA_BR.ufs).map(([uf,d]) => `<path class="uf ${SEL.uf===uf?'sel':''}" d="${d}" data-k="uf" data-v="${uf}" style="fill:${porUF[uf]?`color-mix(in srgb,#1f4e79 ${Math.round((.1+.6*Math.sqrt(porUF[uf]/mx))*100)}%,#eef1ee)`:'#eef1f4'}"><title>${uf}: ${porUF[uf]||0} instrumentos</title></path>`).join('');
+  const rot = Object.entries(MAPA_BR.centro).map(([uf,[x,y]]) => `<text class="rot" x="${x}" y="${y}">${uf}</text>`).join('');
+  const ps = [...pts.values()].sort((a,b) => b.n-a.n).map(p => `<circle class="pt" cx="${p.x}" cy="${p.y}" r="${(2.2+1.3*Math.sqrt(p.n)).toFixed(1)}" fill="${p.alerta?'#c0392b':'#2e8a57'}"><title>${p.nome}/${p.uf}: ${p.n} instrumento(s) · repasse ${fm(p.v)}</title></circle>`).join('');
+  return `<div class="mapa"><svg viewBox="0 0 ${MAPA_BR.w} ${MAPA_BR.h}">${est}${rot}${ps}</svg></div>`;
+}
+// Tesouro (EXE/RAP do painel): saldo de cada nota de empenho
+let TES = null;
+async function lerTesouro(){
+  try{ TES = await parent.__tgSiafiNE(); }catch(e){ TES = {erro: e.message || 'fora do painel'}; }
+  if(TES && TES.mapa){
+    D.forEach(o => { let sE = 0, sR = 0, pg = 0, ach = 0; o.tes = {};
+      o.nes.forEach(([ne, ug]) => { const t = TES.mapa[ug+'|'+ne]; if(!t) return; ach++; o.tes[ug+'|'+ne] = t;
+        if(t.exe){ sE += t.exe.saldo; pg += t.exe.pago; } if(t.rap){ sR += t.rap.saldo; pg += t.rap.pago; } });
+      o.sE = sE; o.sR = sR; o.pS = pg; o.nAch = ach;
+      const s = sE + sR, falta = o.sit==='Em execução' ? o.aDes - s : -s;
+      o.reforco = o.sit==='Em execução' && falta > 1 ? falta : 0; o.sobra = falta < -1 ? -falta : 0; });
+  }
+  render();
+}
+const ABERTO = new Set(), PAG = {};
+function ficha(o){
+  const linhaNE = ([ne, ug, data, valor, tipo]) => { const t = o.tes[ug+'|'+ne];
+    const st = t ? [t.exe?`EXE: pago ${fm(t.exe.pago)} · saldo ${fm(t.exe.saldo)}`:'', t.rap?`RAP: pago ${fm(t.rap.pago)} · saldo ${fm(t.rap.saldo)}`:''].filter(Boolean).join('<br>') : (TES && TES.mapa ? '<span style="color:#7b8790">fora das bases de '+ANO+'</span>' : '—');
+    return `<tr><td>${esc(ne)}</td><td>${esc(ug)}</td><td>${esc(data)}</td><td>${esc(tipo)}</td><td class="n">${fm(valor)}</td><td>${st}</td></tr>`; };
+  return `<div class="ficha"><h4>Instrumento ${esc(o.n)} · ${esc(o.prop)}</h4>
+  <div class="fg">
+   <div><span>Situação</span>${esc(o.sit)}</div><div><span>Modalidade</span>${esc(o.mod)}</div><div><span>Vigência até</span>${esc(o.fv)||'—'}${o.dv!==null?` (${o.dv<0?'vencida há '+(-o.dv):'faltam '+o.dv} dias)`:''}</div><div><span>UG · ação</span>${esc(o.ug)} · ${esc(o.acao)}</div>
+   <div><span>Programa</span>${esc(o.prog)}</div><div><span>Parlamentar</span>${esc(o.parl)}${o.emd?' · emenda '+esc(o.emd):''}</div><div><span>Resultado primário</span>${esc(o.rpN)}</div><div><span>Local</span>${esc(o.munN)}/${esc(o.uf)}</div>
+   <div><span>Repasse</span>${R$(o.rep)}</div><div><span>Desembolsado</span>${R$(o.des)} (${pct(o.des,o.rep)})</div><div><span>A desembolsar</span>${R$(o.aDes)}</div><div><span>Empenhado (Transferegov)</span>${R$(o.emp)}</div>
+   <div><span>Saldo de empenho no Tesouro</span>${o.sE===null?'—':R$(o.sE+o.sR)+`<small> EXE ${fm(o.sE)} · RAP ${fm(o.sR)}</small>`}</div><div><span>Reforço / sobra de empenho</span>${o.sE===null?'—':o.reforco?`<b style="color:#c0392b">falta ${R$(o.reforco)}</b>`:o.sobra?`<b style="color:#b7860b">sobra ${R$(o.sobra)}</b>`:'✓ ajustado'}</div><div><span>Pago a fornecedores</span>${R$(o.pg)} (${n(o.nPg)} pagamentos)</div><div><span>Saldo em conta</span>${R$(o.sc)}</div>
+   <div><span>Último desembolso</span>${esc(o.ultd)||'—'}</div><div><span>Último pagamento</span>${esc(o.ultP)||'—'}</div><div><span>Devolvido</span>${R$(o.dt+o.dc)}</div><div><span>Valor de emendas</span>${o.vEm?R$(o.vEm):'—'}</div>
+  </div>
+  ${o.nes.length?`<div style="margin-top:10px;font-size:12px;font-weight:600">Notas de empenho (Transferegov) × Tesouro ${esc(TES&&TES.mes||'')}</div><table class="mini"><tr><th>Nota</th><th>UG</th><th>Emissão</th><th>Tipo</th><th class="n">Valor</th><th>No Tesouro</th></tr>${o.nes.map(linhaNE).join('')}</table>`:''}
+  ${o.ems.length?`<div style="margin-top:10px;font-size:12px;font-weight:600">Emendas</div><table class="mini"><tr><th>Emenda</th><th>Parlamentar</th><th>Tipo</th><th>Impositiva</th><th class="n">Valor</th></tr>${o.ems.map(e => `<tr><td>${esc(e[0])}</td><td>${esc(e[1])}</td><td>${esc(e[2])}</td><td>${esc(e[4])}</td><td class="n">${fm(e[3])}</td></tr>`).join('')}</table>`:''}
+  ${o.desAno.length?`<div style="margin-top:10px;font-size:12px;font-weight:600">Desembolsos em ${ANO}</div><table class="mini"><tr><th>Data</th><th>OB</th><th class="n">Valor</th></tr>${o.desAno.map(x => `<tr><td>${esc(x[0])}</td><td>${esc(x[2])}</td><td class="n">${fm(x[1])}</td></tr>`).join('')}</table>`:''}
+  ${o.pags.length?`<div style="margin-top:10px;font-size:12px;font-weight:600">Últimos pagamentos do convenente</div><table class="mini"><tr><th>Data</th><th>Fornecedor</th><th>Documento</th><th class="n">Valor</th></tr>${o.pags.map(x => `<tr><td>${esc(x[0])}</td><td>${esc(x[1])}</td><td>${esc(x[3])} ${esc(x[4])}</td><td class="n">${fm(x[2])}</td></tr>`).join('')}</table>`:''}
+  <div style="margin-top:8px;font-size:12.5px"><b>Objeto:</b> ${esc(o.obj)}</div>
+  <div style="margin-top:8px"><a class="lk" href="${esc(o.link)}" target="_blank">Abrir no Transferegov ↗</a> <button type="button" class="btn" style="margin:0 0 0 8px;padding:5px 14px" data-fichacompleta="${esc(o.n)}">Ficha completa do instrumento ›</button></div></div>`;
+}
+function tabela(id, L, cols, porPag){
+  const p = PAG[id]||0, ini = p*porPag, pg = L.slice(ini, ini+porPag), nc = cols.length;
+  if(!L.length) return '<p class="d">nenhum instrumento neste recorte</p>';
+  return `<table><tr>${cols.map(c => `<th class="${c[2]||''}">${c[0]}</th>`).join('')}</tr>${pg.map(o => `<tr class="lin ${ABERTO.has(id+o.n)?'aberto':''}" data-ab="${id+o.n}">${cols.map(c => `<td class="${c[2]||''}">${c[1](o)}</td>`).join('')}</tr>${ABERTO.has(id+o.n)?`<tr><td colspan="${nc}" style="padding:0">${ficha(o)}</td></tr>`:''}`).join('')}</table>
+  ${L.length>porPag?`<div class="pag">${ini+1}–${Math.min(L.length,ini+porPag)} de ${n(L.length)} <button data-pg="${id}" data-d="-1" ${p?'':'disabled'}>‹</button><button data-pg="${id}" data-d="1" ${ini+porPag<L.length?'':'disabled'}>›</button></div>`:''}`;
+}
+const objLoc = o => `${esc(o.prop.length>48?o.prop.slice(0,48)+'…':o.prop)}<small>${esc(o.munN)}/${esc(o.uf)} · UG ${esc(o.ug)}</small>`;
+const tesOk = () => TES && TES.mapa;
+const tesMsg = () => !TES ? '<span class="pend">lendo o Tesouro (EXE/RAP)…</span>' : TES.erro ? `<span class="pend">Tesouro indisponível (${esc(TES.erro)})</span>` : 'Tesouro '+esc(TES.mes);
+
+// ------------------------------------------------------------- Empenho / Desembolso
+function telaEmp(L){
+  const ex = L.filter(o => o.sit==='Em execução');
+  const sE = soma(L,'sE'), sR = soma(L,'sR'), ref = L.filter(o => o.reforco>0), sob = L.filter(o => o.sobra>0);
+  const desAno = L.reduce((a,o) => a + o.desAno.reduce((b,x) => b+x[1], 0), 0), semDes = L.filter(o => !o.des);
+  const porMes = Array.from({length:12}, (_,i) => ({m:i+1, prev:0, real:0}));
+  L.forEach(o => { o.crono.forEach(([k,v]) => { const [a,m] = k.split('-'); if(+a===ANO) porMes[+m-1].prev += v; }); o.desAno.forEach(([d,v]) => { porMes[+d.slice(3,5)-1].real += v; }); });
+  const mxM = Math.max(1,...porMes.map(x => Math.max(x.prev,x.real))), MES = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+  const graf = `<div class="anos" style="height:190px">${porMes.map(x => `<div class="ano" title="${MES[x.m-1]}/${ANO}: previsto ${fm(x.prev)} · realizado ${fm(x.real)}"><em>${fm(x.real)}</em><div class="cols"><i style="height:${x.prev/mxM*100}%;background:#9fb8d3"></i><i style="height:${x.real/mxM*100}%;background:#2e8a57"></i></div><small>${MES[x.m-1]}</small></div>`).join('')}</div><div class="leg"><span><i style="background:#9fb8d3"></i>Previsto no cronograma (concedente)</span><span><i style="background:#2e8a57"></i>Desembolsado</span></div>`;
+  const desL = []; L.forEach(o => o.desAno.forEach(x => desL.push({o, d:x[0], v:x[1], ob:x[2]})));
+  desL.sort((a,b) => b.d.split('/').reverse().join('').localeCompare(a.d.split('/').reverse().join('')));
+  const cD = Object.fromEntries(agrupar(L,'fxD'));
+  return `<div class="grp">Empenhos · ${tesMsg()}</div><div class="kp">
+    ${kpi('Empenhado', fm(soma(L,'emp')), 'Transferegov · '+pct(soma(L,'emp'),soma(L,'rep'))+' do repasse', 'dest')}
+    ${kpi('Saldo de empenho', tesOk()?fm(sE+sR):'—', tesOk()?'EXE '+fm(sE)+' · RAP '+fm(sR):'notas do Transferegov no Tesouro')}
+    ${kpi('Reforço de empenho necessário', tesOk()?fm(soma(ref,'reforco')):'—', tesOk()?ref.length+' instrumentos: a desembolsar maior que o saldo':'', 'red')}
+    ${kpi('Saldo além do necessário', tesOk()?fm(soma(sob,'sobra')):'—', tesOk()?sob.length+' instrumentos: avaliar anulação/cancelamento':'', 'amar')}
+    ${kpi('Instrumentos', n(L.length), ex.length+' em execução')}</div>
+  <div class="grp">Desembolsos</div><div class="kp">
+    ${kpi('Desembolsado', fm(soma(L,'des')), pct(soma(L,'des'),soma(L,'rep'))+' do repasse', 'verde')}
+    ${kpi('A desembolsar', fm(soma(L,'aDes')), pct(soma(L,'aDes'),soma(L,'rep'))+' do repasse', 'red')}
+    ${kpi('Desembolsado em '+ANO, fm(desAno), desL.length+' desembolsos')}
+    ${kpi('Sem nenhum desembolso', n(semDes.length), fm(soma(semDes,'rep'))+' de repasse', 'amar')}
+    ${kpi('Valor a comprovar', fm(Math.max(0, soma(L,'des')+soma(L,'cp')-soma(L,'pg')-soma(L,'sc'))), 'desembolso + contrapartida − pago − saldo em conta')}</div>
+  <div class="g2">${sec('Empenhado por resultado primário','origem do recurso · clique para filtrar', hbar(agrupar(L,'rpN',o => o.emp),'rpN','#1f4e79',fm))}
+   ${sec('Instrumentos por dias sem desembolso','tempo desde o último desembolso · clique para filtrar', colunas(FX_D.map(k => [k, cD[k]||0, k==='Sem desembolso'?'#e6c229':k==='Mais de 365 dias'?'#c0392b':'#1f4e79']),'fxD','#1f4e79'))}</div>
+  <div class="g2">${sec('Saldo de empenho por convenente','os 10 maiores · '+tesMsg(), tesOk() ? hbar(agrupar(L.filter(o => o.sE+o.sR>0),'prop',o => o.sE+o.sR).slice(0,10),'prop','#3a6f9f',fm) : '<p class="d">—</p>')}
+   ${sec('Valor a desembolsar por convenente','os 10 maiores · clique para filtrar', hbar(agrupar(L.filter(o => o.aDes>0),'prop',o => o.aDes).slice(0,10),'prop','#c0392b',fm))}</div>
+  ${sec('Previsão × desembolso em '+ANO,'cronograma de desembolso do concedente (Transferegov) × desembolsado em cada mês', graf)}
+  <div class="g2">${sec('Mapa','pontos: municípios · vermelho = instrumento em execução sem desembolso há mais de 180 dias', mapa(L, o => o.sit==='Em execução' && (o.dsd===null || o.dsd>180)))}
+   ${sec('Desembolsos realizados em '+ANO, desL.length+' desembolsos · '+fm(desAno), desL.length ? `<table class="mini" style="font-size:12px"><tr><th>Data</th><th>Instrumento</th><th>Convenente</th><th class="n">Valor</th></tr>${desL.slice(0,18).map(x => `<tr><td>${esc(x.d)}</td><td>${esc(x.o.n)}</td><td>${esc(x.o.prop.slice(0,40))}</td><td class="n">${fm(x.v)}</td></tr>`).join('')}</table>${desL.length>18?`<p class="d">… e mais ${desL.length-18}</p>`:''}` : '<p class="d">nenhum desembolso no ano</p>')}</div>`;
+}
+// ------------------------------------------------------------- Programas / Emendas
+function telaProg(L){
+  const progs = new Set(L.map(o => o.prog)), ems = new Set(); L.forEach(o => o.ems.forEach(e => e[0] && ems.add(e[0])));
+  const cV = Object.fromEntries(agrupar(L,'fx'));
+  const anos = agrupar(L,'anoAss').filter(([k]) => k).sort((a,b) => a[0].localeCompare(b[0]));
+  const parl = {}; L.forEach(o => o.ems.forEach(e => { if(!e[1]) return; parl[e[1]] = (parl[e[1]]||0) + e[3]; }));
+  return `<div class="kp k6">
+    ${kpi('Instrumentos', n(L.length), fm(soma(L,'rep'))+' de repasse', 'dest')}
+    ${kpi('Programas', n(progs.size), 'com instrumentos no recorte')}
+    ${kpi('Emendas', n(ems.size), fm(soma(L,'vEm'))+' indicados')}
+    ${kpi('Empenhado', fm(soma(L,'emp')), tesOk()?'saldo EXE+RAP '+fm(soma(L,'sE')+soma(L,'sR')):'Transferegov')}
+    ${kpi('Desembolsado', fm(soma(L,'des')), pct(soma(L,'des'),soma(L,'rep'))+' do repasse', 'verde')}
+    ${kpi('A desembolsar', fm(soma(L,'aDes')), '', 'red')}</div>
+  ${sec('Instrumentos por ano de assinatura','quantidade · clique para filtrar', colunas(anos,'anoAss','#1f4e79'))}
+  <div class="g2">${sec('Encerramento da vigência','quanto falta para a vigência terminar · clique para filtrar', colunas(FX_V.map(k => [k, cV[k]||0, k==='Vencida'||k==='Até 30 dias'?'#c0392b':k==='31 a 60 dias'||k==='61 a 90 dias'?'#e67e22':'#1f4e79']),'fx'))}
+   ${sec('Empenhado por resultado primário','origem do recurso · clique para filtrar', hbar(agrupar(L,'rpN',o => o.emp),'rpN','#3a6f9f',fm))}</div>
+  <div class="g2">${sec('Programas','os 12 com mais repasse · clique para filtrar', hbar(agrupar(L,'prog',o => o.rep).slice(0,12),'prog','#1f4e79',fm))}
+   ${sec('Parlamentares','os 12 com mais valor de emendas nos instrumentos do recorte', hbar(Object.entries(parl).sort((a,b) => b[1]-a[1]).slice(0,12),'parl','#2e8a57',fm))}</div>
+  <div class="g2">${sec('Distribuição por objeto resumido','tipo do objeto · clique para filtrar', hbar(agrupar(L,'objr'),'objr','#7d3c98',null,L.length))}
+   ${sec('Mapa','pontos: municípios · vermelho = vigência vence em até 90 dias', mapa(L, o => o.dv!==null && o.dv>=0 && o.dv<=90))}</div>`;
+}
+// ------------------------------------------------------------- Movimentação financeira
+function telaMov(L){
+  const forn = {}; L.forEach(o => o.forn.forEach(([k,nm,v]) => { const f = forn[k] || (forn[k] = {nm, v:0}); f.v += v; }));
+  const cP = Object.fromEntries(agrupar(L,'fxP'));
+  const pgs = []; L.forEach(o => o.pags.forEach(x => pgs.push({o, d:x[0], f:x[1], v:x[2], doc:x[3]+' '+x[4]})));
+  pgs.sort((a,b) => b.d.split('/').reverse().join('').localeCompare(a.d.split('/').reverse().join('')));
+  const des = soma(L,'des'), pg = soma(L,'pg');
+  return `<div class="kp">
+    ${kpi('Repasse', fm(soma(L,'rep')), 'desembolsado '+fm(des), 'dest')}
+    ${kpi('Total de pagamentos', fm(pg), 'OBTV '+fm(soma(L,'pgObtv'))+' · em '+ANO+' '+fm(soma(L,'pgAno')))}
+    ${kpi('Pago / desembolsado', pct(pg, des+soma(L,'cp')), 'pago ÷ (desembolso + contrapartida)', 'verde')}
+    ${kpi('Devolução de recursos', fm(soma(L,'dt')+soma(L,'dc')), 'ao Tesouro '+fm(soma(L,'dt'))+' · convenente '+fm(soma(L,'dc')), 'red')}
+    ${kpi('Saldo em conta', fm(soma(L,'sc')), L.filter(o => o.sc>0).length+' instrumentos · rendimento '+fm(soma(L,'rend')), 'amar')}</div>
+  ${sec('Pagamentos realizados pelos convenentes, por ano','todos os instrumentos da SDR (não muda com os filtros)', colunas(P.meta.pagAno.map(([a,c]) => [String(a), c]), null, '#1f4e79'))}
+  <div class="g2">${sec('Total movimentado por convenente','os 10 maiores pagamentos · clique para filtrar', hbar(agrupar(L.filter(o => o.pg>0),'prop',o => o.pg).slice(0,10),'prop','#1f4e79',fm))}
+   ${sec('Instrumentos por dias sem pagamento','tempo desde o último pagamento do convenente', colunas(FX_P.map(k => [k, cP[k]||0, k==='Sem pagamento'?'#c0392b':k==='Mais de 365 dias'?'#e67e22':'#1f4e79']),'fxP'))}</div>
+  <div class="g2">${sec('Principais fornecedores','os 10 que mais receberam no recorte', hbar(Object.values(forn).sort((a,b) => b.v-a.v).slice(0,10).map(f => [f.nm, f.v]), null, '#3a6f9f', fm))}
+   ${sec('Pagamentos mais recentes', 'dos instrumentos do recorte', pgs.length ? `<table class="mini" style="font-size:12px"><tr><th>Data</th><th>Instrumento</th><th>Fornecedor</th><th class="n">Valor</th></tr>${pgs.slice(0,18).map(x => `<tr><td>${esc(x.d)}</td><td>${esc(x.o.n)}</td><td>${esc((x.f||'').slice(0,38))}</td><td class="n">${fm(x.v)}</td></tr>`).join('')}</table>` : '<p class="d">nenhum pagamento</p>')}</div>
+  ${sec('Mapa','pontos: municípios · vermelho = instrumento em execução sem pagamento há mais de 180 dias', mapa(L, o => o.sit==='Em execução' && (o.dsp===null || o.dsp>180)))}`;
+}
+const TITULO = {emp:'Empenho / Desembolso', prog:'Programas / Emendas', mov:'Movimentação financeira'}[ABA];
+function render(){
+  desenharFiltros();
+  const L = filtrar();
+  document.getElementById('contagem').textContent = `${n(L.length)} instrumentos no recorte`;
+  document.getElementById('corpo').innerHTML = ABA==='emp' ? telaEmp(L) : ABA==='prog' ? telaProg(L) : telaMov(L);
+  const q = document.getElementById('busca').value.trim().toUpperCase();
+  const lista = (q ? L.filter(o => (o.n+' '+o.prop+' '+o.munN+' '+o.parl+' '+o.obj).toUpperCase().includes(q)) : L).slice()
+    .sort((a,b) => ABA==='emp' ? (b.aDes-a.aDes) : ABA==='mov' ? (b.pg-a.pg) : (b.rep-a.rep));
+  const cols = ABA==='emp' ? [['Instrumento',o=>`<b>${esc(o.n)}</b><small>${esc(o.sit)}</small>`],['Convenente / local',objLoc],['Empenhado',o=>fm(o.emp),'n'],['Desembolsado',o=>fm(o.des)+`<small>${pct(o.des,o.rep)}</small>`,'n'],['A desembolsar',o=>fm(o.aDes),'n'],['Saldo empenho',o=>o.sE===null?'—':fm(o.sE+o.sR)+(o.reforco?`<small style="color:#c0392b">falta ${fm(o.reforco)}</small>`:o.sobra?`<small style="color:#b7860b">sobra ${fm(o.sobra)}</small>`:''),'n']]
+    : ABA==='prog' ? [['Instrumento',o=>`<b>${esc(o.n)}</b><small>assinado ${esc(o.anoAss)}</small>`],['Convenente / local',objLoc],['Programa / parlamentar',o=>`${esc(o.prog.slice(0,45))}<small>${esc(o.parl)}</small>`],['Emendas',o=>o.vEm?fm(o.vEm):'—','n'],['Repasse',o=>fm(o.rep),'n'],['Fim vigência',o=>esc(o.fv)+`<small>${o.dv===null?'':o.dv<0?'vencida':'faltam '+o.dv+' d'}</small>`,'n']]
+    : [['Instrumento',o=>`<b>${esc(o.n)}</b><small>${esc(o.sit)}</small>`],['Convenente / local',objLoc],['Desembolsado',o=>fm(o.des),'n'],['Pago',o=>fm(o.pg)+`<small>${n(o.nPg)} pagtos</small>`,'n'],['Saldo em conta',o=>fm(o.sc),'n'],['Último pagamento',o=>(o.ultP||'—')+`<small>${o.dsp===null?'':'há '+o.dsp+' dias'}</small>`,'n']];
+  document.getElementById('lista').innerHTML = tabela('l', lista, cols, 15);
+}
+document.getElementById('nota').innerHTML = `<b>${TITULO}</b> · instrumentos vigentes da SDR (e os que tiveram desembolso ou pagamento em ${ANO}) · Transferegov, carga de __DATA__${ABA!=='mov'?' · saldos de empenho: Tesouro (EXE e RAP) lido pelo painel':''} · clique nos gráficos para filtrar e na linha para abrir a ficha.`;
+document.addEventListener('change', e => { const k = e.target.dataset.k; if(!k) return; if(e.target.value) SEL[k] = e.target.value; else delete SEL[k]; for(const p in PAG) PAG[p]=0; render(); });
+document.addEventListener('click', e => {
+  const fc = e.target.closest('[data-fichacompleta]'); if(fc){ try{ parent.abrirFichaInst(fc.dataset.fichacompleta); }catch(x){} return; }
+  const pg = e.target.closest('[data-pg]'); if(pg){ PAG[pg.dataset.pg] = (PAG[pg.dataset.pg]||0) + +pg.dataset.d; render(); return; }
+  const ab = e.target.closest('[data-ab]'); if(ab && !e.target.closest('a,button')){ const k = ab.dataset.ab; ABERTO.has(k) ? ABERTO.delete(k) : ABERTO.add(k); render(); return; }
+  const f = e.target.closest('[data-k][data-v]'); if(f){ const k = f.dataset.k, v = f.dataset.v; SEL[k]===v ? delete SEL[k] : SEL[k] = v; for(const p in PAG) PAG[p]=0; render(); }
+});
+document.getElementById('limpar').onclick = () => { for(const k in SEL) delete SEL[k]; render(); };
+document.getElementById('busca').oninput = () => { PAG.l = 0; render(); };
+render();
+if(ABA!=='mov') lerTesouro(); else TES = {};
+</script></body></html>

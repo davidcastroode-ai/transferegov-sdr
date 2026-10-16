@@ -31,7 +31,7 @@ jobs:
         env:
           HIST_ANTERIOR: /tmp/historico_obras.csv
 
-      - name: Gerar as páginas Obras, Prestação de contas e Propostas
+      - name: Gerar as páginas do painel (Propostas, Empenho, Programas, Movimentação, Obras, Prestação de contas)
         run: python scripts/paginas.py saida
 
       - name: Publicar na branch "dados"

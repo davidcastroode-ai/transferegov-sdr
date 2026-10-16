@@ -137,6 +137,7 @@ def main(pasta):
         fh.write(montar('prestacao.html', pcs, data_carga))
     print(f'pagina_prestacao.html · {len(pcs)} instrumentos', flush=True)
     propostas(pasta, data_carga)
+    execucao(pasta, data_carga)
 
 
 def propostas(pasta, data_carga):
@@ -167,7 +168,8 @@ def propostas(pasta, data_carga):
                                round(f(r['valor_repasse_proposta'])), round(f(r['valor_global_proposta'])), r['nr_proposta'], r['nr_instrumento'],
                                ix(dic, 'r', r['proponente']), ix(dic, 'c', r['municipio']), int(r['id_proposta'] or 0), r['nr_emenda'],
                                (r['objeto'] or '')[:220 if int(a) >= anomin else 120],
-                               r.get('ug_emitente', ''), r.get('inicio_vigencia_proposta', ''), r.get('fim_vigencia_proposta', ''), r.get('cnpj_proponente', '')])
+                               r.get('ug_emitente', ''), r.get('inicio_vigencia_proposta', ''), r.get('fim_vigencia_proposta', ''), r.get('cnpj_proponente', ''),
+                               ix(dic, 'a', ' | '.join(sorted({x.strip()[-4:] for x in (r.get('acao_orcamentaria') or '').split('|') if x.strip()})))])
     emp = lambda pk: {'d': {k: list(v) for k, v in pk['dic'].items()}, 'r': pk['rows']}
     os.makedirs(os.path.join(pasta, 'propostas_pag'), exist_ok=True)
     antigos = sorted(a for a in pacotes if a != 'recentes')
@@ -180,6 +182,75 @@ def propostas(pasta, data_carga):
     with open(os.path.join(pasta, 'pagina_propostas.html'), 'w', encoding='utf-8') as fh:
         fh.write(h)
     print(f'pagina_propostas.html · {len(dados["r"])} propostas desde {anomin} + {len(antigos)} anos em propostas_pag/ · {sum(n for n, c in anos.values())} no total', flush=True)
+
+
+def execucao(pasta, data_carga):
+    """Páginas Empenho/Desembolso, Programas/Emendas e Movimentação financeira (instrumentos vigentes + os com movimento no ano)."""
+    hoje = datetime.date.today()
+    ano = hoje.year
+    inst = {r['nr_instrumento']: r for r in ler(pasta, 'instrumentos.csv')}
+    agrupa = lambda lista: collections.defaultdict(list, {})
+    emp, des, pag, cro, eme = (collections.defaultdict(list) for _ in range(5))
+    for e in ler(pasta, 'empenhos.csv'):
+        emp[e['NR_CONVENIO']].append(e)
+    for d_ in ler(pasta, 'desembolsos.csv'):
+        des[d_['NR_CONVENIO']].append(d_)
+    for p_ in ler(pasta, 'pagamentos.csv'):
+        pag[p_['NR_CONVENIO']].append(p_)
+    for c in ler(pasta, 'cronograma_desembolso.csv'):
+        cro[c['NR_CONVENIO']].append(c)
+    for e in ler(pasta, 'emendas.csv'):
+        eme[e['ID_PROPOSTA']].append(e)
+    pag_ano = collections.Counter()
+    linhas = []
+    for n, r in inst.items():
+        ds = [(d(x.get('DATA_DESEMBOLSO')), f(x.get('VL_DESEMBOLSADO')), x.get('NR_SIAFI', '')) for x in des.get(n, [])]
+        ps = [(d(x.get('DATA_PAG')), f(x.get('VL_PAGO')), x.get('IDENTIF_FORNECEDOR', ''), x.get('NOME_FORNECEDOR', ''), x.get('TP_MOV_FINANCEIRA', ''), x.get('DESC_DL', ''), x.get('NR_DL', '')) for x in pag.get(n, [])]
+        for x in ps:
+            if x[0]:
+                pag_ano[x[0].year] += 1
+        mov_ano = any(x[0] and x[0].year == ano for x in ds) or any(x[0] and x[0].year == ano for x in ps)
+        if r['situacao'] != 'Em execução' and not mov_ano:
+            continue
+        rpc = collections.Counter((e.get('RESULTADO_PRIMARIO') or '').strip() for e in emp.get(n, []) if (e.get('RESULTADO_PRIMARIO') or '').strip())
+        nes = [[e.get('NR_EMPENHO', ''), e.get('UG_EMITENTE', ''), e.get('DATA_EMISSAO', ''), f(e.get('VALOR_EMPENHO')), e.get('DESC_TIPO_NOTA', '')] for e in emp.get(n, [])]
+        ult_p = max((x[0] for x in ps if x[0]), default=None)
+        forn = collections.defaultdict(lambda: [0.0, 0, ''])
+        for x in ps:
+            k = x[2] or x[3]
+            forn[k][0] += x[1]
+            forn[k][1] += 1
+            forn[k][2] = x[3]
+        fv = d(r['fim_vigencia'])
+        crono = collections.Counter()
+        for c in cro.get(n, []):
+            if (c.get('TIPO_RESP_CRONO_DESEMBOLSO') or '').lower().startswith('concedente') and (c.get('ANO_CRONO_DESEMBOLSO') or '').isdigit():
+                crono[f"{c['ANO_CRONO_DESEMBOLSO']}-{int(c.get('MES_CRONO_DESEMBOLSO') or 0):02d}"] += f(c.get('VALOR_PARCELA_CRONO_DESEMBOLSO'))
+        ems = eme.get(r.get('id_proposta', ''), [])
+        linhas.append(dict(
+            n=n, ug=r['ug_emitente'], sit=r['situacao'], mod=r['modalidade'], prop=r['proponente'], cnpj=r['cnpj_proponente'], uf=r['uf'], mun=na(r['municipio']).strip(), munN=r['municipio'],
+            parl=r['parlamentar'] or '(sem parlamentar)', tp=r['tipo_parlamentar'] or '(sem emenda)', nj=r['natureza_juridica'], ano=r['ano_proposta'], anoAss=(r['data_assinatura'] or '')[-4:],
+            fv=r['fim_vigencia'], dv=(fv - hoje).days if fv else None, rep=f(r['valor_repasse']), des=f(r['valor_desembolsado']), aDes=f(r['valor_a_desembolsar']), emp=f(r['valor_empenhado']),
+            sc=f(r['saldo_em_conta']), rend=f(r['rendimento_aplicacao']), cp=f(r['ingresso_contrapartida']), glob=f(r['valor_global']),
+            dt=f(r.get('saldo_devolvido_tesouro')), dc=f(r.get('saldo_devolvido_convenente')),
+            prog=(r['programa'] or '(sem programa)')[:120], acao=' | '.join(sorted({x.strip()[-4:] for x in (r.get('acao_orcamentaria') or '').split('|') if x.strip()})) or '(sem ação)',
+            emd=r['nr_emenda'], vEm=round(sum(f(e.get('VALOR_REPASSE_EMENDA')) for e in ems), 2), nEm=len({e.get('NR_EMENDA') for e in ems if e.get('NR_EMENDA')}),
+            ems=[[e.get('NR_EMENDA', ''), e.get('NOME_PARLAMENTAR', ''), e.get('TIPO_PARLAMENTAR', ''), f(e.get('VALOR_REPASSE_EMENDA')), e.get('IND_IMPOSITIVO', '')] for e in ems][:8],
+            rp=(rpc.most_common(1)[0][0] if rpc else ''), objr=objeto_resumido(r['objeto']), obj=(r['objeto'] or '')[:300], link=r['link_proposta'],
+            dsd=int(r['dias_sem_desembolso']) if (r['dias_sem_desembolso'] or '').isdigit() else None, ultd=r['ultimo_desembolso'], nes=nes[:20],
+            desAno=[[x[0].strftime('%d/%m/%Y'), x[1], x[2]] for x in sorted(ds, key=lambda x: x[0] or datetime.date.min) if x[0] and x[0].year == ano],
+            crono=sorted(crono.items()),
+            pg=round(sum(x[1] for x in ps), 2), nPg=len(ps), pgAno=round(sum(x[1] for x in ps if x[0] and x[0].year == ano), 2),
+            pgObtv=round(sum(x[1] for x in ps if 'OBTV' in (x[4] or '')), 2),
+            ultP=ult_p.strftime('%d/%m/%Y') if ult_p else '', dsp=(hoje - ult_p).days if ult_p else None,
+            forn=[[k, v[2], round(v[0], 2), v[1]] for k, v in sorted(forn.items(), key=lambda kv: -kv[1][0])[:6]],
+            pags=[[x[0].strftime('%d/%m/%Y') if x[0] else '', x[3], x[1], x[5], x[6]] for x in sorted(ps, key=lambda x: x[0] or datetime.date.min, reverse=True)[:8]]))
+    meta = {'ano': ano, 'pagAno': sorted([a, c] for a, c in pag_ano.items() if a >= 2008)}
+    for aba, nome in (('emp', 'pagina_empenho.html'), ('prog', 'pagina_programas.html'), ('mov', 'pagina_movimentacao.html')):
+        h = montar('execucao.html', {'linhas': linhas, 'meta': meta}, data_carga).replace('__ABA__', aba)
+        with open(os.path.join(pasta, nome), 'w', encoding='utf-8') as fh:
+            fh.write(h)
+    print(f'páginas de execução · {len(linhas)} instrumentos', flush=True)
 
 
 if __name__ == '__main__':
