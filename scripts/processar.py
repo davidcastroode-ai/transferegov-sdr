@@ -15,7 +15,8 @@ import csv, io, json, os, sys, time, urllib.request, zipfile, datetime, re
 BASE = 'https://api-publica.transferegov.gestao.gov.br/downloads/dadosgov/'
 UGS_SDR = ['130010', '130141', '135098', '420013', '130255']
 ARQUIVOS = ['siconv_convenio', 'siconv_programa_proposta', 'siconv_programa', 'siconv_proposta', 'siconv_emenda',
-            'siconv_empenho', 'siconv_desembolso', 'siconv_termo_aditivo', 'siconv_prorroga_oficio', 'data_carga_siconv']
+            'siconv_empenho', 'siconv_desembolso', 'siconv_termo_aditivo', 'siconv_prorroga_oficio', 'data_carga_siconv',
+            'siconv_dados_obrasgov_geral', 'siconv_acomp_obras_contratos_medicoes_modulo_empresas', 'siconv_acomp_obras_valores_itens_medicao_modulo_empresas']
 TMP = os.environ.get('FONTE_LOCAL') or '/tmp/transferegov'
 csv.field_size_limit(10**9)
 LOG = []
@@ -320,7 +321,24 @@ def main(saida):
     gravar(saida, 'prorrogacoes.csv', cab_pr or ['NR_CONVENIO'], prorrogas)
     gravar(saida, 'emendas.csv', meta['cabecalhos'].get('emenda') or ['ID_PROPOSTA'], emendas)
 
-    meta['contagens'] = {'instrumentos': len(inst), 'propostas': len(props), 'empenhos': len(empenhos),
+    # obras (Obrasgov / acompanhamento de obras): filtra pelo nº do instrumento ou pelo ID da proposta, o que o arquivo tiver
+    def obras_de(nome, saida_nome):
+        cab, it = linhas(nome)
+        meta['cabecalhos'][nome.replace('siconv_', '')] = cab
+        if not cab:
+            return 0
+        ci = next((c for c in cab if c in ('NR_CONVENIO', 'NR_INSTRUMENTO', 'NUMERO_INSTRUMENTO', 'NR_TRANSFERENCIA')), None) \
+            or next((c for c in cab if 'CONVENIO' in c or 'INSTRUMENTO' in c), None)
+        cp = 'ID_PROPOSTA' if 'ID_PROPOSTA' in cab else None
+        out = [r for r in it if (ci and r.get(ci) in conv) or (cp and r.get(cp) in prop_do_conv)]
+        log(f'{nome}: {len(out)} linhas da SDR (chave: {ci or cp})')
+        gravar(saida, saida_nome, cab, out)
+        return len(out)
+    n_obras = obras_de('siconv_dados_obrasgov_geral', 'obras.csv')
+    n_med = obras_de('siconv_acomp_obras_contratos_medicoes_modulo_empresas', 'obras_medicoes.csv')
+    n_itm = obras_de('siconv_acomp_obras_valores_itens_medicao_modulo_empresas', 'obras_itens_medicao.csv')
+
+    meta['contagens'] = {'obras': n_obras, 'obras_medicoes': n_med, 'obras_itens_medicao': n_itm, 'instrumentos': len(inst), 'propostas': len(props), 'empenhos': len(empenhos),
                          'desembolsos': len(desembolsos), 'aditivos': len(aditivos), 'prorrogacoes': len(prorrogas),
                          'emendas': len(emendas), 'programas': len(progs_sdr)}
     meta['log'] = LOG
