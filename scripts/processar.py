@@ -13,6 +13,7 @@ Uso:  python scripts/processar.py PASTA_DE_SAIDA
 import csv, io, json, os, sys, time, urllib.request, zipfile, datetime, re
 
 BASE = 'https://api-publica.transferegov.gestao.gov.br/downloads/dadosgov/'
+ORGAO_MAPA = '22000'
 UGS_SDR = ['130010', '130141', '135098', '420013', '130255']
 ARQUIVOS = ['siconv_convenio', 'siconv_programa_proposta', 'siconv_programa', 'siconv_proposta', 'siconv_emenda',
             'siconv_empenho', 'siconv_desembolso', 'siconv_termo_aditivo', 'siconv_prorroga_oficio', 'data_carga_siconv',
@@ -168,9 +169,15 @@ def main(saida):
     meta['cabecalhos']['proposta'] = cab
     proposta = {}
     for r in it:
-        if r.get('ID_PROPOSTA') in escopo:
+        if r.get('ID_PROPOSTA') in escopo and (r.get('COD_ORGAO') or '').strip() == ORGAO_MAPA:
             proposta[r['ID_PROPOSTA']] = r
-    log(f'propostas lidas: {len(proposta)}')
+    log(f'propostas lidas (só concedente {ORGAO_MAPA}): {len(proposta)}')
+    # só instrumentos cujo concedente é o Ministério da Agricultura e Pecuária (a UG emitente sozinha deixa passar outros ministérios)
+    fora = [n for n, c in conv.items() if c.get('ID_PROPOSTA') not in proposta]
+    for n in fora:
+        del conv[n]
+    escopo = set(proposta)
+    log(f'instrumentos de outros órgãos retirados: {len(fora)} ({", ".join(fora[:20])}) · ficam {len(conv)}')
 
     # 4. emendas
     cab, it = linhas('siconv_emenda')
