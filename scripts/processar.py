@@ -302,6 +302,39 @@ def main(saida):
             'qtd_prorrogacoes', 'notas_empenho', 'saldo_em_conta', 'subsituacao', 'em_processo_tce', 'inadimplente_desde', 'objeto']
     gravar(saida, 'painel_instrumentos.csv', leve, [{**r, 'objeto': r['objeto'][:160]} for r in inst])
 
+    # 6b. arquivo no formato da planilha "Parcerias" (mesmos nomes e ordem de colunas A:AH), usado pelo Apps Script da planilha
+    def faixa(d):
+        return 'Até 90 dias' if d <= 90 else 'Acima de 90 até 180 dias' if d <= 180 else 'Acima de 180 até 365 dias' if d <= 365 else 'Acima de 365 dias'
+    def rp_de(n):
+        c = {}
+        for e in emp_c.get(n, []):
+            v = (e.get('RESULTADO_PRIMARIO') or '').strip()
+            if v:
+                c[v] = c.get(v, 0) + 1
+        return max(c, key=c.get) if c else '-'
+    COLS_PLAN = ['Código Programa', 'Link Programa', 'Nº Proposta', 'Nº Instrumento', 'Nome Parlamentar', 'Nº Emenda', 'Ano Proposta', 'Link Direto',
+                 'Modalidade', 'Nome Proponente', 'CNPJ', 'UF', 'Objeto', 'Nº Processo', 'Situação Instrumento', 'Ação Orçamentária', 'Nome Programa',
+                 'Resultado Primário', 'UG', 'Data Assinatura', 'Data Início de Vigência Conv.', 'Data Fim de Vigência Conv.', 'Data Limite Prestação de Contas',
+                 'Valor Global', 'Valor de Repasse', 'Valor de Contrapartida', 'Valor Desembolsado Acumulado', 'A Desembolsar', 'Ingresso de Contrapartida',
+                 'Rendimento Aplicação', 'Saldo em conta', 'Execução Financeira', 'Último Pagamento', 'Sem Desembolso']
+    plan = []
+    for r in inst:
+        ids = [x for x in r['id_programa'].split(' | ') if x]
+        emexec = r['situacao'] == 'Em execução'
+        d = int(r['dias_sem_desembolso']) if r['dias_sem_desembolso'] else None
+        plan.append(dict(zip(COLS_PLAN, [
+            r['cod_programa'] or '-',
+            ('https://discricionarias.transferegov.sistema.gov.br/voluntarias/ConsultarPrograma/ResultadoDaConsultaDeProgramaDeConvenioDetalhar.do?id=' + ids[0] + '&Usr=guest&Pwd=guest') if ids else '-',
+            r['nr_proposta'] or '-', r['nr_instrumento'], r['parlamentar'] or '-', r['nr_emenda'] or '-', r['ano_proposta'] or '-', r['link_proposta'],
+            r['modalidade'] or '-', r['proponente'] or '-', r['cnpj_proponente'] or '-', r['uf'] or '-', r['objeto'] or '-', r['nr_processo'] or '-',
+            r['situacao'] or '-', r['acao_orcamentaria'] or '-', r['programa'] or '-', rp_de(r['nr_instrumento']), r['ug_emitente'],
+            r['data_assinatura'] or '-', r['inicio_vigencia'] or '-', r['fim_vigencia'] or '-', r['limite_prestacao_contas'] or '-',
+            r['valor_global'], r['valor_repasse'], r['valor_contrapartida'], r['valor_desembolsado'], r['valor_a_desembolsar'],
+            r['ingresso_contrapartida'], r['rendimento_aplicacao'], r['saldo_em_conta'], '',
+            ('Sem Desembolso' if emexec and d is None else '-'),
+            (faixa(d) if emexec and d is not None else '-')])))
+    gravar(saida, 'planilha_parcerias.csv', COLS_PLAN, plan)
+
     # 7. propostas (todas do escopo, celebradas ou não)
     props = []
     for p in escopo:
