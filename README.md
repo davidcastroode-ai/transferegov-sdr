@@ -18,6 +18,7 @@ dados abertos do Transferegov (Discricionárias e Legais).
 | `desembolsos.csv` | desembolso | cada liberação de recurso |
 | `aditivos.csv` | termo aditivo | aditivos dos instrumentos |
 | `prorrogacoes.csv` | prorrogação de ofício | prorrogações |
+| `obras.csv` | obra | dados do Obrasgov das obras dos instrumentos (situação da obra, execução física) |
 | `emendas.csv` | emenda × proposta | parlamentar, nº da emenda, valores |
 | `atualizacao.json` | — | data da carga do Transferegov, hora da geração, contagens e registro da execução |
 

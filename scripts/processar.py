@@ -191,6 +191,14 @@ def main(saida):
     cab_des, desembolsos = do_conv('siconv_desembolso')
     cab_ta, aditivos = do_conv('siconv_termo_aditivo')
     cab_pr, prorrogas = do_conv('siconv_prorroga_oficio')
+    # obras (Obrasgov): coluna do instrumento pode ter nome diferente
+    cab_ob, it = linhas('siconv_dados_obrasgov_geral')
+    meta['cabecalhos']['obrasgov'] = cab_ob
+    col_inst = next((c for c in (cab_ob or []) if c in ('NR_CONVENIO', 'NR_INSTRUMENTO', 'NUMERO_INSTRUMENTO', 'INSTRUMENTO')), None) \
+        or next((c for c in (cab_ob or []) if 'CONVENIO' in c or 'INSTRUMENTO' in c), None)
+    obras = [r for r in it if col_inst and str(r.get(col_inst, '')).strip() in conv]
+    meta['obras_coluna_instrumento'] = col_inst
+    log(f'obras (Obrasgov): coluna {col_inst} · {len(obras)} linhas da SDR')
 
     def por_conv(lista):
         g = {}
@@ -319,6 +327,7 @@ def main(saida):
     gravar(saida, 'desembolsos.csv', cab_des or ['NR_CONVENIO'], desembolsos)
     gravar(saida, 'aditivos.csv', cab_ta or ['NR_CONVENIO'], aditivos)
     gravar(saida, 'prorrogacoes.csv', cab_pr or ['NR_CONVENIO'], prorrogas)
+    gravar(saida, 'obras.csv', cab_ob or ['NR_CONVENIO'], obras)
     gravar(saida, 'emendas.csv', meta['cabecalhos'].get('emenda') or ['ID_PROPOSTA'], emendas)
 
     # obras (Obrasgov / módulo de empresas): filtra pelos instrumentos ou propostas da SDR, qualquer que seja a coluna de ligação
@@ -353,7 +362,7 @@ def main(saida):
 
     meta['contagens'] = {'obras': n_obras, 'obras_medicoes': n_med, 'obras_itens_medicao': n_itm, 'instrumentos': len(inst), 'propostas': len(props), 'empenhos': len(empenhos),
                          'desembolsos': len(desembolsos), 'aditivos': len(aditivos), 'prorrogacoes': len(prorrogas),
-                         'emendas': len(emendas), 'programas': len(progs_sdr)}
+                         'emendas': len(emendas), 'obras': len(obras), 'programas': len(progs_sdr)}
     meta['log'] = LOG
     with open(os.path.join(saida, 'atualizacao.json'), 'w', encoding='utf-8') as f:
         json.dump(meta, f, ensure_ascii=False, indent=1)
