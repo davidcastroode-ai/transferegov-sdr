@@ -17,7 +17,7 @@ ORGAO_MAPA = '22000'
 UGS_SDR = ['130010', '130141', '135098', '420013', '130255']
 ARQUIVOS = ['siconv_convenio', 'siconv_programa_proposta', 'siconv_programa', 'siconv_proposta', 'siconv_emenda',
             'siconv_empenho', 'siconv_desembolso', 'siconv_termo_aditivo', 'siconv_prorroga_oficio', 'data_carga_siconv',
-            'siconv_dados_obrasgov_geral', 'siconv_acomp_obras_contratos_medicoes_modulo_empresas', 'siconv_acomp_obras_valores_itens_medicao_modulo_empresas', 'siconv_resumo_fisico_financeiro', 'siconv_historico_situacao']
+            'siconv_dados_obrasgov_geral', 'siconv_acomp_obras_contratos_medicoes_modulo_empresas', 'siconv_acomp_obras_valores_itens_medicao_modulo_empresas', 'siconv_resumo_fisico_financeiro', 'siconv_historico_situacao', 'siconv_pagamento', 'siconv_cronograma_desembolso']
 TMP = os.environ.get('FONTE_LOCAL') or '/tmp/transferegov'
 csv.field_size_limit(10**9)
 LOG = []
@@ -192,7 +192,11 @@ def main(saida):
     def do_conv(nome):
         cab, it = linhas(nome)
         meta['cabecalhos'][nome.replace('siconv_', '')] = cab
-        out = [r for r in it if r.get('NR_CONVENIO') in conv]
+        if cab and 'NR_CONVENIO' not in cab and 'ID_PROPOSTA' in cab:   # arquivos ligados pela proposta (ex.: cronograma)
+            props = {c.get('ID_PROPOSTA') for c in conv.values()}
+            out = [r for r in it if r.get('ID_PROPOSTA') in props]
+        else:
+            out = [r for r in it if r.get('NR_CONVENIO') in conv]
         log(f'{nome}: {len(out)} linhas da SDR')
         return cab, out
     cab_emp, empenhos = do_conv('siconv_empenho')
@@ -200,6 +204,8 @@ def main(saida):
     cab_ta, aditivos = do_conv('siconv_termo_aditivo')
     cab_pr, prorrogas = do_conv('siconv_prorroga_oficio')
     cab_hs, historico = do_conv('siconv_historico_situacao')
+    cab_pg, pagamentos = do_conv('siconv_pagamento')
+    cab_cr, cronograma = do_conv('siconv_cronograma_desembolso')
     # histórico: primeira vez que o instrumento ficou INADIMPLENTE e a sequência de situações
     inad_c, hist_c = {}, {}
     for h in historico:
@@ -382,6 +388,8 @@ def main(saida):
     gravar(saida, 'aditivos.csv', cab_ta or ['NR_CONVENIO'], aditivos)
     gravar(saida, 'prorrogacoes.csv', cab_pr or ['NR_CONVENIO'], prorrogas)
     gravar(saida, 'historico_situacao.csv', cab_hs or ['NR_CONVENIO'], historico)
+    gravar(saida, 'pagamentos.csv', cab_pg or ['NR_CONVENIO'], pagamentos)
+    gravar(saida, 'cronograma_desembolso.csv', cab_cr or ['NR_CONVENIO'], cronograma)
     gravar(saida, 'emendas.csv', meta['cabecalhos'].get('emenda') or ['ID_PROPOSTA'], emendas)
 
     # obras (Obrasgov / acompanhamento de obras): filtra pelo nº do instrumento ou pelo ID da proposta, o que o arquivo tiver
