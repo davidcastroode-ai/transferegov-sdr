@@ -281,6 +281,12 @@ def main(saida):
     inst.sort(key=lambda r: (r['ano'] or '0000', r['nr_instrumento']), reverse=True)
     campos_inst = list(inst[0].keys()) if inst else []
     gravar(saida, 'instrumentos.csv', campos_inst, inst)
+    # versão leve para o painel (abre rápido no navegador)
+    leve = ['nr_instrumento', 'ug_emitente', 'ano', 'situacao', 'situacao_contratacao', 'clausula_suspensiva_ate', 'fim_vigencia',
+            'limite_prestacao_contas', 'nr_processo', 'modalidade', 'proponente', 'uf', 'municipio', 'natureza_juridica', 'tipo_parlamentar',
+            'valor_repasse', 'valor_desembolsado', 'valor_a_desembolsar', 'ultimo_desembolso', 'dias_sem_desembolso', 'qtd_aditivos',
+            'qtd_prorrogacoes', 'notas_empenho', 'saldo_em_conta', 'objeto']
+    gravar(saida, 'painel_instrumentos.csv', leve, [{**r, 'objeto': r['objeto'][:160]} for r in inst])
 
     # 7. propostas (todas do escopo, celebradas ou não)
     props = []
