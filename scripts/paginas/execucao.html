@@ -4,7 +4,7 @@
 .grp{font-size:12px;font-weight:700;color:#1f4e79;text-transform:uppercase;letter-spacing:.6px;margin:2px 0 6px 2px}
 .kp.k4{grid-template-columns:repeat(4,1fr)}.kp.k6{grid-template-columns:repeat(6,1fr)}@media(max-width:900px){.kp.k4,.kp.k6{grid-template-columns:1fr 1fr}}
 .k b.s{font-size:20px}.k.amar b{color:#b7860b}.k.verde b{color:#2e8a57}
-.hb{grid-template-columns:minmax(150px,44%) 1fr 78px 36px}.hb .rot{white-space:normal;line-height:1.2;font-size:12.5px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.hb{grid-template-columns:minmax(150px,44%) 1fr 78px 36px}.hb .hbr{white-space:normal;line-height:1.2;font-size:12.5px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .fg .tag{display:inline-block;width:auto}.mini{width:100%;font-size:11.5px;margin-top:4px}.mini th{background:#3a6f9f;padding:4px 6px}.mini td{padding:4px 6px}
 .bx{display:flex;gap:6px;align-items:flex-end;height:180px;padding-top:18px}.bx>div{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;cursor:pointer;border-radius:6px}.bx>div:hover,.bx>div.sel{background:#e3edf7}
 .bx i{width:60%;max-width:46px;border-radius:4px 4px 0 0;display:block}.bx small{font-size:11px;color:#4a5a66;margin-top:3px;text-align:center}.bx em{font-style:normal;font-size:11px;font-weight:700;color:#1f4e79}
@@ -50,7 +50,7 @@ function desenharFiltros(){
 // barras horizontais: lista [[rótulo, valor, campo-filtro?]]; fmt para o número
 function hbar(lista, campo, cor, fmt, tot){
   const mx = Math.max(1,...lista.map(x => Math.abs(x[1])));
-  return lista.map(([k,v],i) => `<div class="hb ${campo && SEL[campo]===k?'sel':''}" ${campo?`data-k="${campo}" data-v="${esc(k)}"`:''} title="${esc(k)}"><span class="rot">${esc(k)}</span><div><i style="width:${Math.abs(v)/mx*100}%;background:${typeof cor==='function'?cor(k,i):cor}"></i></div><b>${fmt?fmt(v):n(v)}</b><em>${tot?Math.round(v/tot*100)+'%':''}</em></div>`).join('');
+  return lista.map(([k,v],i) => `<div class="hb ${campo && SEL[campo]===k?'sel':''}" ${campo?`data-k="${campo}" data-v="${esc(k)}"`:''} title="${esc(k)}"><span class="hbr">${esc(k)}</span><div><i style="width:${Math.abs(v)/mx*100}%;background:${typeof cor==='function'?cor(k,i):cor}"></i></div><b>${fmt?fmt(v):n(v)}</b><em>${tot?Math.round(v/tot*100)+'%':''}</em></div>`).join('');
 }
 function colunas(lista, campo, cor, fmt){
   const mx = Math.max(1,...lista.map(x => x[1]));

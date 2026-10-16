@@ -31,4 +31,4 @@ tr.lin{cursor:pointer}tr.lin:hover td{background:#f2f6f9}tr.lin td:first-child::
 .busca{font:inherit;padding:6px 10px;border:1px solid #c9d3db;border-radius:8px;width:280px;margin-bottom:8px}
 .pag{display:flex;gap:8px;justify-content:flex-end;align-items:center;font-size:12.5px;margin-top:8px}.pag button{border:1px solid #c9d3db;background:#fff;border-radius:6px;padding:3px 10px;cursor:pointer}
 a.lk{color:#1f4e79;font-weight:600}
-</style><style>.hb span,.hb .rot{color:#1d2b33;font-weight:500}.hb.sel span{font-weight:700}</style>
+</style><style>.hb span,.hb .hbr{color:#1d2b33;font-weight:500}.hb.sel span{font-weight:700}</style>

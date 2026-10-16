@@ -5,7 +5,7 @@
 .funil div b{display:block;font-size:22px}.funil div small{font-size:11.5px;opacity:.9}.funil div.sel{outline:3px solid #2fae5c}
 .funil-rej{margin-top:8px;font-size:13px;color:#7b241c;cursor:pointer}
 .fg .tag{display:inline-block;width:auto}.eq{display:inline-block;padding:1px 7px;border-radius:9px;font-size:10.5px;font-weight:700;background:#e3f6e8;color:#1f6b3a}.eq.at{background:#fff3e0;color:#a04000}
-.hb{grid-template-columns:minmax(150px,46%) 1fr 58px 36px}.hb .rot{white-space:normal;line-height:1.2;font-size:12.5px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.hb{grid-template-columns:minmax(150px,46%) 1fr 58px 36px}.hb .hbr{white-space:normal;line-height:1.2;font-size:12.5px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .anos .ano.velho{cursor:default}.anos .ano.velho:hover{background:none}
 </style></head><body>
 <div class="wrap">
@@ -82,7 +82,7 @@ function desenharFiltros(){
 }
 function hbar(lista, campo, cor, tot, dot, rot){
   const mx = Math.max(1,...lista.map(x => x[1]));
-  return lista.map(([k,v],i) => `<div class="hb ${SEL[campo]===k?'sel':''}" data-k="${campo}" data-v="${esc(k)}" title="${esc(k)}"><span class="rot">${dot?`<i class="dot" style="background:${cor(k,i)}"></i>`:''}${esc(rot ? rot(k) : k)}</span><div><i style="width:${v/mx*100}%;background:${cor(k,i)}"></i></div><b>${v.toLocaleString('pt-BR')}</b><em>${tot?Math.round(v/tot*100)+'%':''}</em></div>`).join('');
+  return lista.map(([k,v],i) => `<div class="hb ${SEL[campo]===k?'sel':''}" data-k="${campo}" data-v="${esc(k)}" title="${esc(k)}"><span class="hbr">${dot?`<i class="dot" style="background:${cor(k,i)}"></i>`:''}${esc(rot ? rot(k) : k)}</span><div><i style="width:${v/mx*100}%;background:${cor(k,i)}"></i></div><b>${v.toLocaleString('pt-BR')}</b><em>${tot?Math.round(v/tot*100)+'%':''}</em></div>`).join('');
 }
 const conta = (L,k) => { const c = {}; L.forEach(o => c[o[k]] = (c[o[k]]||0)+1); return Object.entries(c).sort((a,b) => b[1]-a[1]); };
 const ABERTO = new Set(), PAG = {};
