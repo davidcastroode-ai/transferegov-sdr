@@ -25,6 +25,8 @@ def log(msg):
     linha = time.strftime('%H:%M:%S') + '  ' + msg
     print(linha, flush=True)
     LOG.append(linha)
+    if os.environ.get('GITHUB_ACTIONS'):
+        print('::notice::' + msg, flush=True)
 
 
 # ---------------------------------------------------------------- download
