@@ -84,6 +84,11 @@ function estimarEmp(o){
   let soma = 0; porNE.forEach((v, k) => { const t = o.tes[k]; const vt = t ? Math.max(t.exe ? t.exe.emp : 0, t.rap ? (t.rap.emp||0) : 0) : 0; soma += Math.max(v, vt); });
   o.empNE = soma; o.empPiso = o.des + (o.sE||0) + (o.sR||0); o.empEst = Math.max(soma, o.empPiso, 0);
   o.reforco = o.sit==='Em execução' && o.rep - o.empEst > 1 ? o.rep - o.empEst : 0;
+  // empenho acima do repasse: se houve ajuste (redução do repasse, supressão em aditivo, ajuste de PT, global menor que o original) é saldo remanescente; senão, é problema
+  o.excesso = Math.max(o.empEst - o.rep, o.sobra||0); if(o.excesso <= 1) o.excesso = 0;
+  o.reducao = Math.max(o.reduRep||0, o.supTA||0, o.globOrig && o.glob ? o.globOrig - o.glob : 0);
+  o.ajuste = o.reducao > 1 || o.nAjPT > 0;
+  o.remanesc = o.excesso && o.ajuste ? o.excesso : 0; o.semAjuste = o.excesso && !o.ajuste ? o.excesso : 0;
 }
 async function lerTesouro(){
   try{ TES = await parent.__tgSiafiNE(); }catch(e){ TES = {erro: e.message || 'fora do painel'}; }
@@ -93,7 +98,7 @@ async function lerTesouro(){
         if(t.exe){ sE += t.exe.saldo; pg += t.exe.pago; } if(t.rap){ sR += t.rap.saldo; pg += t.rap.pago; } });
       o.sE = sE; o.sR = sR; o.pS = pg; o.nAch = ach; estimarEmp(o);
       const s = sE + sR, falta = o.sit==='Em execução' ? o.aDes - s : -s;
-      o.sobra = falta < -1 ? -falta : 0; o.semSaldo = o.sit==='Em execução' && !o.reforco && falta > 1 ? falta : 0; });
+      o.sobra = falta < -1 ? -falta : 0; estimarEmp(o); o.semSaldo = o.sit==='Em execução' && !o.reforco && falta > 1 ? falta : 0; });
   }
   render();
 }
@@ -107,7 +112,7 @@ function ficha(o){
    <div><span>Situação</span>${esc(o.sit)}</div><div><span>Modalidade</span>${esc(o.mod)}</div><div><span>Vigência até</span>${esc(o.fv)||'—'}${o.dv!==null?` (${o.dv<0?'vencida há '+(-o.dv):'faltam '+o.dv} dias)`:''}</div><div><span>UG · ação</span>${esc(o.ug)} · ${esc(o.acao)}</div>
    <div><span>Programa</span>${esc(o.prog)}</div><div><span>Parlamentar</span>${esc(o.parl)}${o.emd?' · emenda '+esc(o.emd):''}</div><div><span>Resultado primário</span>${esc(o.rpN)}</div><div><span>Local</span>${esc(o.munN)}/${esc(o.uf)}</div>
    <div><span>Repasse</span>${R$(o.rep)}</div><div><span>Desembolsado</span>${R$(o.des)} (${pct(o.des,o.rep)})</div><div><span>A desembolsar</span>${R$(o.aDes)}</div><div><span>Empenhado (soma das notas)</span>${R$(o.empEst)}<small>notas ${fm(o.empNE)} · desembolsado + saldo no Tesouro ${fm(o.empPiso)}</small></div>
-   <div><span>Saldo de empenho no Tesouro</span>${o.sE===null?'—':R$(o.sE+o.sR)+`<small> EXE ${fm(o.sE)} · RAP ${fm(o.sR)}</small>`}</div><div><span>Reforço de empenho</span>${o.reforco?`<b style="color:#c0392b">falta empenhar ${R$(o.reforco)}</b><small>repasse ${fm(o.rep)} − empenhado ${fm(o.empEst)}</small>`:'✓ empenhado todo o repasse'}${o.sobra?`<small style="color:#b7860b">saldo no Tesouro ${fm(o.sobra)} acima do que falta repassar</small>`:''}${o.semSaldo?`<small style="color:#b7860b">saldo no Tesouro ${fm(o.semSaldo)} abaixo do que falta repassar: conferir a nota</small>`:''}</div><div><span>Pago a fornecedores</span>${R$(o.pg)} (${n(o.nPg)} pagamentos)</div><div><span>Saldo em conta</span>${R$(o.sc)}</div>
+   <div><span>Saldo de empenho no Tesouro</span>${o.sE===null?'—':R$(o.sE+o.sR)+`<small> EXE ${fm(o.sE)} · RAP ${fm(o.sR)}</small>`}</div><div><span>Reforço de empenho</span>${o.reforco?`<b style="color:#c0392b">falta empenhar ${R$(o.reforco)}</b><small>repasse ${fm(o.rep)} − empenhado ${fm(o.empEst)}</small>`:'✓ empenhado todo o repasse'}${o.sobra?`<small style="color:#b7860b">saldo no Tesouro ${fm(o.sobra)} acima do que falta repassar</small>`:''}${o.semSaldo?`<small style="color:#b7860b">saldo no Tesouro ${fm(o.semSaldo)} abaixo do que falta repassar: conferir a nota</small>`:''}</div><div><span>Ajuste de valor</span>${ajusteTxt(o)}${o.remanesc?`<small style="color:#b7860b">saldo remanescente ${fm(o.remanesc)}</small>`:''}${o.semAjuste?`<small style="color:#c0392b">empenho ${fm(o.semAjuste)} acima do repasse sem ajuste</small>`:''}</div><div><span>Pago a fornecedores</span>${R$(o.pg)} (${n(o.nPg)} pagamentos)</div><div><span>Saldo em conta</span>${R$(o.sc)}</div>
    <div><span>Último desembolso</span>${esc(o.ultd)||'—'}</div><div><span>Último pagamento</span>${esc(o.ultP)||'—'}</div><div><span>Devolvido</span>${R$(o.dt+o.dc)}</div><div><span>Valor de emendas</span>${o.vEm?R$(o.vEm):'—'}</div>
   </div>
   ${o.nes.length?`<div style="margin-top:10px;font-size:12px;font-weight:600">Notas de empenho (Transferegov) × Tesouro ${esc(TES&&TES.mes||'')}</div><table class="mini"><tr><th>Nota</th><th>UG</th><th>Emissão</th><th>Tipo</th><th class="n">Valor</th><th>No Tesouro</th></tr>${o.nes.map(linhaNE).join('')}</table>`:''}
@@ -124,13 +129,16 @@ function tabela(id, L, cols, porPag){
   ${L.length>porPag?`<div class="pag">${ini+1}–${Math.min(L.length,ini+porPag)} de ${n(L.length)} <button data-pg="${id}" data-d="-1" ${p?'':'disabled'}>‹</button><button data-pg="${id}" data-d="1" ${ini+porPag<L.length?'':'disabled'}>›</button></div>`:''}`;
 }
 const objLoc = o => `${esc(o.prop.length>48?o.prop.slice(0,48)+'…':o.prop)}<small>${esc(o.munN)}/${esc(o.uf)} · UG ${esc(o.ug)}</small>`;
+const ajusteTxt = o => [o.reduRep>1 ? 'repasse reduzido em '+fm(o.reduRep)+' (proposta '+fm(o.repProp)+' → atual '+fm(o.rep)+')' : '', o.supTA>1 ? 'supressão em aditivo: '+fm(o.supTA) : '',
+  o.globOrig && o.glob && o.globOrig-o.glob>1 ? 'valor global original '+fm(o.globOrig)+' → '+fm(o.glob) : '', o.nAjPT ? o.nAjPT+' ajuste(s) de PT'+(o.ultAjPT?' (último '+o.ultAjPT+')':'') : ''].filter(Boolean).join('<br>') || '<span style="color:#c0392b">nenhum</span>';
 const tesOk = () => TES && TES.mapa;
 const tesMsg = () => !TES ? '<span class="pend">lendo o Tesouro (EXE/RAP)…</span>' : TES.erro ? `<span class="pend">Tesouro indisponível (${esc(TES.erro)})</span>` : 'Tesouro '+esc(TES.mes);
 
 // ------------------------------------------------------------- Empenho / Desembolso
 function telaEmp(L){
   const ex = L.filter(o => o.sit==='Em execução');
-  const sE = soma(L,'sE'), sR = soma(L,'sR'), ref = L.filter(o => o.reforco>0), sob = L.filter(o => o.sobra>0);
+  const sE = soma(L,'sE'), sR = soma(L,'sR'), ref = L.filter(o => o.reforco>0), rem = L.filter(o => o.remanesc>0), semAj = L.filter(o => o.semAjuste>0);
+  const colAj = [['Repasse atual',o=>fm(o.rep),'n'],['Repasse da proposta',o=>o.repProp?fm(o.repProp):'—','n'],['Empenhado (notas)',o=>fm(o.empEst),'n'],['Empenho acima',o=>`<b>${fm(o.excesso)}</b>`,'n'],['Ajuste encontrado',o=>ajusteTxt(o)]];
   const desAno = L.reduce((a,o) => a + o.desAno.reduce((b,x) => b+x[1], 0), 0), semDes = L.filter(o => !o.des);
   const porMes = Array.from({length:12}, (_,i) => ({m:i+1, prev:0, real:0}));
   L.forEach(o => { o.crono.forEach(([k,v]) => { const [a,m] = k.split('-'); if(+a===ANO) porMes[+m-1].prev += v; }); o.desAno.forEach(([d,v]) => { porMes[+d.slice(3,5)-1].real += v; }); });
@@ -139,11 +147,12 @@ function telaEmp(L){
   const desL = []; L.forEach(o => o.desAno.forEach(x => desL.push({o, d:x[0], v:x[1], ob:x[2]})));
   desL.sort((a,b) => b.d.split('/').reverse().join('').localeCompare(a.d.split('/').reverse().join('')));
   const cD = Object.fromEntries(agrupar(L,'fxD'));
-  return `<div class="grp">Empenhos · ${tesMsg()}</div><div class="kp">
+  return `<div class="grp">Empenhos · ${tesMsg()}</div><div class="kp k6">
     ${kpi('Empenhado', fm(soma(L,'empEst')), 'soma das notas · '+pct(soma(L,'empEst'),soma(L,'rep'))+' do repasse', 'dest', {l:L.filter(o=>o.empEst), s:(a,b)=>b.empEst-a.empEst, c:[['Empenhado',o=>fm(o.empEst),'n'],['Repasse',o=>fm(o.rep),'n'],['% do repasse',o=>pct(o.empEst,o.rep),'n']]})}
     ${kpi('Saldo de empenho', tesOk()?fm(sE+sR):'—', tesOk()?'EXE '+fm(sE)+' · RAP '+fm(sR):'notas do Transferegov no Tesouro', '', {l:L.filter(o=>(o.sE||0)+(o.sR||0)>0), s:(a,b)=>(b.sE+b.sR)-(a.sE+a.sR), c:[['Saldo EXE',o=>fm(o.sE),'n'],['Saldo RAP',o=>fm(o.sR),'n'],['A desembolsar',o=>fm(o.aDes),'n']]})}
     ${kpi('Reforço de empenho necessário', fm(soma(ref,'reforco')), ref.length+' instrumentos: soma das notas de empenho menor que o repasse', 'red', {l:ref, s:(a,b)=>b.reforco-a.reforco, c:[['Repasse',o=>fm(o.rep),'n'],['Empenhado (notas)',o=>fm(o.empEst),'n'],['Desembolsado',o=>fm(o.des),'n'],['Falta empenhar',o=>`<b style="color:#c0392b">${fm(o.reforco)}</b>`,'n']]})}
-    ${kpi('Saldo além do necessário', tesOk()?fm(soma(sob,'sobra')):'—', tesOk()?sob.length+' instrumentos: avaliar anulação/cancelamento':'', 'amar', {l:sob, s:(a,b)=>b.sobra-a.sobra, c:[['A desembolsar',o=>fm(o.aDes),'n'],['Saldo de empenho',o=>fm(o.sE+o.sR),'n'],['Sobra',o=>`<b style="color:#b7860b">${fm(o.sobra)}</b>`,'n']]})}
+    ${kpi('Saldo remanescente (houve ajuste)', fm(soma(rem,'remanesc')), rem.length+' instrumentos: empenho acima do repasse, com ajuste registrado · avaliar anulação', 'amar', {l:rem, s:(a,b)=>b.remanesc-a.remanesc, c:colAj})}
+    ${kpi('Empenho acima do repasse sem ajuste', fm(soma(semAj,'semAjuste')), semAj.length+' instrumentos: nenhum ajuste de valor encontrado · verificar', 'red', {l:semAj, s:(a,b)=>b.semAjuste-a.semAjuste, c:colAj})}
     ${kpi('Instrumentos', n(L.length), ex.length+' em execução', '', {l:L, s:(a,b)=>b.rep-a.rep, c:[['Repasse',o=>fm(o.rep),'n'],['Fim vigência',o=>esc(o.fv),'n']]})}</div>
   <div class="grp">Desembolsos</div><div class="kp">
     ${kpi('Desembolsado', fm(soma(L,'des')), pct(soma(L,'des'),soma(L,'rep'))+' do repasse', 'verde', {l:L.filter(o=>o.des>0), s:(a,b)=>b.des-a.des, c:[['Desembolsado',o=>fm(o.des),'n'],['% do repasse',o=>pct(o.des,o.rep),'n'],['Último desembolso',o=>esc(o.ultd||'—'),'n']]})}

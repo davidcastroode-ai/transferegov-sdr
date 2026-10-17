@@ -17,7 +17,7 @@ ORGAO_MAPA = '22000'
 UGS_SDR = ['130010', '130141', '135098', '420013', '130255']
 ARQUIVOS = ['siconv_convenio', 'siconv_programa_proposta', 'siconv_programa', 'siconv_proposta', 'siconv_emenda',
             'siconv_empenho', 'siconv_desembolso', 'siconv_termo_aditivo', 'siconv_prorroga_oficio', 'data_carga_siconv',
-            'siconv_dados_obrasgov_geral', 'siconv_acomp_obras_contratos_medicoes_modulo_empresas', 'siconv_acomp_obras_valores_itens_medicao_modulo_empresas', 'siconv_resumo_fisico_financeiro', 'siconv_historico_situacao', 'siconv_pagamento', 'siconv_cronograma_desembolso']
+            'siconv_dados_obrasgov_geral', 'siconv_acomp_obras_contratos_medicoes_modulo_empresas', 'siconv_acomp_obras_valores_itens_medicao_modulo_empresas', 'siconv_resumo_fisico_financeiro', 'siconv_historico_situacao', 'siconv_pagamento', 'siconv_cronograma_desembolso', 'siconv_solicitacao_ajuste_pt']
 TMP = os.environ.get('FONTE_LOCAL') or '/tmp/transferegov'
 csv.field_size_limit(10**9)
 LOG = []
@@ -206,6 +206,7 @@ def main(saida):
     cab_hs, historico = do_conv('siconv_historico_situacao')
     cab_pg, pagamentos = do_conv('siconv_pagamento')
     cab_cr, cronograma = do_conv('siconv_cronograma_desembolso')
+    cab_aj, ajustes_pt = do_conv('siconv_solicitacao_ajuste_pt')
     # histórico: primeira vez que o instrumento ficou INADIMPLENTE e a sequência de situações
     inad_c, hist_c = {}, {}
     for h in historico:
@@ -282,6 +283,7 @@ def main(saida):
             'clausula_suspensiva_ate': c.get('DATA_SUSPENSIVA', ''),
             'situacao_contratacao': c.get('SITUACAO_CONTRATACAO', ''),
             'valor_global': v2(num(c.get('VL_GLOBAL_CONV'))),
+            'valor_global_original': v2(num(c.get('VALOR_GLOBAL_ORIGINAL_CONV'))),
             'valor_repasse': v2(rep),
             'valor_contrapartida': v2(num(c.get('VL_CONTRAPARTIDA_CONV'))),
             'valor_empenhado': v2(num(c.get('VL_EMPENHADO_CONV'))),
@@ -307,6 +309,49 @@ def main(saida):
         }
         reg.update(info_prop(c.get('ID_PROPOSTA', '')))
         inst.append(reg)
+    # ação orçamentária que falta (programa sem ação no Transferegov): pela PTRES das notas de empenho
+    ptres_acao = {}
+    for r in inst:
+        acs = [a for a in r['acao_orcamentaria'].split(' | ') if a]
+        if len(acs) == 1:
+            for e in emp_c.get(r['nr_instrumento'], []):
+                pt = (e.get('PTRES') or '').strip()
+                if pt:
+                    ptres_acao.setdefault(pt, {}).setdefault(acs[0], 0)
+                    ptres_acao[pt][acs[0]] += 1
+    preench = 0
+    for r in inst:
+        r['acao_pela_ptres'] = ''
+        if r['acao_orcamentaria']:
+            continue
+        cont = {}
+        for e in emp_c.get(r['nr_instrumento'], []):
+            for a, q in ptres_acao.get((e.get('PTRES') or '').strip(), {}).items():
+                cont[a] = cont.get(a, 0) + q
+        if cont:
+            r['acao_orcamentaria'] = max(cont, key=cont.get)
+            r['acao_pela_ptres'] = 'SIM'
+            preench += 1
+    log(f'ação orçamentária preenchida pela PTRES das notas: {preench} instrumentos')
+    # ajuste de valor: aditivos de valor e solicitações de ajuste do plano de trabalho
+    ta_c = por_conv(aditivos)
+    aj_c = por_conv([a for a in ajustes_pt if a.get('NR_CONVENIO')]) if ajustes_pt and 'NR_CONVENIO' in (cab_aj or []) else {}
+    if ajustes_pt and 'NR_CONVENIO' not in (cab_aj or []) and 'ID_PROPOSTA' in (cab_aj or []):
+        for a in ajustes_pt:
+            n = prop_do_conv.get(a.get('ID_PROPOSTA'))
+            if n:
+                aj_c.setdefault(n, []).append(a)
+    for r in inst:
+        n = r['nr_instrumento']
+        tas = [a for a in ta_c.get(n, []) if num(a.get('VL_REPASSE_TA')) or num(a.get('VL_GLOBAL_TA'))]
+        r['aditivos_valor'] = ' | '.join(f"{a.get('NUMERO_TA','')} {a.get('TIPO_TA','')} repasse {v2(num(a.get('VL_REPASSE_TA')))} em {a.get('DT_ASSINATURA_TA','')}".strip() for a in tas)
+        r['supressao_repasse_ta'] = v2(sum(num(a.get('VL_REPASSE_TA')) for a in tas if 'SUPRESS' in (a.get('TIPO_TA') or '').upper()))
+        ajs = aj_c.get(n, [])
+        datas = [x for x in (data(next((a.get(k) for k in a if 'DATA' in k or k.startswith('DT_')), '')) for a in ajs) if x]
+        r['qtd_ajustes_pt'] = str(len(ajs))
+        r['ultimo_ajuste_pt'] = br(max(datas)) if datas else ''
+        rep_orig = num(r.get('valor_repasse_proposta'))
+        r['reducao_repasse'] = v2(max(0.0, rep_orig - num(r['valor_repasse']))) if rep_orig else '0.00'
     inst.sort(key=lambda r: (r['ano'] or '0000', r['nr_instrumento']), reverse=True)
     campos_inst = list(inst[0].keys()) if inst else []
     gravar(saida, 'instrumentos.csv', campos_inst, inst)
@@ -314,7 +359,8 @@ def main(saida):
     leve = ['nr_instrumento', 'ug_emitente', 'ano', 'situacao', 'situacao_contratacao', 'clausula_suspensiva_ate', 'fim_vigencia',
             'limite_prestacao_contas', 'nr_processo', 'modalidade', 'proponente', 'uf', 'municipio', 'natureza_juridica', 'tipo_parlamentar',
             'valor_repasse', 'valor_desembolsado', 'valor_a_desembolsar', 'ultimo_desembolso', 'dias_sem_desembolso', 'qtd_aditivos',
-            'qtd_prorrogacoes', 'notas_empenho', 'saldo_em_conta', 'subsituacao', 'em_processo_tce', 'inadimplente_desde', 'ugs_empenho', 'acao_orcamentaria', 'cod_programa', 'programa', 'objeto']
+            'qtd_prorrogacoes', 'notas_empenho', 'saldo_em_conta', 'subsituacao', 'em_processo_tce', 'inadimplente_desde', 'ugs_empenho', 'acao_orcamentaria', 'cod_programa', 'programa', 'valor_global', 'valor_global_original',
+            'valor_repasse_proposta', 'supressao_repasse_ta', 'qtd_ajustes_pt', 'ultimo_ajuste_pt', 'reducao_repasse', 'aditivos_valor', 'objeto']
     gravar(saida, 'painel_instrumentos.csv', leve, [{**r, 'objeto': r['objeto'][:160]} for r in inst])
 
     # 6b. arquivo no formato da planilha "Parcerias" (mesmos nomes e ordem de colunas A:AH), usado pelo Apps Script da planilha
@@ -421,6 +467,7 @@ def main(saida):
     gravar(saida, 'historico_situacao.csv', cab_hs or ['NR_CONVENIO'], historico)
     gravar(saida, 'pagamentos.csv', cab_pg or ['NR_CONVENIO'], pagamentos)
     gravar(saida, 'cronograma_desembolso.csv', cab_cr or ['NR_CONVENIO'], cronograma)
+    gravar(saida, 'ajustes_pt.csv', cab_aj or ['NR_CONVENIO'], ajustes_pt)
     gravar(saida, 'emendas.csv', meta['cabecalhos'].get('emenda') or ['ID_PROPOSTA'], emendas)
 
     # obras (Obrasgov / acompanhamento de obras): filtra pelo nº do instrumento ou pelo ID da proposta, o que o arquivo tiver

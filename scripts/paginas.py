@@ -235,6 +235,8 @@ def execucao(pasta, data_carga):
             fv=r['fim_vigencia'], dv=(fv - hoje).days if fv else None, rep=f(r['valor_repasse']), des=f(r['valor_desembolsado']), aDes=f(r['valor_a_desembolsar']), emp=f(r['valor_empenhado']),
             sc=f(r['saldo_em_conta']), rend=f(r['rendimento_aplicacao']), cp=f(r['ingresso_contrapartida']), glob=f(r['valor_global']),
             dt=f(r.get('saldo_devolvido_tesouro')), dc=f(r.get('saldo_devolvido_convenente')),
+            repProp=f(r.get('valor_repasse_proposta')), globOrig=f(r.get('valor_global_original')), supTA=f(r.get('supressao_repasse_ta')),
+            reduRep=f(r.get('reducao_repasse')), nAjPT=int(r.get('qtd_ajustes_pt') or 0), ultAjPT=r.get('ultimo_ajuste_pt', ''), adt=(r.get('aditivos_valor') or '')[:300],
             prog=(r['programa'] or '(sem programa)')[:120], acao=' | '.join(sorted({x.strip()[-4:] for x in (r.get('acao_orcamentaria') or '').split('|') if x.strip()})) or '(sem ação)',
             emd=r['nr_emenda'], vEm=round(sum(f(e.get('VALOR_REPASSE_EMENDA')) for e in ems), 2), nEm=len({e.get('NR_EMENDA') for e in ems if e.get('NR_EMENDA')}),
             ems=[[e.get('NR_EMENDA', ''), e.get('NOME_PARLAMENTAR', ''), e.get('TIPO_PARLAMENTAR', ''), f(e.get('VALOR_REPASSE_EMENDA')), e.get('IND_IMPOSITIVO', '')] for e in ems][:8],
