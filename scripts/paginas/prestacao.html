@@ -44,7 +44,7 @@ function desenharFiltros(){
 }
 function hbar(lista, campo, cor, tot, dot){
   const mx = Math.max(1,...lista.map(x => x[1]));
-  return lista.map(([k,v],i) => `<div class="hb ${SEL[campo]===k?'sel':''}" data-k="${campo}" data-v="${esc(k)}"><span>${dot?`<i class="dot" style="background:${cor(k,i)}"></i>`:''}${esc(k)}</span><div><i style="width:${v/mx*100}%;background:${cor(k,i)}"></i></div><b>${v}</b><em>${tot?Math.round(v/tot*100)+'%':''}</em></div>`).join('');
+  return lista.map(([k,v],i) => `<div class="hb ${ehSel(campo,k)?'sel':''}" data-k="${campo}" data-v="${esc(k)}"><span>${dot?`<i class="dot" style="background:${cor(k,i)}"></i>`:''}${esc(k)}</span><div><i style="width:${v/mx*100}%;background:${cor(k,i)}"></i></div><b>${v}</b><em>${tot?Math.round(v/tot*100)+'%':''}</em></div>`).join('');
 }
 const conta = (L,k) => { const c = {}; L.forEach(o => c[o[k]] = (c[o[k]]||0)+1); return Object.entries(c).sort((a,b) => b[1]-a[1]); };
 const tag = o => `<span class="tag" style="background:${FCOR[o.fase]}">${o.fase}</span>`;
@@ -79,7 +79,7 @@ function mapa(L){
   L.forEach(o => { porUF[o.uf] = (porUF[o.uf]||0)+1; const nm = o.mun.replace(/['\-]/g,' ').replace(/\s+/g,' ').trim(); const c = MUN.get(o.uf+'|'+nm); if(!c) return;
     const p = pts.get(o.uf+nm) || {x:c[0],y:c[1],n:0,s:{},nome:o.munN,uf:o.uf}; p.n++; p.s[o.fase]=(p.s[o.fase]||0)+1; pts.set(o.uf+nm,p); });
   const mx = Math.max(1,...Object.values(porUF));
-  const est = Object.entries(MAPA_BR.ufs).map(([uf,d]) => `<path class="uf ${SEL.uf===uf?'sel':''}" d="${d}" data-k="uf" data-v="${uf}" style="fill:${porUF[uf]?`color-mix(in srgb,#1f4e79 ${Math.round((.1+.6*Math.sqrt(porUF[uf]/mx))*100)}%,#eef1ee)`:'#eef1f4'}"><title>${uf}: ${porUF[uf]||0} instrumentos</title></path>`).join('');
+  const est = Object.entries(MAPA_BR.ufs).map(([uf,d]) => `<path class="uf ${ehSel('uf',uf)?'sel':''}" d="${d}" data-k="uf" data-v="${uf}" style="fill:${porUF[uf]?`color-mix(in srgb,#1f4e79 ${Math.round((.1+.6*Math.sqrt(porUF[uf]/mx))*100)}%,#eef1ee)`:'#eef1f4'}"><title>${uf}: ${porUF[uf]||0} instrumentos</title></path>`).join('');
   const rot = Object.entries(MAPA_BR.centro).map(([uf,[x,y]]) => `<text class="rot" x="${x}" y="${y}">${uf}</text>`).join('');
   const cor = p => (p.s['Aguardando PC · prazo vencido']||p.s['Rejeitada']||p.s['Inadimplente']) ? '#c0392b' : p.s['Em complementação'] ? '#e67e22' : (p.s['Em análise']||p.s['Enviada para análise']) ? '#3a6f9f' : '#9aa6af';
   const ps = [...pts.values()].sort((a,b) => b.n-a.n).map(p => `<circle class="pt" cx="${p.x}" cy="${p.y}" r="${(2.2+1.3*Math.sqrt(p.n)).toFixed(1)}" fill="${cor(p)}"><title>${p.nome}/${p.uf}: ${p.n} · ${Object.entries(p.s).map(([k,v]) => k+' '+v).join(', ')}</title></circle>`).join('');
@@ -109,10 +109,10 @@ function render(){
   const cf = Object.fromEntries(conta(L,'fase'));
   document.getElementById('fase').innerHTML = hbar(FORD.filter(k => cf[k]).map(k => [k,cf[k]]), 'fase', k => FCOR[k], tot, 1);
   const ct = Object.fromEntries(conta(L,'tempo')), mt = Math.max(1,...Object.values(ct));
-  document.getElementById('tempo').innerHTML = FX.map(k => `<div class="ano ${SEL.tempo===k?'sel':''}" data-k="tempo" data-v="${k}" title="${k}: ${ct[k]||0}"><em>${ct[k]||0}</em><div class="cols"><i style="width:34px;height:${(ct[k]||0)/mt*100}%;background:${k==='Mais de 5 anos'||k==='3 a 5 anos'?'#c0392b':'#1f4e79'}"></i></div><small>${k}</small></div>`).join('');
+  document.getElementById('tempo').innerHTML = FX.map(k => `<div class="ano ${ehSel('tempo',k)?'sel':''}" data-k="tempo" data-v="${k}" title="${k}: ${ct[k]||0}"><em>${ct[k]||0}</em><div class="cols"><i style="width:34px;height:${(ct[k]||0)/mt*100}%;background:${k==='Mais de 5 anos'||k==='3 a 5 anos'?'#c0392b':'#1f4e79'}"></i></div><small>${k}</small></div>`).join('');
   const anos = {}; L.forEach(o => { const a = anos[o.anoFim] || (anos[o.anoFim] = {n:0,d:0,c:0}); a.n++; a.d+=o.des; a.c+=o.canc; });
   const ks = Object.keys(anos).filter(Boolean).sort(), mr = Math.max(1,...ks.map(k => anos[k].d));
-  document.getElementById('anos').innerHTML = ks.map(k => `<div class="ano ${SEL.anoFim===k?'sel':''}" data-k="anoFim" data-v="${k}" title="${k}: ${anos[k].n} instrumentos · desembolsado ${fm(anos[k].d)} · empenhado não desembolsado ${fm(anos[k].c)}"><em>${anos[k].n}</em><div class="cols"><i style="height:${anos[k].d/mr*100}%;background:#1f4e79"></i><i style="height:${anos[k].c/mr*100}%;background:#c0392b"></i></div><small>${k}</small></div>`).join('');
+  document.getElementById('anos').innerHTML = ks.map(k => `<div class="ano ${ehSel('anoFim',k)?'sel':''}" data-k="anoFim" data-v="${k}" title="${k}: ${anos[k].n} instrumentos · desembolsado ${fm(anos[k].d)} · empenhado não desembolsado ${fm(anos[k].c)}"><em>${anos[k].n}</em><div class="cols"><i style="height:${anos[k].d/mr*100}%;background:#1f4e79"></i><i style="height:${anos[k].c/mr*100}%;background:#c0392b"></i></div><small>${k}</small></div>`).join('');
   document.getElementById('mapa').innerHTML = mapa(L);
   document.getElementById('ufs').innerHTML = hbar(conta(L,'uf').slice(0,14), 'uf', () => '#1f4e79', tot);
   const LIS = {
@@ -138,9 +138,10 @@ document.addEventListener('click', e => {
   const li = e.target.closest('[data-lista]'); if(li){ LISTA = li.dataset.lista; render(); return; }
   const pg = e.target.closest('[data-pg]'); if(pg){ PAG[pg.dataset.pg] = (PAG[pg.dataset.pg]||0) + +pg.dataset.d; render(); return; }
   const ab = e.target.closest('[data-ab]'); if(ab && !e.target.closest('a')){ const k = ab.dataset.ab; ABERTO.has(k) ? ABERTO.delete(k) : ABERTO.add(k); render(); return; }
-  const f = e.target.closest('[data-k][data-v]'); if(f){ const k = f.dataset.k, v = f.dataset.v; SEL[k]===v ? delete SEL[k] : SEL[k] = v; for(const p in PAG) PAG[p]=0; render(); }
+  const f = e.target.closest('[data-k][data-v]'); if(f){ const k = f.dataset.k, v = f.dataset.v; alternar(k, v); for(const p in PAG) PAG[p]=0; render(); }
 });
 document.getElementById('limpar').onclick = () => { for(const k in SEL) delete SEL[k]; render(); };
 document.getElementById('busca').oninput = () => { PAG.todas = 0; render(); };
 render();
+__FILTRO__
 </script></body></html>

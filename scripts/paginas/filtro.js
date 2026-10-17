@@ -1,0 +1,62 @@
+
+// ===================== filtro inteligente: busca dentro do filtro, várias escolhas, contagem de cada opção =====================
+// (funções declaradas: valem para a página inteira; substituem filtrar/desenharFiltros da página)
+function _selArr(k){ const s = SEL[k]; if(s === undefined || s === null || s === '') return null; if(!Array.isArray(s)) SEL[k] = [String(s)]; return SEL[k].length ? SEL[k] : null; }
+function ehSel(k, v){ const s = _selArr(k); return !!(s && s.includes(String(v))); }
+function alternar(k, v){ v = String(v); const s = _selArr(k) || (SEL[k] = []); const i = s.indexOf(v); if(i >= 0) s.splice(i, 1); else s.push(v); if(!SEL[k].length) delete SEL[k]; }
+function _baseF(){ return typeof base === 'function' ? base() : D; }
+function filtrar(exceto){
+  const at = FIL.filter(([k]) => k !== exceto && _selArr(k)).map(([k]) => [k, new Set(SEL[k])]);
+  return _baseF().filter(o => at.every(([k, s]) => s.has(String(o[k]))));
+}
+function _rotF(k, v){ return (typeof ROTULO_F === 'object' && ROTULO_F[k]) ? ROTULO_F[k](v) : v; }
+const _semAc = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase();
+function _opcoesF(k){
+  const c = new Map(); filtrar(k).forEach(o => { const v = String(o[k]); c.set(v, (c.get(v) || 0) + 1); });
+  (_selArr(k) || []).forEach(v => { if(!c.has(v)) c.set(v, 0); });
+  return [...c.entries()].sort((a, b) => /^ano/i.test(k) ? b[0].localeCompare(a[0]) : (b[1] - a[1]) || a[0].localeCompare(b[0], 'pt'));
+}
+function _listaF(k){
+  const q = _semAc((window.__fbus || {})[k] || ''), sel = new Set(_selArr(k) || []);
+  let ops = _opcoesF(k); if(q) ops = ops.filter(([v]) => _semAc(_rotF(k, v)).includes(q));
+  ops.sort((a, b) => (sel.has(b[0]) - sel.has(a[0])));
+  const mostrar = ops.slice(0, 300);
+  return mostrar.map(([v, n]) => `<label class="fop ${sel.has(v) ? 'on' : ''}"><input type="checkbox" data-fop="${k}" value="${esc(v)}" ${sel.has(v) ? 'checked' : ''}><span>${esc(_rotF(k, v)) || '(vazio)'}</span><em>${n.toLocaleString('pt-BR')}</em></label>`).join('')
+    + (ops.length > 300 ? `<p class="fmais">mostrando 300 de ${ops.length.toLocaleString('pt-BR')} · digite para achar</p>` : '') + (!ops.length ? '<p class="fmais">nada encontrado</p>' : '');
+}
+function desenharFiltros(){
+  const ab = window.__fab;
+  document.getElementById('filtros').innerHTML = FIL.map(([k, n, novo]) => {
+    const s = _selArr(k), rot = !s ? 'Todos' : s.length === 1 ? _rotF(k, s[0]) : s.length + ' selecionados';
+    return `<div class="fi2" data-fk="${k}"><span class="fl">${n}${novo ? '<span class="novo">novo</span>' : ''}</span>
+      <button type="button" class="fb ${s ? 'ativo' : ''}" data-fabre="${k}" title="${esc(s ? s.map(v => _rotF(k, v)).join(' · ') : 'Todos')}"><span>${esc(rot)}</span><i>▾</i></button>
+      ${ab === k ? `<div class="fpop"><input class="fbusca" data-fbusca="${k}" placeholder="Buscar…" value="${esc((window.__fbus || {})[k] || '')}">
+        <div class="facoes"><a data-ftodos="${k}">marcar os da busca</a><a data-flimpa="${k}">limpar</a><a data-ffecha="1">fechar ✕</a></div><div class="flista">${_listaF(k)}</div></div>` : ''}</div>`; }).join('');
+}
+(function(){
+  const css = document.createElement('style');
+  css.textContent = `.fi2{position:relative;display:flex;flex-direction:column;gap:3px;font-size:12px;font-weight:600;color:#3a4a55}
+  .fb{display:flex;justify-content:space-between;align-items:center;gap:6px;font:inherit;font-weight:500;font-size:13px;padding:6px 9px;border:1px solid #c9d3db;border-radius:8px;background:#f6f8fa;cursor:pointer;text-align:left;color:#1d2b33;min-width:0}
+  .fb span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.fb.ativo{border-color:#1f4e79;background:#e3edf7;font-weight:700}.fb i{font-style:normal;color:#7b8790}
+  .fpop{position:absolute;top:100%;left:0;z-index:50;margin-top:4px;width:max(100%,300px);background:#fff;border:1px solid #b9c7d3;border-radius:10px;box-shadow:0 10px 30px rgba(20,40,60,.22);padding:8px}
+  .fbusca{width:100%;box-sizing:border-box;font:inherit;font-weight:400;padding:6px 8px;border:1px solid #c9d3db;border-radius:7px}
+  .facoes{display:flex;gap:12px;margin:6px 2px;font-weight:600}.facoes a{color:#1f4e79;cursor:pointer;font-size:11.5px}.facoes a:last-child{margin-left:auto;color:#7b8790}
+  .flista{max-height:260px;overflow:auto}.filtros label.fop,.fop{display:grid;flex-direction:row;text-align:left;font-size:12.5px;grid-template-columns:18px 1fr auto;gap:6px;align-items:center;padding:4px 4px;border-radius:6px;font-weight:400;cursor:pointer;color:#1d2b33}
+  .fop span{text-align:left;overflow:hidden;text-overflow:ellipsis}.fop input{margin:0}.fop:hover{background:#f2f6f9}.fop.on{background:#e3edf7;font-weight:600}.fop em{font-style:normal;color:#7b8790;font-size:11px}.fmais{font-size:11px;color:#7b8790;margin:6px 4px;font-weight:400}`;
+  document.head.appendChild(css);
+  const reset = () => { if(typeof PAG === 'object') for(const p in PAG) PAG[p] = 0; };
+  document.addEventListener('click', e => {
+    const a = e.target.closest('[data-fabre]');
+    if(a){ e.stopImmediatePropagation(); window.__fab = window.__fab === a.dataset.fabre ? null : a.dataset.fabre; desenharFiltros();
+      const i = document.querySelector('.fbusca'); if(i) i.focus(); return; }
+    if(e.target.closest('[data-ffecha]')){ e.stopImmediatePropagation(); window.__fab = null; desenharFiltros(); return; }
+    const l = e.target.closest('[data-flimpa]'); if(l){ e.stopImmediatePropagation(); delete SEL[l.dataset.flimpa]; reset(); render(); return; }
+    const t = e.target.closest('[data-ftodos]'); if(t){ e.stopImmediatePropagation(); const k = t.dataset.ftodos;
+      document.querySelectorAll(`.fpop input[data-fop="${k}"]`).forEach(c => { if(!ehSel(k, c.value)) alternar(k, c.value); }); reset(); render(); return; }
+    if(e.target.closest('.fpop')){ e.stopImmediatePropagation(); return; }
+    if(window.__fab && !e.target.closest('.fi2')){ window.__fab = null; desenharFiltros(); }
+  }, true);
+  document.addEventListener('change', e => { const c = e.target.closest('[data-fop]'); if(!c) return; e.stopImmediatePropagation(); alternar(c.dataset.fop, c.value); reset(); render(); }, true);
+  document.addEventListener('input', e => { const b = e.target.closest('[data-fbusca]'); if(!b) return; e.stopImmediatePropagation();
+    (window.__fbus || (window.__fbus = {}))[b.dataset.fbusca] = b.value; const L = b.closest('.fpop').querySelector('.flista'); if(L) L.innerHTML = _listaF(b.dataset.fbusca); }, true);
+})();

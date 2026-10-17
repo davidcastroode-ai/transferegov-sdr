@@ -29,6 +29,7 @@
 const P = __DADOS__;
 // colunas de cada linha
 const C = {ano:0, s:1, m:2, u:3, g:4, p:5, t:6, j:7, cel:8, vr:9, vg:10, np:11, ni:12, r:13, c:14, id:15, em:16, ob:17, ug:18, vi:19, vf:20, cn:21, ac:22};
+const ROTULO_F = {sit: v => curtoSit(v)};
 const AC420 = ['215A','8593','214Z','00PN','8622','21B6','8606'];   // ações da 420013 (a 2000 é de várias UGs)
 const curtoSit = s => String(s||'').replace(/^Proposta\/Plano de Trabalho /,'').replace(/^Proposta Aprovada e Plano de Trabalho /,'Aprovada · PT ').replace(/^Proposta /,'').replace(/^./, c => c.toUpperCase());
 const GRUPO = s => /REJEIT|ELIMINAD/i.test(s) ? 'Rejeitada' : /CADASTRAD/i.test(s) ? 'Cadastrada' : /COMPLEMENTA[CÇ][AÃ]O$/i.test(s) && !/ENVIAD|AN[AÁ]LISE/i.test(s) ? 'Em complementação'
@@ -82,7 +83,7 @@ function desenharFiltros(){
 }
 function hbar(lista, campo, cor, tot, dot, rot){
   const mx = Math.max(1,...lista.map(x => x[1]));
-  return lista.map(([k,v],i) => `<div class="hb ${SEL[campo]===k?'sel':''}" data-k="${campo}" data-v="${esc(k)}" title="${esc(k)}"><span class="hbr">${dot?`<i class="dot" style="background:${cor(k,i)}"></i>`:''}${esc(rot ? rot(k) : k)}</span><div><i style="width:${v/mx*100}%;background:${cor(k,i)}"></i></div><b>${v.toLocaleString('pt-BR')}</b><em>${tot?Math.round(v/tot*100)+'%':''}</em></div>`).join('');
+  return lista.map(([k,v],i) => `<div class="hb ${ehSel(campo,k)?'sel':''}" data-k="${campo}" data-v="${esc(k)}" title="${esc(k)}"><span class="hbr">${dot?`<i class="dot" style="background:${cor(k,i)}"></i>`:''}${esc(rot ? rot(k) : k)}</span><div><i style="width:${v/mx*100}%;background:${cor(k,i)}"></i></div><b>${v.toLocaleString('pt-BR')}</b><em>${tot?Math.round(v/tot*100)+'%':''}</em></div>`).join('');
 }
 const conta = (L,k) => { const c = {}; L.forEach(o => c[o[k]] = (c[o[k]]||0)+1); return Object.entries(c).sort((a,b) => b[1]-a[1]); };
 const ABERTO = new Set(), PAG = {};
@@ -112,7 +113,7 @@ function tabela(id, L, cols, porPag){
 function mapa(L){
   const porUF = {}; L.forEach(o => porUF[o.uf] = (porUF[o.uf]||0)+1);
   const mx = Math.max(1,...Object.values(porUF));
-  const est = Object.entries(MAPA_BR.ufs).map(([uf,d]) => `<path class="uf ${SEL.uf===uf?'sel':''}" d="${d}" data-k="uf" data-v="${uf}" style="fill:${porUF[uf]?`color-mix(in srgb,#1f4e79 ${Math.round((.1+.75*Math.sqrt(porUF[uf]/mx))*100)}%,#eef1ee)`:'#eef1f4'}"><title>${uf}: ${(porUF[uf]||0).toLocaleString('pt-BR')} propostas</title></path>`).join('');
+  const est = Object.entries(MAPA_BR.ufs).map(([uf,d]) => `<path class="uf ${ehSel('uf',uf)?'sel':''}" d="${d}" data-k="uf" data-v="${uf}" style="fill:${porUF[uf]?`color-mix(in srgb,#1f4e79 ${Math.round((.1+.75*Math.sqrt(porUF[uf]/mx))*100)}%,#eef1ee)`:'#eef1f4'}"><title>${uf}: ${(porUF[uf]||0).toLocaleString('pt-BR')} propostas</title></path>`).join('');
   const rot = Object.entries(MAPA_BR.centro).map(([uf,[x,y]]) => `<text class="rot" x="${x}" y="${y}">${uf}</text>`).join('');
   return `<svg viewBox="0 0 ${MAPA_BR.w} ${MAPA_BR.h}">${est}${rot}</svg>`;
 }
@@ -128,7 +129,7 @@ function render(){
    <div class="k"><span>Aprovadas, ainda sem instrumento</span><b>${apr.length.toLocaleString('pt-BR')}</b><small>${fm(apr.reduce((a,o)=>a+o.vr,0))}</small></div>
    <div class="k"><span>Acompanhadas pela equipe 420013</span><b>${EQ ? eq.length.toLocaleString('pt-BR') : '…'}</b><small>${EQ ? eqAt.length.toLocaleString('pt-BR')+' de ações da 420013 fora da planilha (atualizar)' : 'lendo a planilha de Propostas…'}</small></div>`;
   const cg = Object.fromEntries(conta(L,'grupo'));
-  document.getElementById('funil').innerHTML = ETAPAS.map(k => `<div class="${SEL.grupo===k?'sel':''}" data-k="grupo" data-v="${k}" style="background:${ECOR[k]}"><small>${k}</small><b>${(cg[k]||0).toLocaleString('pt-BR')}</b><small>${fm(L.filter(o=>o.grupo===k).reduce((a,o)=>a+o.vr,0))}</small></div>`).join('');
+  document.getElementById('funil').innerHTML = ETAPAS.map(k => `<div class="${ehSel('grupo',k)?'sel':''}" data-k="grupo" data-v="${k}" style="background:${ECOR[k]}"><small>${k}</small><b>${(cg[k]||0).toLocaleString('pt-BR')}</b><small>${fm(L.filter(o=>o.grupo===k).reduce((a,o)=>a+o.vr,0))}</small></div>`).join('');
   document.getElementById('rej').innerHTML = `<span data-k="grupo" data-v="Rejeitada">✕ Rejeitadas / eliminadas: <b>${(cg['Rejeitada']||0).toLocaleString('pt-BR')}</b> (${fm(rej.reduce((a,o)=>a+o.vr,0))}) · clique para ver</span>`;
   // por ano: anos antigos vêm do resumo (todas as propostas), anos recentes do recorte
   const A = {}; P.anos.forEach(([a,n,c]) => A[a] = {n, c, velho: +a < P.anomin && !CARREGADOS.has(String(a))});
@@ -136,7 +137,7 @@ function render(){
   const rec = {}; filtrar('ano').forEach(o => { const x = rec[o.ano] || (rec[o.ano] = {n:0,c:0}); x.n++; if(o.grupo==='Celebrada') x.c++; });
   Object.keys(rec).forEach(a => A[a] = {...rec[a], velho:false});
   const ks = Object.keys(A).sort(), mx = Math.max(1,...ks.map(k => A[k].n));
-  document.getElementById('anos').innerHTML = ks.map(k => `<div class="ano ${A[k].velho?'velho':''} ${SEL.ano===k?'sel':''}" ${A[k].velho?'':`data-k="ano" data-v="${k}"`} title="${k}: ${A[k].n.toLocaleString('pt-BR')} propostas · ${A[k].c.toLocaleString('pt-BR')} celebradas${A[k].velho?(filtrosAtivos?' (total do ano, sem os filtros)':'')+' · ano sem lista detalhada':''}"><em>${A[k].n>=1000?(A[k].n/1000).toFixed(1).replace('.',',')+' mil':A[k].n}</em><div class="cols"><i style="height:${A[k].n/mx*100}%;background:${A[k].velho?'#8fa9c4':'#1f4e79'}"></i><i style="height:${A[k].c/mx*100}%;background:#2fae5c"></i></div><small>${k}</small></div>`).join('');
+  document.getElementById('anos').innerHTML = ks.map(k => `<div class="ano ${A[k].velho?'velho':''} ${ehSel('ano',k)?'sel':''}" ${A[k].velho?'':`data-k="ano" data-v="${k}"`} title="${k}: ${A[k].n.toLocaleString('pt-BR')} propostas · ${A[k].c.toLocaleString('pt-BR')} celebradas${A[k].velho?(filtrosAtivos?' (total do ano, sem os filtros)':'')+' · ano sem lista detalhada':''}"><em>${A[k].n>=1000?(A[k].n/1000).toFixed(1).replace('.',',')+' mil':A[k].n}</em><div class="cols"><i style="height:${A[k].n/mx*100}%;background:${A[k].velho?'#8fa9c4':'#1f4e79'}"></i><i style="height:${A[k].c/mx*100}%;background:#2fae5c"></i></div><small>${k}</small></div>`).join('');
   document.getElementById('sit').innerHTML = hbar(conta(L,'sit').slice(0,14), 'sit', k => ECOR[GRUPO(k)] || '#1f4e79', tot, false, curtoSit);
   document.getElementById('prog').innerHTML = hbar(conta(L,'prog').slice(0,12), 'prog', () => '#1f4e79', tot);
   document.getElementById('parl').innerHTML = hbar(conta(L,'parl').filter(([k]) => k!=='(sem parlamentar)').slice(0,12), 'parl', () => '#3a6f9f', tot);
@@ -167,9 +168,10 @@ document.addEventListener('click', e => {
   const ab0 = e.target.closest('[data-ab]');
   if(ab0 && !e.target.closest('a,button') && parent.__fichaPropTG){ const o = D.find(x => 'l'+x.id===ab0.dataset.ab); if(o){ try{ parent.__fichaPropTG({...o, sitCurta: curtoSit(o.sit)}, EQ && EQ.get(o.k)); return; }catch(x){} } }
   const ab = e.target.closest('[data-ab]'); if(ab && !e.target.closest('a,button')){ const k = ab.dataset.ab; ABERTO.has(k) ? ABERTO.delete(k) : ABERTO.add(k); render(); return; }
-  const f = e.target.closest('[data-k][data-v]'); if(f){ const k = f.dataset.k, v = f.dataset.v; SEL[k]===v ? delete SEL[k] : SEL[k] = v; for(const p in PAG) PAG[p]=0; render(); }
+  const f = e.target.closest('[data-k][data-v]'); if(f){ const k = f.dataset.k, v = f.dataset.v; alternar(k, v); for(const p in PAG) PAG[p]=0; render(); }
 });
 document.getElementById('limpar').onclick = () => { for(const k in SEL) delete SEL[k]; render(); };
 document.getElementById('busca').oninput = () => { PAG.l = 0; render(); };
 render();
+__FILTRO__
 </script></body></html>
