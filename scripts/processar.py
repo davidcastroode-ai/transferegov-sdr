@@ -314,7 +314,7 @@ def main(saida):
     leve = ['nr_instrumento', 'ug_emitente', 'ano', 'situacao', 'situacao_contratacao', 'clausula_suspensiva_ate', 'fim_vigencia',
             'limite_prestacao_contas', 'nr_processo', 'modalidade', 'proponente', 'uf', 'municipio', 'natureza_juridica', 'tipo_parlamentar',
             'valor_repasse', 'valor_desembolsado', 'valor_a_desembolsar', 'ultimo_desembolso', 'dias_sem_desembolso', 'qtd_aditivos',
-            'qtd_prorrogacoes', 'notas_empenho', 'saldo_em_conta', 'subsituacao', 'em_processo_tce', 'inadimplente_desde', 'ugs_empenho', 'objeto']
+            'qtd_prorrogacoes', 'notas_empenho', 'saldo_em_conta', 'subsituacao', 'em_processo_tce', 'inadimplente_desde', 'ugs_empenho', 'acao_orcamentaria', 'cod_programa', 'programa', 'objeto']
     gravar(saida, 'painel_instrumentos.csv', leve, [{**r, 'objeto': r['objeto'][:160]} for r in inst])
 
     # 6b. arquivo no formato da planilha "Parcerias" (mesmos nomes e ordem de colunas A:AH), usado pelo Apps Script da planilha
