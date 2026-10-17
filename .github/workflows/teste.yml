@@ -9,8 +9,8 @@ jobs:
       - uses: actions/checkout@v5
       - uses: actions/setup-python@v6
         with: {python-version: '3.12'}
-      - name: Diagnóstico TED
-        run: python scripts/diag_ted.py
+      - name: Robô TED (teste)
+        run: python scripts/ted.py diag_saida && mkdir -p diag && cp -r diag_saida/ted/* diag/
       - name: Publicar na branch "diag"
         run: |
           cd diag && git init -q && git checkout -q -b diag
