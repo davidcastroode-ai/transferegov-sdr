@@ -22,8 +22,9 @@
 </div>
 <script>
 const P = __DADOS__, D = P.linhas, ANO = P.ano;
-const FASES = ['Em execução','Vigência vencida','Prestação de contas','Concluído','Em formalização','Plano em análise','Plano rejeitado'];
-const COR_F = {'Em execução':'#2e8a57','Vigência vencida':'#c0392b','Prestação de contas':'#b7860b','Concluído':'#1f4e79','Em formalização':'#6c5ce7','Plano em análise':'#7b8790','Plano rejeitado':'#b2bec3'};
+const FASES = ['Em execução','Vigência vencida','Prestação de contas','Concluído','Em formalização','Só no Tesouro','Plano em análise','Plano rejeitado'];
+const TES = P.tes || {};
+const COR_F = {'Em execução':'#2e8a57','Vigência vencida':'#c0392b','Prestação de contas':'#b7860b','Concluído':'#1f4e79','Em formalização':'#6c5ce7','Plano em análise':'#7b8790','Plano rejeitado':'#b2bec3','Só no Tesouro':'#16a085'};
 const SIT = {EM_EXECUCAO:'Em execução',CUMPRIMENTO_OBJETO_INICIADO:'Cumprimento do objeto iniciado',CUMPRIMENTO_OBJETO_ENVIADO_ANALISE:'Cumprimento do objeto em análise',
   CUMPRIMENTO_OBJETO_APROVADO:'Cumprimento do objeto aprovado',CUMPRIMENTO_OBJETO_APROVADO_COM_RESSALVAS:'Aprovado com ressalvas',PENDENTE_REGISTRO_NO_SIAFI:'Pendente de registro no SIAFI',
   EM_ELABORACAO:'Em elaboração',ENVIADO:'Enviado',APROVADO:'Aprovado',REJEITADO:'Rejeitado',ENVIADO_ANALISE:'Enviado para análise',ANALISE_APROVADA:'Análise aprovada',EM_ANALISE:'Em análise',EM_COMPLEMENTACAO:'Em complementação'};
@@ -37,7 +38,7 @@ D.forEach(o => {
 });
 const FX_V = ['Vencida','Até 30 dias','31 a 60 dias','61 a 90 dias','91 a 180 dias','181 a 365 dias','Mais de 1 ano'];
 const FIL = [['ano','Ano do TED'],['fase','Fase'],['ugdN','UG descentralizadora'],['er','Enviado / recebido'],['orr','Órgão descentralizado'],
-  ['unr','Unidade descentralizada'],['acao','Ação orçamentária'],['rpN','Resultado primário'],['stN','Situação do termo'],['fx','Vencimento da vigência']];
+  ['unr','Unidade descentralizada'],['acao','Ação orçamentária'],['rpN','Resultado primário'],['stN','Situação do termo'],['fx','Vencimento da vigência'],['org','Origem (Tesouro × API)']];
 const SEL = {};
 function base(){ return document.getElementById('rej').checked ? D : D.filter(o => o.fase!=='Plano rejeitado'); }
 const esc = s => String(s??'').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -58,7 +59,7 @@ function colunas(lista, campo, cor, fmt){
 }
 const agrupar = (L, k, val) => { const m = {}; L.forEach(o => { const c = o[k]; m[c] = (m[c]||0) + (val ? val(o) : 1); }); return Object.entries(m).sort((a,b) => b[1]-a[1]); };
 const sec = (tit, desc, corpo, cls) => `<section class="card ${cls||''}"><h3>${tit}</h3><p class="d">${desc}</p>${corpo}</section>`;
-const tedId = o => `<b>${o.n?'TED '+esc(o.n):'Plano '+esc(o.cod)}</b><small>${o.n?'plano '+esc(o.cod)+' · ':''}${esc(o.ano)}</small>`;
+const tedId = o => `<b>${o.n?'TED '+esc(o.n):'Plano '+esc(o.cod)}</b><small>${o.n&&o.cod?'plano '+esc(o.cod)+' · ':''}${esc(o.ano)}${TES.carregado && o.org!=='Tesouro e API' && o.n ? ` · <span style="color:${o.org==='Só no Tesouro'?'#16a085':/diferentes/.test(o.org)?'#c0392b':'#b7860b'}">${esc(o.org)}</span>` : ''}</small>`;
 const unid = o => `${esc(o.unr.length>52?o.unr.slice(0,52)+'…':o.unr)}<small>UG ${esc(o.ugr)} · ${esc(o.orr)}</small>`;
 const faseTag = o => `<b class="st" style="background:${COR_F[o.fase]}">${esc(o.fase)}</b>`;
 const kpi = (rot, val, sub, cls, def) => { let a = '';
@@ -84,7 +85,18 @@ function ficha(o){
   ${o.cro.length?`<div class="sub">Cronograma de desembolso</div>${t(['Mês','Valor'], o.cro.map(x => `<tr><td>${mesN(x[1])}/${esc(x[0])}</td><td class="n">${fm(x[2])}</td></tr>`).join(''))}`:''}
   ${o.met.length?`<div class="sub">Metas</div>${t(['Meta','Descrição','Qtd','Período'], o.met.map(x => `<tr><td>${esc(x[0])}</td><td>${esc(x[1])}</td><td class="n">${esc(x[2])} ${esc(x[3])}</td><td>${esc(x[5])} a ${esc(x[6])}</td></tr>`).join(''))}`:''}
   ${o.par.length?`<div class="sub">Análises e pareceres</div>${t(['Tipo','Resultado','Situação','Justificativa'], o.par.map(x => `<tr><td>${esc(x[0])}</td><td>${esc(sitN(x[1]))||'—'}</td><td>${esc(sitN(x[2]))}</td><td class="just">${esc(x[3])}</td></tr>`).join(''))}`:''}
-  <div style="margin-top:8px;font-size:12.5px"><b>Objeto:</b> ${esc(o.obj)}</div></div>`;
+  ${fichaTes(o)}
+  ${o.obj?`<div style="margin-top:8px;font-size:12.5px"><b>Objeto:</b> ${esc(o.obj)}</div>`:''}</div>`;
+}
+function fichaTes(o){
+  if(!TES.carregado) return '';
+  if(!o.tes) return `<div class="sub">Tesouro Gerencial (SIAFI)</div><p class="just">${o.n?'TED '+esc(o.n)+' não aparece no relatório do Tesouro carregado.':'Plano ainda sem nº de TED: não tem como estar no Tesouro.'}</p>`;
+  const t = o.tes, v = x => x===null||x===undefined ? '—' : R$(x);
+  return `<div class="sub">Tesouro Gerencial (SIAFI) · relatório de ${esc(TES.gerado_em)}</div>
+   <div class="fg" style="margin-top:4px"><div><span>A comprovar</span>${v(t.aComp)}</div><div><span>Comprovado</span>${v(t.comp)}</div><div><span>A repassar</span>${v(t.aRep)}</div><div><span>Repassado</span>${v(t.rep)}</div>
+   <div><span>Descentralizado</span>${v(t.nc)}</div><div><span>Firmado</span>${v(t.fir)}</div><div><span>Devolvido / anulado</span>${v(t.dev)}</div><div><span>UG emitente → favorecida</span>${esc(t.ugE)||'—'} → ${esc(t.ugF)||'—'}</div></div>
+   ${o.dif.length?`<table class="mini"><tr><th>Diferença</th><th class="n">API</th><th class="n">Tesouro</th><th class="n">Tesouro − API</th></tr>${o.dif.map(d => `<tr><td>${esc(d[0])}</td><td class="n">${fm(d[1])}</td><td class="n">${fm(d[2])}</td><td class="n" style="color:#c0392b">${fm(d[2]-d[1])}</td></tr>`).join('')}</table>`:''}
+   ${t.contas.length?`<table class="mini"><tr><th>Conta / coluna do relatório</th><th class="n">Valor</th></tr>${t.contas.map(c => `<tr><td>${esc(c[0])}</td><td class="n">${R$(c[1])}</td></tr>`).join('')}</table>`:''}`;
 }
 function tabela(id, L, cols, porPag){
   const p = PAG[id]||0, ini = p*porPag, pg = L.slice(ini, ini+porPag), nc = cols.length;
@@ -112,11 +124,22 @@ function telaTED(L){
     ${kpi('Vigência vencida sem prestação', n(venc.length), 'termo ainda "em execução"', venc.length?'red':'', {l: venc, s:(a,b)=>a.dias-b.dias, c: vcol})}
     ${kpi('Em prestação de contas', n(pc.length), 'cumprimento do objeto iniciado ou em análise', '', {l: pc, c:[['Situação do termo',o=>esc(o.stN)],['Firmado',o=>fm(o.fir),'n']]})}
   </div>`;
+  const tesL = L.filter(o => o.tes), so = L.filter(o => o.org==='Só no Tesouro'), dif = L.filter(o => o.dif && o.dif.length), soAPI = L.filter(o => o.org==='Só na API');
+  const sT = k => tesL.reduce((a,o) => a+(o.tes[k]||0), 0);
+  const kp3 = !TES.carregado ? `<div class="grp">Tesouro Gerencial (SIAFI)</div><div class="nota" style="background:#eef4fa;border-color:#b9c7d3">${TES.erros && TES.erros.length ? 'Não consegui ler o relatório do Tesouro: '+esc(TES.erros.join(' · ')) : 'O relatório do Tesouro ainda não foi ligado. Quando o link da aba estiver no robô, aparecem aqui: a comprovar, comprovado, TEDs que só estão no Tesouro e as diferenças entre Tesouro e API.'}</div>`
+   : `<div class="grp">Tesouro Gerencial (SIAFI) · relatório de ${esc(TES.gerado_em)}</div><div class="kp k6">
+    ${kpi('A comprovar (Tesouro)', fm(sT('aComp')), n(tesL.filter(o => o.tes.aComp>1).length)+' TEDs', 'amar', {l: tesL.filter(o => o.tes.aComp>1), s:(a,b)=>b.tes.aComp-a.tes.aComp, c:[['A comprovar',o=>fm(o.tes.aComp),'n']]})}
+    ${kpi('Comprovado (Tesouro)', fm(sT('comp')), n(tesL.filter(o => o.tes.comp>1).length)+' TEDs', 'verde', {l: tesL.filter(o => o.tes.comp>1), s:(a,b)=>b.tes.comp-a.tes.comp, c:[['Comprovado',o=>fm(o.tes.comp),'n']]})}
+    ${kpi('A repassar (Tesouro)', fm(sT('aRep')), n(tesL.filter(o => o.tes.aRep>1).length)+' TEDs', '', {l: tesL.filter(o => o.tes.aRep>1), s:(a,b)=>b.tes.aRep-a.tes.aRep, c:[['A repassar (Tesouro)',o=>fm(o.tes.aRep),'n'],['A repassar (API)',o=>fm(o.ar),'n']]})}
+    ${kpi('Só no Tesouro', n(so.length), 'TEDs que a API não traz', so.length?'amar':'', {l: so})}
+    ${kpi('Só na API', n(soAPI.length), 'TEDs com nº fora do relatório', '', {l: soAPI})}
+    ${kpi('Valores diferentes', n(dif.length), 'Tesouro × API (NC, PF ou firmado)', dif.length?'red':'', {l: dif, c:[['Diferenças',o=>o.dif.map(d => esc(d[0])+': '+fm(d[2]-d[1])).join('<br>')]]})}
+  </div>`;
   const porFase = FASES.map(f => [f, L.filter(o => o.fase===f).length]).filter(x => x[1]);
   const anos = [...new Set(L.map(o => o.ano))].sort();
   const porAno = anos.map(a => [a, soma(L.filter(o => o.ano===a),'fir')]);
   const vf = FX_V.map(f => [f, L.filter(o => o.fx===f && (o.fase==='Em execução' || o.fase==='Vigência vencida')).length, f==='Vencida'?'#c0392b':'#2e8a57']);
-  return kp1 + kp2 + `<div class="g2">
+  return kp1 + kp2 + kp3 + `<div class="g2">
     ${sec('Por fase', 'quantidade de planos de ação · clique para filtrar', hbar(porFase, 'fase', k => COR_F[k], null, L.length))}
     ${sec('Valor firmado por ano', 'ano do TED · clique para filtrar', colunas(porAno, 'ano', '#1f4e79', fm))}
     ${sec('Por UG descentralizadora', 'valor firmado', hbar(agrupar(L,'ugdN',o=>o.fir), 'ugdN', '#3a6f9f', fm, fir))}
@@ -125,6 +148,7 @@ function telaTED(L){
     ${sec('Unidades descentralizadas', 'as 12 maiores · valor firmado', hbar(agrupar(L,'unr',o=>o.fir).slice(0,12), 'unr', '#6c8fb3', fm, fir))}
     ${sec('Ação orçamentária', 'valor firmado', hbar(agrupar(L,'acao',o=>o.fir).slice(0,10), 'acao', '#b7860b', fm, fir))}
     ${sec('Resultado primário', 'valor firmado', hbar(agrupar(L,'rpN',o=>o.fir), 'rpN', '#8e6bbf', fm, fir))}
+    ${TES.carregado ? sec('Origem do TED', 'Tesouro Gerencial × API do Transferegov · quantidade', hbar(agrupar(L,'org'), 'org', k => /diferentes/.test(k)?'#c0392b':/Só no Tesouro/.test(k)?'#16a085':/Só na API|sem nº/.test(k)?'#b7860b':'#2e8a57', null, L.length)) : ''}
   </div>`;
 }
 function render(){
@@ -140,7 +164,7 @@ function render(){
     ['Fim vigência',o=>(esc(o.fim)||'—')+`<small>${o.dias===null?'':o.dias<0?'vencida':'faltam '+o.dias+' d'}</small>`,'n']];
   document.getElementById('lista').innerHTML = tabela('l', lista, cols, 15);
 }
-document.getElementById('nota').innerHTML = `<b>TED API</b> · Termos de Execução Descentralizada das UGs 130010, 130141, 130255, 135098 e 420013 · API de TED do Transferegov, dados de __DATA__ · planos rejeitados ficam fora (marque “incluir planos rejeitados”) · clique nos cartões para ver a lista, nos gráficos para filtrar e na linha para abrir a ficha. <b style="color:#c0392b">Teste</b>`;
+document.getElementById('nota').innerHTML = `<b>TED API</b> · Termos de Execução Descentralizada das UGs 130010, 130141, 130255, 135098 e 420013 · API de TED do Transferegov, dados de __DATA__ · ${TES.carregado ? 'Tesouro Gerencial: relatório de '+esc(TES.gerado_em)+' · ' : ''}planos rejeitados ficam fora (marque “incluir planos rejeitados”) · clique nos cartões para ver a lista, nos gráficos para filtrar e na linha para abrir a ficha. <b style="color:#c0392b">Teste</b>`;
 document.addEventListener('click', e => {
   const pg = e.target.closest('[data-pg]'); if(pg){ PAG[pg.dataset.pg] = (PAG[pg.dataset.pg]||0) + +pg.dataset.d; render(); return; }
   const ab = e.target.closest('[data-ab]'); if(ab && !e.target.closest('a,button')){ const k = ab.dataset.ab; ABERTO.has(k) ? ABERTO.delete(k) : ABERTO.add(k); render(); return; }

@@ -35,6 +35,10 @@ jobs:
         continue-on-error: true
         run: python scripts/ted.py saida
 
+      - name: TEDs · relatório do Tesouro Gerencial (abas publicadas da BASE TED)
+        continue-on-error: true
+        run: python scripts/ted_tesouro.py saida
+
       - name: Gerar as páginas do painel (Propostas, Empenho, Programas, Movimentação, Obras, Prestação de contas)
         run: python scripts/paginas.py saida
 

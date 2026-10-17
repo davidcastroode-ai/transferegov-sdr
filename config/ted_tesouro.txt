@@ -1,0 +1,3 @@
+# Links CSV publicados das abas do Tesouro Gerencial com os TEDs (um por linha).
+# Na planilha BASE TED: Arquivo › Compartilhar › Publicar na Web › escolha a aba › Valores separados por vírgula (.csv) › Publicar
+# Cole o link aqui embaixo (sem # na frente).

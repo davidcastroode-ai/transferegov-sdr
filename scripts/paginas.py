@@ -262,6 +262,9 @@ def execucao(pasta, data_carga):
 
 
 
+UGS_SDR = {'130010', '130141', '130255', '135098', '420013'}
+
+
 def ted(pasta):
     """Página TED API: termos de execução descentralizada das UGs da SDR (arquivos que o ted.py grava em PASTA/ted)."""
     tp = os.path.join(pasta, 'ted')
@@ -321,10 +324,54 @@ def ted(pasta):
             rp=g('Resultado primário'), emd=g('Emenda (autor)'), ult=g('Último parecer / análise'), link=g('Link do termo'), ns=g('Nº da NS do termo'),
             ncs=ncs.get(i, [])[:40], pfs=pfs.get(i, [])[:40], cro=cr[:36], prox=[prox[0], prox[1], prox[2]] if prox else None,
             par=par.get(i, [])[-8:], met=met.get(i, [])[:20]))
+    # ---- cruzamento com o relatório do Tesouro Gerencial (ted/ted_tesouro.csv, gravado pelo ted_tesouro.py)
+    import ted_tesouro
+    tes_lin = ler(tp, 'ted_tesouro.csv')
+    tes_meta = {}
+    try:
+        tes_meta = json.load(open(os.path.join(tp, 'ted_tesouro.json'), encoding='utf-8'))
+    except Exception:
+        pass
+    fx = lambda v: f(v) if (v or '').strip() != '' else None
+    base_c = {'ted', 'ted_txt', 'ug_emit', 'ug_fav', 'nome_fav', 'ano', 'processo', 'fir', 'nc', 'rep', 'aRep', 'aComp', 'comp', 'dev'}
+    tes = {}
+    for x in tes_lin:
+        tes[x['ted']] = dict(fir=fx(x['fir']), nc=fx(x['nc']), rep=fx(x['rep']), aRep=fx(x['aRep']), aComp=fx(x['aComp']), comp=fx(x['comp']), dev=fx(x['dev']),
+                             ugE=x['ug_emit'], ugF=x['ug_fav'], nome=x['nome_fav'], ano=x['ano'], proc=x['processo'],
+                             contas=[[k, f(v)] for k, v in x.items() if k not in base_c and (v or '').strip() not in ('', '0', '0.0')])
+    usados = set()
+    for o in linhas:
+        k = ted_tesouro.chave_ted(o['n'])
+        t = tes.get(k) if k else None
+        if not tes:
+            o['org'] = 'Tesouro não carregado'
+        elif t:
+            usados.add(k)
+            o['org'] = 'Tesouro e API'
+        else:
+            o['org'] = 'Só na API' if o['n'] else 'Plano sem nº (só API)'
+        o['tes'] = t
+        o['dif'] = []
+        if t:
+            for rot, a_, b_ in (('Descentralizado (NC)', o['nc'], t['nc']), ('Repassado (PF)', o['pf'], t['rep']), ('Valor firmado', o['fir'], t['fir'])):
+                if b_ is not None and abs(a_ - b_) > 1:
+                    o['dif'].append([rot, a_, b_])
+            if o['dif']:
+                o['org'] = 'Tesouro e API · valores diferentes'
+    for k, t in tes.items():
+        if k in usados:
+            continue
+        linhas.append(dict(id='T' + k, n=k, ano=t['ano'] or '(sem ano)', cod='', er='Enviado' if t['ugE'] in UGS_SDR else ('Recebido' if t['ugF'] in UGS_SDR else ''),
+                           ugd=t['ugE'], und='', ugr=t['ugF'], unr=t['nome'] or '(não informada)', orr='(só no Tesouro)', uge=t['ugF'], prog='', acao='(sem ação)',
+                           obj='', sp='(só no Tesouro)', st='(sem termo)', fase='Só no Tesouro', sei=t['proc'], ass='', ini='', fim='', dias=None,
+                           fir=t['fir'] or 0, nc=t['nc'] or 0, op=0, pf=t['rep'] or 0, ar=t['aRep'] or 0, rp='', emd='', ult='', link='', ns='',
+                           ncs=[], pfs=[], cro=[], prox=None, par=[], met=[], org='Só no Tesouro', tes=t, dif=[]))
+    tesInfo = {'carregado': bool(tes), 'gerado_em': tes_meta.get('gerado_em', ''), 'teds': len(tes), 'soTesouro': len(tes) - len(usados),
+               'erros': [x.get('erro') for x in tes_meta.get('fontes', []) if not x.get('ok')]}
     data = (meta.get('data_api') or {}).get('data_ultima_atualizacao', '').replace('T', ' ')[:16]
     data = (data[8:10] + '/' + data[5:7] + '/' + data[:4] + data[10:]) if data else meta.get('gerado_em', '')
     with open(os.path.join(pasta, 'pagina_ted.html'), 'w', encoding='utf-8') as fh:
-        fh.write(montar('ted.html', {'linhas': linhas, 'ano': hoje.year}, data))
+        fh.write(montar('ted.html', {'linhas': linhas, 'ano': hoje.year, 'tes': tesInfo}, data))
     print(f'pagina_ted.html · {len(linhas)} planos de ação', flush=True)
 
 
