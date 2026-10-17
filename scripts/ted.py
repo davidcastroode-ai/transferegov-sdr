@@ -77,7 +77,7 @@ def br(d):
 
 
 def gravar(pasta, nome, linhas, campos=None):
-    campos = campos or (list(linhas[0].keys()) if linhas else ['vazio'])
+    campos = campos or (list(dict.fromkeys(k for l in linhas for k in l.keys())) if linhas else ['vazio'])
     with open(os.path.join(pasta, nome), 'w', encoding='utf-8', newline='') as f:
         w = csv.DictWriter(f, fieldnames=campos, extrasaction='ignore')
         w.writeheader()

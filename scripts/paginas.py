@@ -140,6 +140,10 @@ def main(pasta):
     print(f'pagina_prestacao.html · {len(pcs)} instrumentos', flush=True)
     propostas(pasta, data_carga)
     execucao(pasta, data_carga)
+    try:
+        ted(pasta)
+    except Exception as e:  # a falta dos TEDs não pode derrubar as outras páginas
+        print('página de TED não gerada:', e, flush=True)
 
 
 def propostas(pasta, data_carga):
@@ -255,6 +259,73 @@ def execucao(pasta, data_carga):
         with open(os.path.join(pasta, nome), 'w', encoding='utf-8') as fh:
             fh.write(h)
     print(f'páginas de execução · {len(linhas)} instrumentos', flush=True)
+
+
+
+def ted(pasta):
+    """Página TED API: termos de execução descentralizada das UGs da SDR (arquivos que o ted.py grava em PASTA/ted)."""
+    tp = os.path.join(pasta, 'ted')
+    planos = ler(tp, 'ted_planilha.csv')
+    if not planos:
+        print('página de TED: sem ted/ted_planilha.csv', flush=True)
+        return
+    meta = {}
+    try:
+        meta = json.load(open(os.path.join(tp, 'ted_atualizacao.json'), encoding='utf-8'))
+    except Exception:
+        pass
+    ncs, pfs, cro, par, met = (collections.defaultdict(list) for _ in range(5))
+    dt = lambda s: (s or '')[8:10] + '/' + (s or '')[5:7] + '/' + (s or '')[:4] if s and len(s) >= 10 else ''
+    for x in ler(tp, 'ted_notas_credito.csv'):
+        ncs[x['id_plano_acao']].append([x['tx_numero_nota'] or x['tx_minuta_nota'], dt(x['dt_emissao_nota']), x['cd_ug_emitente_nota'], x['cd_ug_favorecida_nota'],
+                                        f(x['valor_eventos']), x['ptres'], x['plano_interno'], x['natureza'], x['resultado_primario'], x['tx_situacao_nota'], x['autor_emenda']])
+    for x in ler(tp, 'ted_programacoes.csv'):
+        pfs[x['id_plano_acao']].append([x['tx_numero_programacao'] or x['tx_minuta_programacao'], dt(x['dh_recebimento_programacao']), x['ug_emitente_programacao'],
+                                        x['ug_favorecida_programacao'], f(x['valor_trf']), x['tx_situacao_programacao'], (x['tx_observacao_programacao'] or '')[:160]])
+    MES = {m: i for i, m in enumerate(['JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN', 'JUL', 'AGO', 'SET', 'OUT', 'NOV', 'DEZ'], 1)}
+    for x in ler(tp, 'ted_cronograma.csv'):
+        cro[x['id_plano_acao']].append([x['ano_cronograma_plano_trabalho'], MES.get(x['mes_cronograma_plano_trabalho'], 0), f(x['valor_cronograma_plano_trabalho'])])
+    for x in ler(tp, 'ted_analises_pareceres.csv'):
+        par[x['id_plano_acao']].append([x['tipo'], x['resultado_analise'], x['tx_situacao_analise'], (x['tx_justificativa_analise'] or '')[:400]])
+    for x in ler(tp, 'ted_metas.csv'):
+        met[x['id_plano_acao']].append([x['nr_numero_meta'], x['tx_nome_meta'][:160], x['nr_quantidade_meta'], x['tp_unidade_meta'], f(x['vl_valor_unitario_meta']),
+                                        dt(x['dt_inicio_vigencia_meta']), dt(x['dt_fim_vigencia_meta'])])
+    hoje = datetime.date.today()
+    linhas = []
+    for r in planos:
+        g = lambda k: (r.get(k) or '').strip()
+        sp, st = g('Situação do plano de ação'), g('Situação do termo')
+        dias = int(g('Dias para o fim')) if re.fullmatch(r'-?\d+', g('Dias para o fim')) else None
+        if st.startswith('CUMPRIMENTO_OBJETO_APROVADO'):
+            fase = 'Concluído'
+        elif st.startswith('CUMPRIMENTO_OBJETO'):
+            fase = 'Prestação de contas'
+        elif st == 'EM_EXECUCAO':
+            fase = 'Vigência vencida' if dias is not None and dias < 0 else 'Em execução'
+        elif st or g('Nº TED (SIAFI)'):
+            fase = 'Em formalização'
+        elif sp == 'REJEITADO':
+            fase = 'Plano rejeitado'
+        else:
+            fase = 'Plano em análise'
+        i = g('id_plano_acao')
+        cr = sorted(cro.get(i, []))
+        prox = next((c for c in cr if (int(c[0] or 0), c[1]) >= (hoje.year, hoje.month)), None)
+        linhas.append(dict(
+            id=i, n=g('Nº TED (SIAFI)'), ano=g('Ano do TED') or '(sem ano)', cod=g('Código do plano de ação'), er=g('Enviado / recebido'),
+            ugd=g('UG descentralizadora'), und=g('Unidade descentralizadora'), ugr=g('UG descentralizada'), unr=g('Unidade descentralizada') or '(não informada)',
+            orr=g('Órgão descentralizado') or '(não informado)', uge=g('UG executora'), prog=g('Programa'), acao=g('Ação orçamentária') or '(sem ação)',
+            obj=g('Objeto')[:600], sp=sp or '(sem situação)', st=st or '(sem termo)', fase=fase, sei=g('Processo SEI'), ass=g('Data de assinatura'),
+            ini=g('Início da vigência'), fim=g('Fim da vigência'), dias=dias, fir=f(g('Valor firmado')), nc=f(g('Descentralizado (notas de crédito)')),
+            op=f(g('Orçamento pendente')), pf=f(g('Repassado (programação financeira)')), ar=f(g('A repassar')),
+            rp=g('Resultado primário'), emd=g('Emenda (autor)'), ult=g('Último parecer / análise'), link=g('Link do termo'), ns=g('Nº da NS do termo'),
+            ncs=ncs.get(i, [])[:40], pfs=pfs.get(i, [])[:40], cro=cr[:36], prox=[prox[0], prox[1], prox[2]] if prox else None,
+            par=par.get(i, [])[-8:], met=met.get(i, [])[:20]))
+    data = (meta.get('data_api') or {}).get('data_ultima_atualizacao', '').replace('T', ' ')[:16]
+    data = (data[8:10] + '/' + data[5:7] + '/' + data[:4] + data[10:]) if data else meta.get('gerado_em', '')
+    with open(os.path.join(pasta, 'pagina_ted.html'), 'w', encoding='utf-8') as fh:
+        fh.write(montar('ted.html', {'linhas': linhas, 'ano': hoje.year}, data))
+    print(f'pagina_ted.html · {len(linhas)} planos de ação', flush=True)
 
 
 if __name__ == '__main__':
