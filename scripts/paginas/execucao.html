@@ -27,6 +27,7 @@ D.forEach(o => {
   o.fxD = o.dsd===null ? 'Sem desembolso' : o.dsd<=90 ? 'Até 90 dias' : o.dsd<=180 ? '91 a 180 dias' : o.dsd<=365 ? '181 a 365 dias' : 'Mais de 365 dias';
   o.fxP = o.dsp===null ? 'Sem pagamento' : o.dsp<=30 ? 'Até 30 dias' : o.dsp<=90 ? '31 a 90 dias' : o.dsp<=180 ? '91 a 180 dias' : o.dsp<=365 ? '181 a 365 dias' : 'Mais de 365 dias';
   o.sE = null; o.sR = null; o.pS = null; o.tes = {};
+  o.reforco = o.sit==='Em execução' && o.rep - o.emp > 1 ? o.rep - o.emp : 0; o.sobra = 0;
 });
 const FX_V = ['Vencida','Até 30 dias','31 a 60 dias','61 a 90 dias','91 a 180 dias','181 a 365 dias','Mais de 1 ano'];
 const FX_D = ['Até 90 dias','91 a 180 dias','181 a 365 dias','Mais de 365 dias','Sem desembolso'];
@@ -83,7 +84,7 @@ async function lerTesouro(){
         if(t.exe){ sE += t.exe.saldo; pg += t.exe.pago; } if(t.rap){ sR += t.rap.saldo; pg += t.rap.pago; } });
       o.sE = sE; o.sR = sR; o.pS = pg; o.nAch = ach;
       const s = sE + sR, falta = o.sit==='Em execução' ? o.aDes - s : -s;
-      o.reforco = o.sit==='Em execução' && falta > 1 ? falta : 0; o.sobra = falta < -1 ? -falta : 0; });
+      o.sobra = falta < -1 ? -falta : 0; o.semSaldo = o.sit==='Em execução' && !o.reforco && falta > 1 ? falta : 0; });
   }
   render();
 }
@@ -97,7 +98,7 @@ function ficha(o){
    <div><span>Situação</span>${esc(o.sit)}</div><div><span>Modalidade</span>${esc(o.mod)}</div><div><span>Vigência até</span>${esc(o.fv)||'—'}${o.dv!==null?` (${o.dv<0?'vencida há '+(-o.dv):'faltam '+o.dv} dias)`:''}</div><div><span>UG · ação</span>${esc(o.ug)} · ${esc(o.acao)}</div>
    <div><span>Programa</span>${esc(o.prog)}</div><div><span>Parlamentar</span>${esc(o.parl)}${o.emd?' · emenda '+esc(o.emd):''}</div><div><span>Resultado primário</span>${esc(o.rpN)}</div><div><span>Local</span>${esc(o.munN)}/${esc(o.uf)}</div>
    <div><span>Repasse</span>${R$(o.rep)}</div><div><span>Desembolsado</span>${R$(o.des)} (${pct(o.des,o.rep)})</div><div><span>A desembolsar</span>${R$(o.aDes)}</div><div><span>Empenhado (Transferegov)</span>${R$(o.emp)}</div>
-   <div><span>Saldo de empenho no Tesouro</span>${o.sE===null?'—':R$(o.sE+o.sR)+`<small> EXE ${fm(o.sE)} · RAP ${fm(o.sR)}</small>`}</div><div><span>Reforço / sobra de empenho</span>${o.sE===null?'—':o.reforco?`<b style="color:#c0392b">falta ${R$(o.reforco)}</b>`:o.sobra?`<b style="color:#b7860b">sobra ${R$(o.sobra)}</b>`:'✓ ajustado'}</div><div><span>Pago a fornecedores</span>${R$(o.pg)} (${n(o.nPg)} pagamentos)</div><div><span>Saldo em conta</span>${R$(o.sc)}</div>
+   <div><span>Saldo de empenho no Tesouro</span>${o.sE===null?'—':R$(o.sE+o.sR)+`<small> EXE ${fm(o.sE)} · RAP ${fm(o.sR)}</small>`}</div><div><span>Reforço de empenho</span>${o.reforco?`<b style="color:#c0392b">falta empenhar ${R$(o.reforco)}</b><small>repasse ${fm(o.rep)} − empenhado ${fm(o.emp)}</small>`:'✓ empenhado todo o repasse'}${o.sobra?`<small style="color:#b7860b">saldo no Tesouro ${fm(o.sobra)} acima do que falta repassar</small>`:''}${o.semSaldo?`<small style="color:#b7860b">saldo no Tesouro ${fm(o.semSaldo)} abaixo do que falta repassar: conferir a nota</small>`:''}</div><div><span>Pago a fornecedores</span>${R$(o.pg)} (${n(o.nPg)} pagamentos)</div><div><span>Saldo em conta</span>${R$(o.sc)}</div>
    <div><span>Último desembolso</span>${esc(o.ultd)||'—'}</div><div><span>Último pagamento</span>${esc(o.ultP)||'—'}</div><div><span>Devolvido</span>${R$(o.dt+o.dc)}</div><div><span>Valor de emendas</span>${o.vEm?R$(o.vEm):'—'}</div>
   </div>
   ${o.nes.length?`<div style="margin-top:10px;font-size:12px;font-weight:600">Notas de empenho (Transferegov) × Tesouro ${esc(TES&&TES.mes||'')}</div><table class="mini"><tr><th>Nota</th><th>UG</th><th>Emissão</th><th>Tipo</th><th class="n">Valor</th><th>No Tesouro</th></tr>${o.nes.map(linhaNE).join('')}</table>`:''}
@@ -132,7 +133,7 @@ function telaEmp(L){
   return `<div class="grp">Empenhos · ${tesMsg()}</div><div class="kp">
     ${kpi('Empenhado', fm(soma(L,'emp')), 'Transferegov · '+pct(soma(L,'emp'),soma(L,'rep'))+' do repasse', 'dest', {l:L.filter(o=>o.emp), s:(a,b)=>b.emp-a.emp, c:[['Empenhado',o=>fm(o.emp),'n'],['Repasse',o=>fm(o.rep),'n'],['% do repasse',o=>pct(o.emp,o.rep),'n']]})}
     ${kpi('Saldo de empenho', tesOk()?fm(sE+sR):'—', tesOk()?'EXE '+fm(sE)+' · RAP '+fm(sR):'notas do Transferegov no Tesouro', '', {l:L.filter(o=>(o.sE||0)+(o.sR||0)>0), s:(a,b)=>(b.sE+b.sR)-(a.sE+a.sR), c:[['Saldo EXE',o=>fm(o.sE),'n'],['Saldo RAP',o=>fm(o.sR),'n'],['A desembolsar',o=>fm(o.aDes),'n']]})}
-    ${kpi('Reforço de empenho necessário', tesOk()?fm(soma(ref,'reforco')):'—', tesOk()?ref.length+' instrumentos: a desembolsar maior que o saldo':'', 'red', {l:ref, s:(a,b)=>b.reforco-a.reforco, c:[['A desembolsar',o=>fm(o.aDes),'n'],['Saldo de empenho',o=>fm(o.sE+o.sR),'n'],['Falta (reforço)',o=>`<b style="color:#c0392b">${fm(o.reforco)}</b>`,'n']]})}
+    ${kpi('Reforço de empenho necessário', fm(soma(ref,'reforco')), ref.length+' instrumentos: empenhado menor que o repasse', 'red', {l:ref, s:(a,b)=>b.reforco-a.reforco, c:[['Repasse',o=>fm(o.rep),'n'],['Empenhado',o=>fm(o.emp),'n'],['Falta empenhar',o=>`<b style="color:#c0392b">${fm(o.reforco)}</b>`,'n']]})}
     ${kpi('Saldo além do necessário', tesOk()?fm(soma(sob,'sobra')):'—', tesOk()?sob.length+' instrumentos: avaliar anulação/cancelamento':'', 'amar', {l:sob, s:(a,b)=>b.sobra-a.sobra, c:[['A desembolsar',o=>fm(o.aDes),'n'],['Saldo de empenho',o=>fm(o.sE+o.sR),'n'],['Sobra',o=>`<b style="color:#b7860b">${fm(o.sobra)}</b>`,'n']]})}
     ${kpi('Instrumentos', n(L.length), ex.length+' em execução', '', {l:L, s:(a,b)=>b.rep-a.rep, c:[['Repasse',o=>fm(o.rep),'n'],['Fim vigência',o=>esc(o.fv),'n']]})}</div>
   <div class="grp">Desembolsos</div><div class="kp">
@@ -199,7 +200,7 @@ function render(){
   const q = document.getElementById('busca').value.trim().toUpperCase();
   const lista = (q ? L.filter(o => (o.n+' '+o.prop+' '+o.munN+' '+o.parl+' '+o.obj).toUpperCase().includes(q)) : L).slice()
     .sort((a,b) => ABA==='emp' ? (b.aDes-a.aDes) : ABA==='mov' ? (b.pg-a.pg) : (b.rep-a.rep));
-  const cols = ABA==='emp' ? [['Instrumento',o=>`<b>${esc(o.n)}</b><small>${esc(o.sit)}</small>`],['Convenente / local',objLoc],['Empenhado',o=>fm(o.emp),'n'],['Desembolsado',o=>fm(o.des)+`<small>${pct(o.des,o.rep)}</small>`,'n'],['A desembolsar',o=>fm(o.aDes),'n'],['Saldo empenho',o=>o.sE===null?'—':fm(o.sE+o.sR)+(o.reforco?`<small style="color:#c0392b">falta ${fm(o.reforco)}</small>`:o.sobra?`<small style="color:#b7860b">sobra ${fm(o.sobra)}</small>`:''),'n']]
+  const cols = ABA==='emp' ? [['Instrumento',o=>`<b>${esc(o.n)}</b><small>${esc(o.sit)}</small>`],['Convenente / local',objLoc],['Empenhado',o=>fm(o.emp),'n'],['Desembolsado',o=>fm(o.des)+`<small>${pct(o.des,o.rep)}</small>`,'n'],['A desembolsar',o=>fm(o.aDes),'n'],['Saldo empenho',o=>o.sE===null?'—':fm(o.sE+o.sR)+(o.reforco?`<small style="color:#c0392b">falta empenhar ${fm(o.reforco)}</small>`:o.sobra?`<small style="color:#b7860b">sobra ${fm(o.sobra)}</small>`:''),'n']]
     : ABA==='prog' ? [['Instrumento',o=>`<b>${esc(o.n)}</b><small>assinado ${esc(o.anoAss)}</small>`],['Convenente / local',objLoc],['Programa / parlamentar',o=>`${esc(o.prog.slice(0,45))}<small>${esc(o.parl)}</small>`],['Emendas',o=>o.vEm?fm(o.vEm):'—','n'],['Repasse',o=>fm(o.rep),'n'],['Fim vigência',o=>esc(o.fv)+`<small>${o.dv===null?'':o.dv<0?'vencida':'faltam '+o.dv+' d'}</small>`,'n']]
     : [['Instrumento',o=>`<b>${esc(o.n)}</b><small>${esc(o.sit)}</small>`],['Convenente / local',objLoc],['Desembolsado',o=>fm(o.des),'n'],['Pago',o=>fm(o.pg)+`<small>${n(o.nPg)} pagtos</small>`,'n'],['Saldo em conta',o=>fm(o.sc),'n'],['Último pagamento',o=>(o.ultP||'—')+`<small>${o.dsp===null?'':'há '+o.dsp+' dias'}</small>`,'n']];
   document.getElementById('lista').innerHTML = tabela('l', lista, cols, 15);
