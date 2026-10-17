@@ -98,13 +98,17 @@ function render(){
   const fila = L.filter(o => o.fase==='Enviada para análise'||o.fase==='Em análise');
   if(ABA==='tce'){ const c = k => L.filter(o => o.fase===k), v = a => fm(a.reduce((x,o)=>x+o.des,0));
    const g = [['Em processo de TCE','no Transferegov (subsituação)'],['Inadimplente','convenente inadimplente hoje'],['Rejeitada','prestação de contas rejeitada'],['Aguardando PC · prazo vencido','omissão: não prestou contas'],[HIST,'já foi rejeitada/inadimplente e depois encerrou']];
-   document.getElementById('kp').innerHTML = g.map(([k,d],i) => `<div class="k ${i===0?'dest':i<4?'red':''}" data-k="fase" data-v="${k}" style="cursor:pointer"><span>${k==='Aguardando PC · prazo vencido'?'Prazo vencido sem prestar contas':k===HIST?'Já foi rejeitada / inadimplente':k}</span><b>${c(k).length}</b><small>${d} · ${v(c(k))}</small></div>`).join('');
-  } else
-  document.getElementById('kp').innerHTML = `<div class="k dest"><span>${ABA==='pc'?'Em prestação de contas':'Em risco de TCE'}</span><b>${tot.toLocaleString('pt-BR')}</b><small>desembolsado ${fm(s('des'))}</small></div>
-   <div class="k"><span>Na fila de análise</span><b>${fila.length.toLocaleString('pt-BR')}</b><small>${fm(fila.reduce((a,o)=>a+o.des,0))} · ${fila.filter(o=>o.dfv>730).length} há mais de 2 anos</small></div>
-   <div class="k red"><span>Prazo vencido sem prestar contas</span><b>${om.length}</b><small>${fm(om.reduce((a,o)=>a+o.des,0))} desembolsado</small></div>
-   <div class="k red"><span>Empenhado não desembolsado</span><b>${fm(s('canc'))}</b><small>${L.filter(o=>o.canc>0).length} instrumentos · saldo a cancelar</small></div>
-   <div class="k"><span>Saldo parado em conta</span><b>${fm(s('sc'))}</b><small>${L.filter(o=>o.sc>0).length} instrumentos · rendimento ${fm(s('rend'))}</small></div>`;
+   g.forEach(([k]) => { (window.KPI_DEF||(window.KPI_DEF={}))['f|'+k] = {tit: k==='Aguardando PC · prazo vencido'?'Prazo vencido sem prestar contas':k, lista: c(k).slice().sort((a,b)=>b.des-a.des), cols: [['Instrumento',o=>o.n],['Objeto / local',objLoc],['Inadimplente desde / rejeitada em',o=>(o.inad||o.rej||'—'),'n'],['Desembolsado',o=>fm(o.des),'n']]}; });
+   document.getElementById('kp').innerHTML = g.map(([k,d],i) => `<div class="k ${i===0?'dest':i<4?'red':''}" data-kpi="f|${esc(k)}"><span>${k==='Aguardando PC · prazo vencido'?'Prazo vencido sem prestar contas':k===HIST?'Já foi rejeitada / inadimplente':k}</span><b>${c(k).length}</b><small>${d} · ${v(c(k))}</small></div>`).join('');
+  } else {
+  const cP = extra => [['Instrumento',o=>o.n],['Objeto / local',objLoc]].concat(extra);
+  const kd = (ch, tit, l, s, extra) => { (window.KPI_DEF||(window.KPI_DEF={}))[ch] = {tit, lista: l.slice().sort(s), cols: cP(extra)}; return `data-kpi="${ch}"`; };
+  document.getElementById('kp').innerHTML = `<div class="k dest" ${kd('tot',ABA==='pc'?'Em prestação de contas':'Em risco de TCE',L,(a,b)=>b.des-a.des,[['Fim da vigência',o=>esc(o.fv)+`<small>${tempoTxt(o)}</small>`,'n'],['Desembolsado',o=>fm(o.des),'n']])}><span>${ABA==='pc'?'Em prestação de contas':'Em risco de TCE'}</span><b>${tot.toLocaleString('pt-BR')}</b><small>desembolsado ${fm(s('des'))}</small></div>
+   <div class="k" ${kd('fila','Na fila de análise (mais antigas primeiro)',fila,(a,b)=>b.dfv-a.dfv,[['Fim da vigência',o=>esc(o.fv)+`<small>há ${tempoTxt(o)}</small>`,'n'],['Desembolsado',o=>fm(o.des),'n']])}><span>Na fila de análise</span><b>${fila.length.toLocaleString('pt-BR')}</b><small>${fm(fila.reduce((a,o)=>a+o.des,0))} · ${fila.filter(o=>o.dfv>730).length} há mais de 2 anos</small></div>
+   <div class="k red" ${kd('om','Prazo vencido sem prestar contas',om,(a,b)=>b.des-a.des,[['Limite p/ prestar contas',o=>esc(o.lim)+`<small>vencido há ${o.dlim} dias</small>`,'n'],['Desembolsado',o=>fm(o.des),'n']])}><span>Prazo vencido sem prestar contas</span><b>${om.length}</b><small>${fm(om.reduce((a,o)=>a+o.des,0))} desembolsado</small></div>
+   <div class="k red" ${kd('canc','Empenhado não desembolsado (saldo a cancelar)',L.filter(o=>o.canc>0),(a,b)=>b.canc-a.canc,[['Empenhado',o=>fm(o.emp),'n'],['Desembolsado',o=>fm(o.des),'n'],['Não desembolsado',o=>`<b style="color:#c0392b">${fm(o.canc)}</b>`,'n']])}><span>Empenhado não desembolsado</span><b>${fm(s('canc'))}</b><small>${L.filter(o=>o.canc>0).length} instrumentos · saldo a cancelar</small></div>
+   <div class="k" ${kd('sc','Saldo parado em conta',L.filter(o=>o.sc>0),(a,b)=>b.sc-a.sc,[['Fim da vigência',o=>esc(o.fv),'n'],['Saldo em conta',o=>`<b style="color:#c0392b">${fm(o.sc)}</b>`,'n'],['Rendimento',o=>fm(o.rend),'n']])}><span>Saldo parado em conta</span><b>${fm(s('sc'))}</b><small>${L.filter(o=>o.sc>0).length} instrumentos · rendimento ${fm(s('rend'))}</small></div>`;
+  }
   document.getElementById('devol').textContent = fm(s('dt'));
   const cf = Object.fromEntries(conta(L,'fase'));
   document.getElementById('fase').innerHTML = hbar(FORD.filter(k => cf[k]).map(k => [k,cf[k]]), 'fase', k => FCOR[k], tot, 1);
@@ -144,4 +148,5 @@ document.getElementById('limpar').onclick = () => { for(const k in SEL) delete S
 document.getElementById('busca').oninput = () => { PAG.todas = 0; render(); };
 render();
 __FILTRO__
+__KPI__
 </script></body></html>

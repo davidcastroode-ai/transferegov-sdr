@@ -58,7 +58,9 @@ function colunas(lista, campo, cor, fmt){
 }
 const agrupar = (L, k, val) => { const m = {}; L.forEach(o => { const c = o[k]; m[c] = (m[c]||0) + (val ? val(o) : 1); }); return Object.entries(m).sort((a,b) => b[1]-a[1]); };
 const sec = (tit, desc, corpo, cls) => `<section class="card ${cls||''}"><h3>${tit}</h3><p class="d">${desc}</p>${corpo}</section>`;
-const kpi = (rot, val, sub, cls) => `<div class="k ${cls||''}"><span>${rot}</span><b>${val}</b><small>${sub||''}</small></div>`;
+const kpi = (rot, val, sub, cls, def) => { let a = '';
+  if(def){ const ch = ABA+'|'+rot; (window.KPI_DEF||(window.KPI_DEF={}))[ch] = {tit: rot, lista: def.l.slice().sort(def.s || (() => 0)), cols: [['Instrumento',o=>`<b>${esc(o.n)}</b><small>${esc(o.sit)}</small>`],['Convenente / local',objLoc]].concat(def.c || [])}; a = ` data-kpi="${esc(ch)}"`; }
+  return `<div class="k ${cls||''}"${a}><span>${rot}</span><b>${val}</b><small>${sub||''}</small></div>`; };
 let MUN = null;
 function mapa(L, corPt){
   if(!MUN){ MUN = new Map(); MUN_BR.split(';').forEach(l => { const [uf,nm,x,y] = l.split('|'); MUN.set(uf+'|'+nm,[+x,+y]); }); }
@@ -128,17 +130,17 @@ function telaEmp(L){
   desL.sort((a,b) => b.d.split('/').reverse().join('').localeCompare(a.d.split('/').reverse().join('')));
   const cD = Object.fromEntries(agrupar(L,'fxD'));
   return `<div class="grp">Empenhos · ${tesMsg()}</div><div class="kp">
-    ${kpi('Empenhado', fm(soma(L,'emp')), 'Transferegov · '+pct(soma(L,'emp'),soma(L,'rep'))+' do repasse', 'dest')}
-    ${kpi('Saldo de empenho', tesOk()?fm(sE+sR):'—', tesOk()?'EXE '+fm(sE)+' · RAP '+fm(sR):'notas do Transferegov no Tesouro')}
-    ${kpi('Reforço de empenho necessário', tesOk()?fm(soma(ref,'reforco')):'—', tesOk()?ref.length+' instrumentos: a desembolsar maior que o saldo':'', 'red')}
-    ${kpi('Saldo além do necessário', tesOk()?fm(soma(sob,'sobra')):'—', tesOk()?sob.length+' instrumentos: avaliar anulação/cancelamento':'', 'amar')}
-    ${kpi('Instrumentos', n(L.length), ex.length+' em execução')}</div>
+    ${kpi('Empenhado', fm(soma(L,'emp')), 'Transferegov · '+pct(soma(L,'emp'),soma(L,'rep'))+' do repasse', 'dest', {l:L.filter(o=>o.emp), s:(a,b)=>b.emp-a.emp, c:[['Empenhado',o=>fm(o.emp),'n'],['Repasse',o=>fm(o.rep),'n'],['% do repasse',o=>pct(o.emp,o.rep),'n']]})}
+    ${kpi('Saldo de empenho', tesOk()?fm(sE+sR):'—', tesOk()?'EXE '+fm(sE)+' · RAP '+fm(sR):'notas do Transferegov no Tesouro', '', {l:L.filter(o=>(o.sE||0)+(o.sR||0)>0), s:(a,b)=>(b.sE+b.sR)-(a.sE+a.sR), c:[['Saldo EXE',o=>fm(o.sE),'n'],['Saldo RAP',o=>fm(o.sR),'n'],['A desembolsar',o=>fm(o.aDes),'n']]})}
+    ${kpi('Reforço de empenho necessário', tesOk()?fm(soma(ref,'reforco')):'—', tesOk()?ref.length+' instrumentos: a desembolsar maior que o saldo':'', 'red', {l:ref, s:(a,b)=>b.reforco-a.reforco, c:[['A desembolsar',o=>fm(o.aDes),'n'],['Saldo de empenho',o=>fm(o.sE+o.sR),'n'],['Falta (reforço)',o=>`<b style="color:#c0392b">${fm(o.reforco)}</b>`,'n']]})}
+    ${kpi('Saldo além do necessário', tesOk()?fm(soma(sob,'sobra')):'—', tesOk()?sob.length+' instrumentos: avaliar anulação/cancelamento':'', 'amar', {l:sob, s:(a,b)=>b.sobra-a.sobra, c:[['A desembolsar',o=>fm(o.aDes),'n'],['Saldo de empenho',o=>fm(o.sE+o.sR),'n'],['Sobra',o=>`<b style="color:#b7860b">${fm(o.sobra)}</b>`,'n']]})}
+    ${kpi('Instrumentos', n(L.length), ex.length+' em execução', '', {l:L, s:(a,b)=>b.rep-a.rep, c:[['Repasse',o=>fm(o.rep),'n'],['Fim vigência',o=>esc(o.fv),'n']]})}</div>
   <div class="grp">Desembolsos</div><div class="kp">
-    ${kpi('Desembolsado', fm(soma(L,'des')), pct(soma(L,'des'),soma(L,'rep'))+' do repasse', 'verde')}
-    ${kpi('A desembolsar', fm(soma(L,'aDes')), pct(soma(L,'aDes'),soma(L,'rep'))+' do repasse', 'red')}
-    ${kpi('Desembolsado em '+ANO, fm(desAno), desL.length+' desembolsos')}
-    ${kpi('Sem nenhum desembolso', n(semDes.length), fm(soma(semDes,'rep'))+' de repasse', 'amar')}
-    ${kpi('Valor a comprovar', fm(Math.max(0, soma(L,'des')+soma(L,'cp')-soma(L,'pg')-soma(L,'sc'))), 'desembolso + contrapartida − pago − saldo em conta')}</div>
+    ${kpi('Desembolsado', fm(soma(L,'des')), pct(soma(L,'des'),soma(L,'rep'))+' do repasse', 'verde', {l:L.filter(o=>o.des>0), s:(a,b)=>b.des-a.des, c:[['Desembolsado',o=>fm(o.des),'n'],['% do repasse',o=>pct(o.des,o.rep),'n'],['Último desembolso',o=>esc(o.ultd||'—'),'n']]})}
+    ${kpi('A desembolsar', fm(soma(L,'aDes')), pct(soma(L,'aDes'),soma(L,'rep'))+' do repasse', 'red', {l:L.filter(o=>o.aDes>0), s:(a,b)=>b.aDes-a.aDes, c:[['Repasse',o=>fm(o.rep),'n'],['Desembolsado',o=>fm(o.des),'n'],['A desembolsar',o=>fm(o.aDes),'n']]})}
+    ${kpi('Desembolsado em '+ANO, fm(desAno), desL.length+' desembolsos', '', {l:L.filter(o=>o.desAno.length), s:(a,b)=>b.desAno.reduce((x,y)=>x+y[1],0)-a.desAno.reduce((x,y)=>x+y[1],0), c:[['Desembolsos no ano',o=>o.desAno.length,'n'],['Valor no ano',o=>fm(o.desAno.reduce((x,y)=>x+y[1],0)),'n'],['Último',o=>esc(o.desAno[o.desAno.length-1][0]),'n']]})}
+    ${kpi('Sem nenhum desembolso', n(semDes.length), fm(soma(semDes,'rep'))+' de repasse', 'amar', {l:semDes, s:(a,b)=>b.rep-a.rep, c:[['Repasse',o=>fm(o.rep),'n'],['Assinado em',o=>esc(o.anoAss),'n'],['Fim vigência',o=>esc(o.fv),'n']]})}
+    ${kpi('Valor a comprovar', fm(Math.max(0, soma(L,'des')+soma(L,'cp')-soma(L,'pg')-soma(L,'sc'))), 'desembolso + contrapartida − pago − saldo em conta', '', {l:L.filter(o=>o.des+o.cp-o.pg-o.sc>1), s:(a,b)=>(b.des+b.cp-b.pg-b.sc)-(a.des+a.cp-a.pg-a.sc), c:[['Desembolso + contrap.',o=>fm(o.des+o.cp),'n'],['Pago',o=>fm(o.pg),'n'],['Saldo em conta',o=>fm(o.sc),'n'],['A comprovar',o=>fm(o.des+o.cp-o.pg-o.sc),'n']]})}</div>
   <div class="g2">${sec('Empenhado por resultado primário','origem do recurso · clique para filtrar', hbar(agrupar(L,'rpN',o => o.emp),'rpN','#1f4e79',fm))}
    ${sec('Instrumentos por dias sem desembolso','tempo desde o último desembolso · clique para filtrar', colunas(FX_D.map(k => [k, cD[k]||0, k==='Sem desembolso'?'#e6c229':k==='Mais de 365 dias'?'#c0392b':'#1f4e79']),'fxD','#1f4e79'))}</div>
   <div class="g2">${sec('Saldo de empenho por convenente','os 10 maiores · '+tesMsg(), tesOk() ? hbar(agrupar(L.filter(o => o.sE+o.sR>0),'prop',o => o.sE+o.sR).slice(0,10),'prop','#3a6f9f',fm) : '<p class="d">—</p>')}
@@ -154,12 +156,12 @@ function telaProg(L){
   const anos = agrupar(L,'anoAss').filter(([k]) => k).sort((a,b) => a[0].localeCompare(b[0]));
   const parl = {}; L.forEach(o => o.ems.forEach(e => { if(!e[1]) return; parl[e[1]] = (parl[e[1]]||0) + e[3]; }));
   return `<div class="kp k6">
-    ${kpi('Instrumentos', n(L.length), fm(soma(L,'rep'))+' de repasse', 'dest')}
-    ${kpi('Programas', n(progs.size), 'com instrumentos no recorte')}
-    ${kpi('Emendas', n(ems.size), fm(soma(L,'vEm'))+' indicados')}
-    ${kpi('Empenhado', fm(soma(L,'emp')), tesOk()?'saldo EXE+RAP '+fm(soma(L,'sE')+soma(L,'sR')):'Transferegov')}
-    ${kpi('Desembolsado', fm(soma(L,'des')), pct(soma(L,'des'),soma(L,'rep'))+' do repasse', 'verde')}
-    ${kpi('A desembolsar', fm(soma(L,'aDes')), '', 'red')}</div>
+    ${kpi('Instrumentos', n(L.length), fm(soma(L,'rep'))+' de repasse', 'dest', {l:L, s:(a,b)=>b.rep-a.rep, c:[['Programa',o=>esc(o.prog.slice(0,50))],['Repasse',o=>fm(o.rep),'n']]})}
+    ${kpi('Programas', n(progs.size), 'com instrumentos no recorte', '', {l:L, s:(a,b)=>a.prog.localeCompare(b.prog)||b.rep-a.rep, c:[['Programa',o=>esc(o.prog.slice(0,60))],['Ação',o=>esc(o.acao)],['Repasse',o=>fm(o.rep),'n']]})}
+    ${kpi('Emendas', n(ems.size), fm(soma(L,'vEm'))+' indicados', '', {l:L.filter(o=>o.ems.length), s:(a,b)=>b.vEm-a.vEm, c:[['Emendas',o=>o.ems.map(e=>esc(e[0])+' · '+esc(e[1])).join('<br>')],['Valor',o=>fm(o.vEm),'n']]})}
+    ${kpi('Empenhado', fm(soma(L,'emp')), tesOk()?'saldo EXE+RAP '+fm(soma(L,'sE')+soma(L,'sR')):'Transferegov', '', {l:L.filter(o=>o.emp), s:(a,b)=>b.emp-a.emp, c:[['Empenhado',o=>fm(o.emp),'n'],['Saldo EXE+RAP',o=>o.sE===null?'—':fm(o.sE+o.sR),'n']]})}
+    ${kpi('Desembolsado', fm(soma(L,'des')), pct(soma(L,'des'),soma(L,'rep'))+' do repasse', 'verde', {l:L.filter(o=>o.des>0), s:(a,b)=>b.des-a.des, c:[['Desembolsado',o=>fm(o.des),'n'],['% do repasse',o=>pct(o.des,o.rep),'n']]})}
+    ${kpi('A desembolsar', fm(soma(L,'aDes')), '', 'red', {l:L.filter(o=>o.aDes>0), s:(a,b)=>b.aDes-a.aDes, c:[['Repasse',o=>fm(o.rep),'n'],['A desembolsar',o=>fm(o.aDes),'n'],['Fim vigência',o=>esc(o.fv),'n']]})}</div>
   ${sec('Instrumentos por ano de assinatura','quantidade · clique para filtrar', colunas(anos,'anoAss','#1f4e79'))}
   <div class="g2">${sec('Encerramento da vigência','quanto falta para a vigência terminar · clique para filtrar', colunas(FX_V.map(k => [k, cV[k]||0, k==='Vencida'||k==='Até 30 dias'?'#c0392b':k==='31 a 60 dias'||k==='61 a 90 dias'?'#e67e22':'#1f4e79']),'fx'))}
    ${sec('Empenhado por resultado primário','origem do recurso · clique para filtrar', hbar(agrupar(L,'rpN',o => o.emp),'rpN','#3a6f9f',fm))}</div>
@@ -176,11 +178,11 @@ function telaMov(L){
   pgs.sort((a,b) => b.d.split('/').reverse().join('').localeCompare(a.d.split('/').reverse().join('')));
   const des = soma(L,'des'), pg = soma(L,'pg');
   return `<div class="kp">
-    ${kpi('Repasse', fm(soma(L,'rep')), 'desembolsado '+fm(des), 'dest')}
-    ${kpi('Total de pagamentos', fm(pg), 'OBTV '+fm(soma(L,'pgObtv'))+' · em '+ANO+' '+fm(soma(L,'pgAno')))}
-    ${kpi('Pago / desembolsado', pct(pg, des+soma(L,'cp')), 'pago ÷ (desembolso + contrapartida)', 'verde')}
-    ${kpi('Devolução de recursos', fm(soma(L,'dt')+soma(L,'dc')), 'ao Tesouro '+fm(soma(L,'dt'))+' · convenente '+fm(soma(L,'dc')), 'red')}
-    ${kpi('Saldo em conta', fm(soma(L,'sc')), L.filter(o => o.sc>0).length+' instrumentos · rendimento '+fm(soma(L,'rend')), 'amar')}</div>
+    ${kpi('Repasse', fm(soma(L,'rep')), 'desembolsado '+fm(des), 'dest', {l:L, s:(a,b)=>b.rep-a.rep, c:[['Repasse',o=>fm(o.rep),'n'],['Desembolsado',o=>fm(o.des),'n']]})}
+    ${kpi('Total de pagamentos', fm(pg), 'OBTV '+fm(soma(L,'pgObtv'))+' · em '+ANO+' '+fm(soma(L,'pgAno')), '', {l:L.filter(o=>o.pg>0), s:(a,b)=>b.pg-a.pg, c:[['Pago',o=>fm(o.pg),'n'],['Pagamentos',o=>n(o.nPg),'n'],['Último pagamento',o=>esc(o.ultP||'—'),'n']]})}
+    ${kpi('Pago / desembolsado', pct(pg, des+soma(L,'cp')), 'pago ÷ (desembolso + contrapartida)', 'verde', {l:L.filter(o=>o.des>0), s:(a,b)=>(a.pg/(a.des+a.cp||1))-(b.pg/(b.des+b.cp||1)), c:[['Desembolso + contrap.',o=>fm(o.des+o.cp),'n'],['Pago',o=>fm(o.pg),'n'],['Pago / recebido',o=>pct(o.pg,o.des+o.cp),'n']]})}
+    ${kpi('Devolução de recursos', fm(soma(L,'dt')+soma(L,'dc')), 'ao Tesouro '+fm(soma(L,'dt'))+' · convenente '+fm(soma(L,'dc')), 'red', {l:L.filter(o=>o.dt+o.dc>0), s:(a,b)=>(b.dt+b.dc)-(a.dt+a.dc), c:[['Ao Tesouro',o=>fm(o.dt),'n'],['Convenente',o=>fm(o.dc),'n']]})}
+    ${kpi('Saldo em conta', fm(soma(L,'sc')), L.filter(o => o.sc>0).length+' instrumentos · rendimento '+fm(soma(L,'rend')), 'amar', {l:L.filter(o=>o.sc>0), s:(a,b)=>b.sc-a.sc, c:[['Saldo em conta',o=>fm(o.sc),'n'],['Rendimento',o=>fm(o.rend),'n'],['Último pagamento',o=>esc(o.ultP||'—'),'n']]})}</div>
   ${sec('Pagamentos realizados pelos convenentes, por ano','todos os instrumentos da SDR (não muda com os filtros)', colunas(P.meta.pagAno.map(([a,c]) => [String(a), c]), null, '#1f4e79'))}
   <div class="g2">${sec('Total movimentado por convenente','os 10 maiores pagamentos · clique para filtrar', hbar(agrupar(L.filter(o => o.pg>0),'prop',o => o.pg).slice(0,10),'prop','#1f4e79',fm))}
    ${sec('Instrumentos por dias sem pagamento','tempo desde o último pagamento do convenente', colunas(FX_P.map(k => [k, cP[k]||0, k==='Sem pagamento'?'#c0392b':k==='Mais de 365 dias'?'#e67e22':'#1f4e79']),'fxP'))}</div>
@@ -215,4 +217,5 @@ document.getElementById('busca').oninput = () => { PAG.l = 0; render(); };
 render();
 if(ABA!=='mov') lerTesouro(); else TES = {};
 __FILTRO__
+__KPI__
 </script></body></html>

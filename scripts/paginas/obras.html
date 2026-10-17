@@ -121,11 +121,13 @@ function render(){
   const cm = L.filter(o => o.vo>0), vo = cm.reduce((s,o)=>s+o.vo,0);
   const pf = vo ? cm.reduce((s,o)=>s+o.pf*o.vo,0)/vo : 0, pfin = cm.reduce((s,o)=>s+o.rep,0) ? cm.reduce((s,o)=>s+o.des,0)/cm.reduce((s,o)=>s+o.rep,0)*100 : 0;
   const par = L.filter(o => o.so==='Paralisada').sort((a,b) => b.des-a.des);
-  document.getElementById('kp').innerHTML = `<div class="k dest"><span>Obras</span><b>${tot.toLocaleString('pt-BR')}</b><small>${par.length} paralisadas</small></div>
-   <div class="k"><span>Valor de repasse</span><b>${fm(rep)}</b><small>desembolsado ${fm(des)}</small></div>
-   <div class="k"><span>Execução física</span><b>${pct(pf)}</b><small>ponderada pelo valor da obra</small></div>
-   <div class="k"><span>Execução financeira</span><b>${pct(pfin)}</b><small>desembolsado / repasse</small></div>
-   <div class="k red"><span>Liberado em obras paralisadas</span><b>${fm(par.reduce((s,o)=>s+o.des,0))}</b><small>${par.length} obras</small></div>`;
+  const cOb = extra => [['Instrumento',o=>`<b>${esc(o.n)}</b>`],['Objeto / local',objLoc]].concat(extra);
+  const kd = (ch, tit, l, s, extra) => { (window.KPI_DEF||(window.KPI_DEF={}))[ch] = {tit, lista: l.slice().sort(s), cols: cOb(extra)}; return `data-kpi="${ch}"`; };
+  document.getElementById('kp').innerHTML = `<div class="k dest" ${kd('obras','Obras',L,(a,b)=>b.rep-a.rep,[['Físico × financeiro',barra],['Repasse',o=>fm(o.rep),'n']])}><span>Obras</span><b>${tot.toLocaleString('pt-BR')}</b><small>${par.length} paralisadas</small></div>
+   <div class="k" ${kd('rep','Valor de repasse',L,(a,b)=>b.rep-a.rep,[['Repasse',o=>fm(o.rep),'n'],['Desembolsado',o=>fm(o.des),'n']])}><span>Valor de repasse</span><b>${fm(rep)}</b><small>desembolsado ${fm(des)}</small></div>
+   <div class="k" ${kd('fis','Execução física (menor % primeiro)',L.filter(o=>o.vo>0),(a,b)=>a.pf-b.pf,[['Físico × financeiro',barra],['Valor da obra',o=>fm(o.vo),'n']])}><span>Execução física</span><b>${pct(pf)}</b><small>ponderada pelo valor da obra</small></div>
+   <div class="k" ${kd('fin','Financeiro acima do físico (maior diferença primeiro)',L.filter(o=>o.vo>0 && o.pd>o.pf),(a,b)=>(b.pd-b.pf)-(a.pd-a.pf),[['Físico × financeiro',barra],['Diferença',o=>Math.round(o.pd-o.pf)+' p.p.','n']])}><span>Execução financeira</span><b>${pct(pfin)}</b><small>desembolsado / repasse</small></div>
+   <div class="k red" ${kd('par','Obras paralisadas com recurso liberado',par,(a,b)=>b.des-a.des,[['Físico × financeiro',barra],['Sem medição',o=>o.dsm?o.dsm+' dias':'—','n'],['Desembolsado',o=>fm(o.des),'n']])}><span>Liberado em obras paralisadas</span><b>${fm(par.reduce((s,o)=>s+o.des,0))}</b><small>${par.length} obras</small></div>`;
   const anos = {}; L.forEach(o => { const a = anos[o.ano] || (anos[o.ano] = {n:0,r:0,d:0}); a.n++; a.r+=o.rep; a.d+=o.des; });
   const ks = Object.keys(anos).filter(Boolean).sort(), mr = Math.max(1,...ks.map(k => anos[k].r));
   document.getElementById('anos').innerHTML = ks.map(k => `<div class="ano ${ehSel('ano',k)?'sel':''}" data-k="ano" data-v="${k}" title="${k}: ${anos[k].n} obras · repasse ${fm(anos[k].r)} · desembolsado ${fm(anos[k].d)}"><em>${anos[k].n}</em><div class="cols"><i style="height:${anos[k].r/mr*100}%;background:#1f4e79"></i><i style="height:${anos[k].d/mr*100}%;background:#2fae5c"></i></div><small>${k}</small></div>`).join('');
@@ -156,4 +158,5 @@ document.getElementById('limpar').onclick = () => { for(const k in SEL) delete S
 document.getElementById('busca').oninput = () => { PAG.todas = 0; render(); };
 render();
 __FILTRO__
+__KPI__
 </script></body></html>

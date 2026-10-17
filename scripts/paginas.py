@@ -65,6 +65,7 @@ def montar(tpl, dados, data_carga):
     h = h.replace('__MAPA__', open(os.path.join(AQUI, 'mapa.js'), encoding='utf-8').read())
     h = h.replace('__DATA__', data_carga)
     h = h.replace('__FILTRO__', open(os.path.join(AQUI, 'filtro.js'), encoding='utf-8').read())
+    h = h.replace('__KPI__', open(os.path.join(AQUI, 'kpi.js'), encoding='utf-8').read())
     return h.replace('__DADOS__', json.dumps(dados, ensure_ascii=False, separators=(',', ':')).replace('</', '<\\/'))
 
 

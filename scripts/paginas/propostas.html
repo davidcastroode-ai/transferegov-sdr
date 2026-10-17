@@ -123,11 +123,13 @@ function render(){
   document.getElementById('contagem').textContent = `${tot.toLocaleString('pt-BR')} propostas no recorte`;
   const cel = L.filter(o => o.grupo==='Celebrada'), ana = L.filter(o => o.grupo==='Enviada / em análise' || o.grupo==='Em complementação'), apr = L.filter(o => o.grupo==='Aprovada'), rej = L.filter(o => o.grupo==='Rejeitada');
   const eq = L.filter(o => o.equipe==='Equipe 420013 (na planilha)'), eqAt = L.filter(o => o.equipe.startsWith('Ação da 420013'));
-  document.getElementById('kp').innerHTML = `<div class="k dest"><span>Propostas</span><b>${tot.toLocaleString('pt-BR')}</b><small>repasse proposto ${fm(s('vr'))}</small></div>
-   <div class="k"><span>Celebradas</span><b>${cel.length.toLocaleString('pt-BR')}</b><small>${tot?Math.round(cel.length/tot*100):0}% · ${fm(cel.reduce((a,o)=>a+o.vr,0))}</small></div>
-   <div class="k"><span>Em análise / complementação</span><b>${ana.length.toLocaleString('pt-BR')}</b><small>${fm(ana.reduce((a,o)=>a+o.vr,0))}</small></div>
-   <div class="k"><span>Aprovadas, ainda sem instrumento</span><b>${apr.length.toLocaleString('pt-BR')}</b><small>${fm(apr.reduce((a,o)=>a+o.vr,0))}</small></div>
-   <div class="k"><span>Acompanhadas pela equipe 420013</span><b>${EQ ? eq.length.toLocaleString('pt-BR') : '…'}</b><small>${EQ ? eqAt.length.toLocaleString('pt-BR')+' de ações da 420013 fora da planilha (atualizar)' : 'lendo a planilha de Propostas…'}</small></div>`;
+  const cPr = [['Ano',o=>`<b>${esc(o.ano)}</b>`],['Proposta',o=>`<b>${esc(o.np)}</b><small>${o.ni?'instrumento '+esc(o.ni):'—'}</small>`],['Proponente / local',o=>`${esc(o.prop.slice(0,50))}<small>${esc(o.mun)}/${esc(o.uf)} · ${tag(o)}</small>`],['Parlamentar',o=>esc(o.parl)],['Repasse proposto',o=>fm(o.vr),'n']];
+  const kd = (ch, tit, l) => { (window.KPI_DEF||(window.KPI_DEF={}))[ch] = {tit, lista: l.slice().sort((a,b)=>b.ano.localeCompare(a.ano)||b.vr-a.vr), cols: cPr}; return `data-kpi="${ch}"`; };
+  document.getElementById('kp').innerHTML = `<div class="k dest" ${kd('tot','Propostas',L)}><span>Propostas</span><b>${tot.toLocaleString('pt-BR')}</b><small>repasse proposto ${fm(s('vr'))}</small></div>
+   <div class="k" ${kd('cel','Propostas celebradas',cel)}><span>Celebradas</span><b>${cel.length.toLocaleString('pt-BR')}</b><small>${tot?Math.round(cel.length/tot*100):0}% · ${fm(cel.reduce((a,o)=>a+o.vr,0))}</small></div>
+   <div class="k" ${kd('ana','Propostas em análise / complementação',ana)}><span>Em análise / complementação</span><b>${ana.length.toLocaleString('pt-BR')}</b><small>${fm(ana.reduce((a,o)=>a+o.vr,0))}</small></div>
+   <div class="k" ${kd('apr','Propostas aprovadas, ainda sem instrumento',apr)}><span>Aprovadas, ainda sem instrumento</span><b>${apr.length.toLocaleString('pt-BR')}</b><small>${fm(apr.reduce((a,o)=>a+o.vr,0))}</small></div>
+   <div class="k" ${kd('eq','Propostas acompanhadas pela equipe 420013',eq)}><span>Acompanhadas pela equipe 420013</span><b>${EQ ? eq.length.toLocaleString('pt-BR') : '…'}</b><small>${EQ ? eqAt.length.toLocaleString('pt-BR')+' de ações da 420013 fora da planilha (atualizar)' : 'lendo a planilha de Propostas…'}</small></div>`;
   const cg = Object.fromEntries(conta(L,'grupo'));
   document.getElementById('funil').innerHTML = ETAPAS.map(k => `<div class="${ehSel('grupo',k)?'sel':''}" data-k="grupo" data-v="${k}" style="background:${ECOR[k]}"><small>${k}</small><b>${(cg[k]||0).toLocaleString('pt-BR')}</b><small>${fm(L.filter(o=>o.grupo===k).reduce((a,o)=>a+o.vr,0))}</small></div>`).join('');
   document.getElementById('rej').innerHTML = `<span data-k="grupo" data-v="Rejeitada">✕ Rejeitadas / eliminadas: <b>${(cg['Rejeitada']||0).toLocaleString('pt-BR')}</b> (${fm(rej.reduce((a,o)=>a+o.vr,0))}) · clique para ver</span>`;
@@ -166,7 +168,7 @@ document.addEventListener('click', e => {
   const fp = e.target.closest('[data-fichaprop]'); if(fp){ try{ parent.abrirFichaProp(fp.dataset.fichaprop); }catch(x){} return; }
   const pg = e.target.closest('[data-pg]'); if(pg){ PAG[pg.dataset.pg] = (PAG[pg.dataset.pg]||0) + +pg.dataset.d; render(); return; }
   const ab0 = e.target.closest('[data-ab]');
-  if(ab0 && !e.target.closest('a,button') && parent.__fichaPropTG){ const o = D.find(x => 'l'+x.id===ab0.dataset.ab); if(o){ try{ parent.__fichaPropTG({...o, sitCurta: curtoSit(o.sit)}, EQ && EQ.get(o.k)); return; }catch(x){} } }
+  if(ab0 && !e.target.closest('a,button') && parent.__fichaPropTG){ const o = D.find(x => String(x.id)===ab0.dataset.ab.slice(1)); if(o){ try{ parent.__fichaPropTG({...o, sitCurta: curtoSit(o.sit)}, EQ && EQ.get(o.k)); return; }catch(x){} } }
   const ab = e.target.closest('[data-ab]'); if(ab && !e.target.closest('a,button')){ const k = ab.dataset.ab; ABERTO.has(k) ? ABERTO.delete(k) : ABERTO.add(k); render(); return; }
   const f = e.target.closest('[data-k][data-v]'); if(f){ const k = f.dataset.k, v = f.dataset.v; alternar(k, v); for(const p in PAG) PAG[p]=0; render(); }
 });
@@ -174,4 +176,5 @@ document.getElementById('limpar').onclick = () => { for(const k in SEL) delete S
 document.getElementById('busca').oninput = () => { PAG.l = 0; render(); };
 render();
 __FILTRO__
+__KPI__
 </script></body></html>
