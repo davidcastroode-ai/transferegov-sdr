@@ -207,7 +207,7 @@ def main(saida):
             'Emenda (autor)': ' | '.join(sorted({x['autor_emenda'] for x in nn if x['autor_emenda']})),
             'Próxima parcela do cronograma': (f"{int(n(prox[0].get('mes_cronograma_plano_trabalho'))):02d}/{int(n(prox[0].get('ano_cronograma_plano_trabalho')))} · {n(prox[0].get('valor_cronograma_plano_trabalho')):.2f}" if prox else ''),
             'Último parecer / análise': (br(ult.get('dt_data_parecer')) + ' · ' + s(ult.get('resultado_parecer') or ult.get('resultado_analise')) + ' · ' + s(ult.get('tp_analise_parecer') or ult.get('tx_situacao_analise'))).strip(' ·') if ult else '',
-            'Link do termo': s(tm.get('link_termo_execucao')),
+            'Link do termo': s((tm.get('link_termo_execucao') or {}).get('tx_link') if isinstance(tm.get('link_termo_execucao'), dict) else tm.get('link_termo_execucao')),
             'Nº da NS do termo': s((tm.get('formalizacao_termo_execucao') or {}).get('tx_numero_ns_termo')),
             'id_plano_acao': pid,
         })

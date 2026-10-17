@@ -27,6 +27,7 @@ dados abertos do Transferegov (Discricionárias e Legais).
 | `painel_empenhos.csv` | nota de empenho | versão leve das notas (instrumento, NE, UG, data, tipo, valor) usada na ficha do painel |
 | `pagina_*.html` (obras, prestacao, propostas, empenho, programas, movimentacao) | página | telas prontas (dados embutidos) que o Painel SDR abre nas abas Obras, Prestação de contas e Propostas da Parceria SDR |
 | `propostas_pag/AAAA.json` | ano | propostas dos anos anteriores (formato compacto), carregadas pela página Propostas depois de abrir |
+| `ted/ted_planilha.csv` | TED | um TED por linha (enviados e recebidos pelas UGs da SDR), nas colunas da aba TED da BASE TED; demais arquivos `ted/*.csv`: notas de crédito, eventos, programações financeiras, cronograma, pareceres, metas, programas |
 | `pagamentos.csv` | pagamento | pagamentos dos convenentes a fornecedores (OBTV e outros) |
 | `cronograma_desembolso.csv` | parcela | cronograma de desembolso previsto (concedente e convenente) |
 | `instrumentos_outros_orgaos.csv` | instrumento | instrumentos com UG da SDR mas concedente de outro ministério (o script da planilha apaga essas linhas) |
