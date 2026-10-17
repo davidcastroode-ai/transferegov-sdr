@@ -22,7 +22,7 @@
 <section class="card"><h3>Parlamentares</h3><p class="d">os 12 com mais propostas · clique para filtrar</p><div id="parl"></div></section>
 <section class="card"><h3>Mapa</h3><p class="d">cor do estado: nº de propostas · clique para filtrar</p><div class="mapa" id="mapa"></div></section>
 </div>
-<section class="card"><h3>Lista de propostas</h3><p class="d">clique na linha para abrir a ficha · coluna "Acompanhamento": técnico da equipe 420013 (planilha de Propostas) · "(atualizar)" = ação da 420013 que ainda não está na planilha · demais: UG/ação de quem acompanha</p>
+<section class="card"><h3>Lista de propostas</h3><p class="d">clique na linha para abrir a ficha da proposta · coluna "Acompanhamento": técnico da equipe 420013 (planilha de Propostas) · "(atualizar)" = ação da 420013 que ainda não está na planilha · demais: UG/ação de quem acompanha</p>
 <input class="busca" id="busca" placeholder="Buscar nº, proponente, município, parlamentar, objeto…"><div id="lista"></div></section>
 </div>
 <script>__MAPA__
@@ -164,6 +164,8 @@ document.addEventListener('click', e => {
   const fc = e.target.closest('[data-fichacompleta]'); if(fc){ try{ parent.abrirFichaInst(fc.dataset.fichacompleta); }catch(x){} return; }
   const fp = e.target.closest('[data-fichaprop]'); if(fp){ try{ parent.abrirFichaProp(fp.dataset.fichaprop); }catch(x){} return; }
   const pg = e.target.closest('[data-pg]'); if(pg){ PAG[pg.dataset.pg] = (PAG[pg.dataset.pg]||0) + +pg.dataset.d; render(); return; }
+  const ab0 = e.target.closest('[data-ab]');
+  if(ab0 && !e.target.closest('a,button') && parent.__fichaPropTG){ const o = D.find(x => 'l'+x.id===ab0.dataset.ab); if(o){ try{ parent.__fichaPropTG({...o, sitCurta: curtoSit(o.sit)}, EQ && EQ.get(o.k)); return; }catch(x){} } }
   const ab = e.target.closest('[data-ab]'); if(ab && !e.target.closest('a,button')){ const k = ab.dataset.ab; ABERTO.has(k) ? ABERTO.delete(k) : ABERTO.add(k); render(); return; }
   const f = e.target.closest('[data-k][data-v]'); if(f){ const k = f.dataset.k, v = f.dataset.v; SEL[k]===v ? delete SEL[k] : SEL[k] = v; for(const p in PAG) PAG[p]=0; render(); }
 });
