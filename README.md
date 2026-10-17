@@ -23,6 +23,7 @@ dados abertos do Transferegov (Discricionárias e Legais).
 | `historico_obras.csv` | dia × obra | fotografia diária do % físico (até 400 dias), usada no critério de obra paralisada da Lei 14.719/2023 |
 | `historico_situacao.csv` | mudança de situação | histórico de situações de cada instrumento (mostra quando ficou inadimplente, por exemplo) |
 | `planilha_parcerias.csv` | instrumento assinado | mesmas colunas (A:AH) e mesma ordem da planilha Parcerias; é o que o Apps Script da planilha usa para atualizar e acrescentar instrumentos novos |
+| `planilha_propostas.csv` | proposta | colunas A:Y da planilha BASE PROPOSTAS SDR (+ sugestão de acompanhamento), propostas de 3 anos atrás em diante |
 | `painel_empenhos.csv` | nota de empenho | versão leve das notas (instrumento, NE, UG, data, tipo, valor) usada na ficha do painel |
 | `pagina_*.html` (obras, prestacao, propostas, empenho, programas, movimentacao) | página | telas prontas (dados embutidos) que o Painel SDR abre nas abas Obras, Prestação de contas e Propostas da Parceria SDR |
 | `propostas_pag/AAAA.json` | ano | propostas dos anos anteriores (formato compacto), carregadas pela página Propostas depois de abrir |

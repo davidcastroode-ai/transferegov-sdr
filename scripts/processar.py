@@ -377,6 +377,37 @@ def main(saida):
     meta['propostas_por_ano'] = {ano: {'total': len(l), 'celebradas': sum(1 for r in l if r['celebrada'] == 'SIM')} for ano, l in sorted(por_ano.items())}
     meta['propostas_csv_desde'] = ano_min
 
+    # 7b. arquivo no formato da planilha "BASE PROPOSTAS SDR" (colunas A:Y), propostas de 3 anos atrás em diante
+    def etapa(r):
+        s = (r.get('situacao_proposta') or '').upper()
+        if r.get('celebrada') == 'SIM':
+            return 'Celebrada'
+        if 'REJEIT' in s or 'ELIMINAD' in s:
+            return 'Rejeitada'
+        if 'CADASTRAD' in s:
+            return 'Cadastrada'
+        if s.endswith('COMPLEMENTAÇÃO') and 'ENVIAD' not in s and 'ANÁLISE' not in s:
+            return 'Em complementação'
+        if 'APROVAD' in s and 'ANÁLISE' not in s and 'COMPLEMENTA' not in s:
+            return 'Aprovada'
+        return 'Enviada / em análise' if s else '(sem situação)'
+    AC420 = {'215A', '8593', '214Z', '00PN', '8622', '21B6', '8606'}
+    COLS_PROP = ['Nº Proposta', 'Ano', 'Situação no Transferegov', 'Etapa', 'Modalidade', 'Programa', 'Ação orçamentária', 'Parlamentar', 'Nº Emenda',
+                 'Tipo de parlamentar', 'Proponente', 'CNPJ', 'Natureza jurídica', 'UF', 'Município', 'Objeto', 'Valor global', 'Repasse proposto',
+                 'Contrapartida', 'Início vigência', 'Fim vigência', 'Nº Instrumento', 'UG', 'Situação do instrumento', 'Link da proposta', 'Sugestão acompanhamento']
+    plan_p = []
+    for r in props:
+        if (r['ano_proposta'] or '0') < str(ano_min):
+            continue
+        acoes = sorted({x.strip()[-4:] for x in (r['acao_orcamentaria'] or '').split('|') if x.strip()})
+        plan_p.append(dict(zip(COLS_PROP, [r['nr_proposta'], r['ano_proposta'], r['situacao_proposta'], etapa(r), r['modalidade'], r['programa'],
+                                           ' | '.join(acoes), r['parlamentar'], r['nr_emenda'], r['tipo_parlamentar'], r['proponente'], r['cnpj_proponente'],
+                                           r['natureza_juridica'], r['uf'], r['municipio'], r['objeto'], r['valor_global_proposta'], r['valor_repasse_proposta'],
+                                           r['valor_contrapartida_proposta'], r['inicio_vigencia_proposta'], r['fim_vigencia_proposta'], r['nr_instrumento'],
+                                           r['ug_emitente'], r['situacao_instrumento'], r['link_proposta'],
+                                           '(atualizar)' if AC420 & set(acoes) else 'Outras UGs'])))
+    gravar(saida, 'planilha_propostas.csv', COLS_PROP, plan_p)
+
     # 8. tabelas de detalhe (colunas originais do Transferegov)
     gravar(saida, 'empenhos.csv', cab_emp or ['NR_CONVENIO'], empenhos)
     # versão leve das notas de empenho para a ficha do painel (nota exata de cada instrumento)
