@@ -143,7 +143,7 @@ function render(){
   document.getElementById('mapa').innerHTML = mapa(L);
   const q = document.getElementById('busca').value.trim().toUpperCase();
   const lista = (q ? L.filter(o => (o.np+' '+o.ni+' '+o.prop+' '+o.mun+' '+o.parl+' '+o.ob).toUpperCase().includes(q)) : L).slice().sort((a,b) => (b.ano.localeCompare(a.ano)) || (b.vr-a.vr));
-  document.getElementById('lista').innerHTML = tabela('l', lista, [['Proposta',o=>`<b>${esc(o.np)}</b><small>${o.ni?'instrumento '+esc(o.ni):'—'}</small>`],
+  document.getElementById('lista').innerHTML = tabela('l', lista, [['Ano',o=>`<b>${esc(o.ano)}</b>`],['Proposta',o=>`<b>${esc(o.np)}</b><small>${o.ni?'instrumento '+esc(o.ni):'—'}</small>`],
     ['Proponente / local',o=>`${esc(o.prop.length>50?o.prop.slice(0,50)+'…':o.prop)}<small>${esc(o.mun)}/${esc(o.uf)} · ${tag(o)}</small>`],
     ['Programa / parlamentar',o=>`${esc(o.prog.length>45?o.prog.slice(0,45)+'…':o.prog)}<small>${esc(o.parl)}</small>`],
     ['Acompanhamento',o=>o.equipe.startsWith('Equipe')?`<span class="eq">${esc((EQ.get(o.k)||{}).exec||'Equipe 420013')}</span>`:o.ac420?`<span class="eq at">${EQ?'(atualizar)':'…'}</span>`:`<small style="color:#4a5a66">${o.ug?'UG '+esc(o.ug):'ação '+esc(o.acao)}</small>`],
