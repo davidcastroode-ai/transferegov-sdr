@@ -1,5 +1,7 @@
 name: Teste Transferegov
 on: workflow_dispatch
+permissions:
+  contents: write
 jobs:
   teste:
     runs-on: ubuntu-latest
@@ -9,6 +11,11 @@ jobs:
         with: {python-version: '3.12'}
       - name: Diagnóstico TED
         run: python scripts/diag_ted.py
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with: {name: spec-ted, path: spec_ted.json, if-no-files-found: ignore}
+      - name: Publicar na branch "diag"
+        run: |
+          cd diag && git init -q && git checkout -q -b diag
+          git config user.name robo-transferegov && git config user.email robo-transferegov@users.noreply.github.com
+          git add -A && git commit -q -m diag
+          git push -q --force "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git" diag
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
