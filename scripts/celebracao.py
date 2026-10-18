@@ -74,7 +74,7 @@ def main(pasta):
             rp = rpc[n].most_common(1)[0][0] if rpc[n] else ''
             linha = {
                 'Ano Proposta': r['ano_proposta'], 'Nº Instrumento': n, 'Nome Parlamentar': r['parlamentar'], 'UF': r['uf'],
-                'Nº Emenda': r['nr_emenda'], 'Nº Proposta': r['nr_proposta'], 'Modalidade': r['modalidade'],
+                'Nº Emenda': r['nr_emenda'], 'Nº Proposta': (lambda p: p.split('/')[0].zfill(6) + '/' + p.split('/')[1] if '/' in p else p)(r['nr_proposta'] or ''), 'Modalidade': r['modalidade'],
                 'Ação Orçamentária': acao[-4:] if acao else '', 'Nome Proponente': r['proponente'], 'CNPJ': r['cnpj_proponente'],
                 'Nº Processo': ''.join(c for c in r['nr_processo'] if c.isdigit()), 'Objeto': (r['objeto'] or '').upper(), 'Situação Instrumento': r['situacao'],
                 'Data Início de Vigência Conv.': r['inicio_vigencia'], 'Data Fim de Vigência Conv.': r['fim_vigencia'],
