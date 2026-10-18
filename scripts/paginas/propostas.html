@@ -45,7 +45,8 @@ function acomp(o){ o.equipe = EQ && EQ.has(o.k) ? 'Equipe 420013 (na planilha)' 
 const chaveProp = t => { const m = String(t||'').match(/(\d{1,7})\s*\/\s*(\d{4})/); return m ? (+m[1])+'/'+m[2] : ''; };
 const BASE = 'https://raw.githubusercontent.com/davidcastroode-ai/transferegov-sdr/dados/propostas_pag/';
 const decodificar = pk => { const DIC = pk.d; return pk.r.map(r => {
-  const sit = DIC.s[r[C.s]] || '';
+  // os dados abertos às vezes vêm sem a situação (ex.: "Proposta Aprovada e Plano de Trabalho enviado para Análise"): conta como em análise
+  const sit = DIC.s[r[C.s]] || 'Não informada nos dados abertos (em análise · conferir no Transferegov)';
   const o = {ano:String(r[C.ano]||''), sit, grupo: r[C.cel] ? 'Celebrada' : GRUPO(sit), mod:DIC.m[r[C.m]]||'', uf:DIC.u[r[C.u]]||'', prog:DIC.g[r[C.g]]||'(sem programa)',
     parl:DIC.p[r[C.p]]||'(sem parlamentar)', tp:DIC.t[r[C.t]]||'(sem emenda)', nj:DIC.j[r[C.j]]||'', cel:r[C.cel] ? 'Sim' : 'Não', vr:r[C.vr], vg:r[C.vg], np:r[C.np], ni:r[C.ni],
     prop:DIC.r[r[C.r]]||'', mun:DIC.c[r[C.c]]||'', id:r[C.id], em:r[C.em], ob:r[C.ob], ug:r[C.ug]||'', vi:r[C.vi]||'', vf:r[C.vf]||'', cnpj:r[C.cn]||'', acao:(DIC.a||[])[r[C.ac]]||'(sem ação)'};
@@ -146,7 +147,7 @@ function render(){
    <div class="k" ${kd('eq','Propostas acompanhadas pela equipe 420013',eq)}><span>Acompanhadas pela equipe 420013</span><b>${EQ ? eq.length.toLocaleString('pt-BR') : '…'}</b><small>${EQ ? fm(eq.reduce((a,o)=>a+o.vr,0))+' · acompanhamento atual da equipe' : 'lendo a planilha de Propostas…'}</small></div>`;
   const cg = Object.fromEntries(conta(L,'grupo'));
   document.getElementById('funil').innerHTML = ETAPAS.map(k => `<div class="${ehSel('grupo',k)?'sel':''}" data-k="grupo" data-v="${k}" style="background:${ECOR[k]}"><small>${k}</small><b>${(cg[k]||0).toLocaleString('pt-BR')}</b><small>${fm(L.filter(o=>o.grupo===k).reduce((a,o)=>a+o.vr,0))}</small></div>`).join('');
-  document.getElementById('rej').innerHTML = `<span data-k="grupo" data-v="Rejeitada">✕ Rejeitadas / eliminadas: <b>${(cg['Rejeitada']||0).toLocaleString('pt-BR')}</b> (${fm(rej.reduce((a,o)=>a+o.vr,0))}) · clique para ver</span>${cg['(sem situação)'] ? ` <span data-k="grupo" data-v="(sem situação)" style="margin-left:14px">· Sem situação informada no Transferegov: <b>${cg['(sem situação)'].toLocaleString('pt-BR')}</b></span>` : ''}`;
+  document.getElementById('rej').innerHTML = `<span data-k="grupo" data-v="Rejeitada">✕ Rejeitadas / eliminadas: <b>${(cg['Rejeitada']||0).toLocaleString('pt-BR')}</b> (${fm(rej.reduce((a,o)=>a+o.vr,0))}) · clique para ver</span>`;
   // por ano: anos antigos vêm do resumo (todas as propostas), anos recentes do recorte
   const A = {}; P.anos.forEach(([a,n,c]) => A[a] = {n, c, velho: +a < P.anomin && !CARREGADOS.has(String(a))});
   const filtrosAtivos = Object.keys(SEL).filter(k => k!=='ano').length;
