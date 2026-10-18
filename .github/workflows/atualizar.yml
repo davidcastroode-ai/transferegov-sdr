@@ -49,6 +49,7 @@ jobs:
       - name: Publicar na branch "dados"
         run: |
           cd saida
+          date -u '+%Y%m%d%H%M%S' > versao.txt
           for f in *; do echo "::notice title=$f::$(du -h "$f" | cut -f1)"; done
           git init -q
           git checkout -q -b dados
