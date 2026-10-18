@@ -70,7 +70,7 @@ def main(pasta):
             pad = round(min(pago[n] / base, 1), 4) if base > 0 and n in pago else (0 if base > 0 else '')
             dsd = int(r['dias_sem_desembolso']) if (r['dias_sem_desembolso'] or '').isdigit() else None
             ug_pg = faixa((hoje - ult[n]).days) if n in ult else ('Sem Desembolso' if des <= 0 else '-')
-            acao = (r['acao_orcamentaria'] or '').split('|')[0].strip()
+            acao = ((r['acao_orcamentaria'] or '') or (r.get('acao_pela_ptres') or '')).split('|')[0].strip()   # sem ação: pega pela PTRES das notas de empenho
             rp = rpc[n].most_common(1)[0][0] if rpc[n] else ''
             linha = {
                 'Ano Proposta': r['ano_proposta'], 'Nº Instrumento': n, 'Nome Parlamentar': r['parlamentar'], 'UF': r['uf'],
