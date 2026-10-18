@@ -31,6 +31,10 @@ jobs:
         env:
           HIST_ANTERIOR: /tmp/historico_obras.csv
 
+      - name: Base Celebração (Planilha Execução Parcerias SDR · UG 420013)
+        continue-on-error: true
+        run: python scripts/celebracao.py saida
+
       - name: TEDs (API pública de TED)
         continue-on-error: true
         run: python scripts/ted.py saida
