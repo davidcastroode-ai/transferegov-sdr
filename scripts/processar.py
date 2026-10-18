@@ -463,6 +463,10 @@ def main(saida):
              'ptres': e.get('PTRES', ''), 'pi': e.get('PLANO_INTERNO', ''),
              'ns_saldo': '1' if 'NSSALDO' in (e.get('OBSERVACAO_EMPENHO') or '').upper().replace(' ', '') else ''} for e in empenhos])   # nota gerada pela transferência de saldo entre UGs
     gravar(saida, 'desembolsos.csv', cab_des or ['NR_CONVENIO'], desembolsos)
+    # versão leve dos desembolsos para a ficha do painel (ordem bancária de cada desembolso)
+    gravar(saida, 'painel_desembolsos.csv', ['nr_instrumento', 'data', 'ob', 'ug', 'obs', 'valor'],
+           [{'nr_instrumento': x.get('NR_CONVENIO', ''), 'data': x.get('DATA_DESEMBOLSO', ''), 'ob': x.get('NR_SIAFI', ''), 'ug': x.get('UG_EMITENTE_DH', ''),
+             'obs': (x.get('OBSERVACAO_DH') or '')[:300], 'valor': v2(num(x.get('VL_DESEMBOLSADO')))} for x in desembolsos])
     gravar(saida, 'aditivos.csv', cab_ta or ['NR_CONVENIO'], aditivos)
     gravar(saida, 'prorrogacoes.csv', cab_pr or ['NR_CONVENIO'], prorrogas)
     gravar(saida, 'historico_situacao.csv', cab_hs or ['NR_CONVENIO'], historico)
