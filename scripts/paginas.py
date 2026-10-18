@@ -219,7 +219,7 @@ def execucao(pasta, data_carga):
         if r['situacao'] != 'Em execução' and not mov_ano:
             continue
         rpc = collections.Counter((e.get('RESULTADO_PRIMARIO') or '').strip() for e in emp.get(n, []) if (e.get('RESULTADO_PRIMARIO') or '').strip())
-        nes = [[e.get('NR_EMPENHO', ''), e.get('UG_EMITENTE', ''), e.get('DATA_EMISSAO', ''), f(e.get('VALOR_EMPENHO')), e.get('DESC_TIPO_NOTA', '')] for e in emp.get(n, [])]
+        nes = [[e.get('NR_EMPENHO', ''), e.get('UG_EMITENTE', ''), e.get('DATA_EMISSAO', ''), f(e.get('VALOR_EMPENHO')), e.get('DESC_TIPO_NOTA', ''), 1 if 'NSSALDO' in (e.get('OBSERVACAO_EMPENHO') or '').upper().replace(' ', '') else 0] for e in emp.get(n, [])]   # 6º: cópia da transferência de saldo (NS SALDO)
         ult_p = max((x[0] for x in ps if x[0]), default=None)
         forn = collections.defaultdict(lambda: [0.0, 0, ''])
         for x in ps:

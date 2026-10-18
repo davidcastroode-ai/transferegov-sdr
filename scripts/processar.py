@@ -457,10 +457,11 @@ def main(saida):
     # 8. tabelas de detalhe (colunas originais do Transferegov)
     gravar(saida, 'empenhos.csv', cab_emp or ['NR_CONVENIO'], empenhos)
     # versão leve das notas de empenho para a ficha do painel (nota exata de cada instrumento)
-    gravar(saida, 'painel_empenhos.csv', ['nr_instrumento', 'ne', 'ug', 'data', 'tipo', 'situacao', 'valor', 'ptres', 'pi'],
+    gravar(saida, 'painel_empenhos.csv', ['nr_instrumento', 'ne', 'ug', 'data', 'tipo', 'situacao', 'valor', 'ptres', 'pi', 'ns_saldo'],
            [{'nr_instrumento': e.get('NR_CONVENIO', ''), 'ne': e.get('NR_EMPENHO', ''), 'ug': e.get('UG_EMITENTE', ''), 'data': e.get('DATA_EMISSAO', ''),
              'tipo': e.get('DESC_TIPO_NOTA', ''), 'situacao': e.get('DESC_SITUACAO_EMPENHO', ''), 'valor': v2(num(e.get('VALOR_EMPENHO'))),
-             'ptres': e.get('PTRES', ''), 'pi': e.get('PLANO_INTERNO', '')} for e in empenhos])
+             'ptres': e.get('PTRES', ''), 'pi': e.get('PLANO_INTERNO', ''),
+             'ns_saldo': '1' if 'NSSALDO' in (e.get('OBSERVACAO_EMPENHO') or '').upper().replace(' ', '') else ''} for e in empenhos])   # nota gerada pela transferência de saldo entre UGs
     gravar(saida, 'desembolsos.csv', cab_des or ['NR_CONVENIO'], desembolsos)
     gravar(saida, 'aditivos.csv', cab_ta or ['NR_CONVENIO'], aditivos)
     gravar(saida, 'prorrogacoes.csv', cab_pr or ['NR_CONVENIO'], prorrogas)

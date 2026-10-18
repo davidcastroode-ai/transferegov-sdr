@@ -80,7 +80,8 @@ let TES = null;
 // nunca menor que desembolsado + saldo das notas no Tesouro (o que já foi pago saiu de algum empenho).
 // O Transferegov traz muitas notas com valor 0, por isso o "valor empenhado" dele sozinho não serve.
 function estimarEmp(o){
-  const porNE = new Map(); o.nes.forEach(([ne, ug, , v]) => { const k = ug+'|'+ne; porNE.set(k, Math.max(porNE.get(k)||0, v||0)); });
+  // a nota gerada pela transferência de saldo (NS SALDO, ex.: 135098 → 130141) é o MESMO empenho mudando de UG: não soma de novo
+  const porNE = new Map(); o.nes.forEach(([ne, ug, , v, , nsSaldo]) => { if(nsSaldo) return; const k = ug+'|'+ne; porNE.set(k, Math.max(porNE.get(k)||0, v||0)); });
   let soma = 0; porNE.forEach((v, k) => { const t = o.tes[k]; const vt = t ? Math.max(t.exe ? t.exe.emp : 0, t.rap ? (t.rap.emp||0) : 0) : 0; soma += Math.max(v, vt); });
   o.empNE = soma; o.empPiso = o.des + (o.sE||0) + (o.sR||0); o.empEst = Math.max(soma, o.empPiso, 0);
   o.reforco = o.sit==='Em execução' && o.rep - o.empEst > 1 ? o.rep - o.empEst : 0;
@@ -104,7 +105,7 @@ async function lerTesouro(){
 }
 const ABERTO = new Set(), PAG = {};
 function ficha(o){
-  const linhaNE = ([ne, ug, data, valor, tipo]) => { const t = o.tes[ug+'|'+ne];
+  const linhaNE = ([ne, ug, data, valor, tipo, nsSaldo]) => { if(nsSaldo) tipo = (tipo||'')+' · transferência de saldo (NS SALDO): não soma'; const t = o.tes[ug+'|'+ne];
     const st = t ? [t.exe?`EXE: pago ${fm(t.exe.pago)} · saldo ${fm(t.exe.saldo)}`:'', t.rap?`RAP: pago ${fm(t.rap.pago)} · saldo ${fm(t.rap.saldo)}`:''].filter(Boolean).join('<br>') : (TES && TES.mapa ? '<span style="color:#7b8790">fora das bases de '+ANO+'</span>' : '—');
     return `<tr><td>${esc(ne)}</td><td>${esc(ug)}</td><td>${esc(data)}</td><td>${esc(tipo)}</td><td class="n">${fm(valor)}</td><td>${st}</td></tr>`; };
   return `<div class="ficha"><h4>Instrumento ${esc(o.n)} · ${esc(o.prop)}</h4>
