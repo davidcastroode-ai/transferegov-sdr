@@ -46,7 +46,7 @@ const chaveProp = t => { const m = String(t||'').match(/(\d{1,7})\s*\/\s*(\d{4})
 const BASE = 'https://raw.githubusercontent.com/davidcastroode-ai/transferegov-sdr/dados/propostas_pag/';
 const decodificar = pk => { const DIC = pk.d; return pk.r.map(r => {
   // os dados abertos às vezes vêm sem a situação (ex.: "Proposta Aprovada e Plano de Trabalho enviado para Análise"): conta como em análise
-  const sit = DIC.s[r[C.s]] || 'Não informada nos dados abertos (em análise · conferir no Transferegov)';
+  const sit = DIC.s[r[C.s]] || 'Proposta Aprovada e Plano de Trabalho enviado para Análise (situação que não vem nos dados abertos)';
   const o = {ano:String(r[C.ano]||''), sit, grupo: r[C.cel] ? 'Celebrada' : GRUPO(sit), mod:DIC.m[r[C.m]]||'', uf:DIC.u[r[C.u]]||'', prog:DIC.g[r[C.g]]||'(sem programa)',
     parl:DIC.p[r[C.p]]||'(sem parlamentar)', tp:DIC.t[r[C.t]]||'(sem emenda)', nj:DIC.j[r[C.j]]||'', cel:r[C.cel] ? 'Sim' : 'Não', vr:r[C.vr], vg:r[C.vg], np:r[C.np], ni:r[C.ni],
     prop:DIC.r[r[C.r]]||'', mun:DIC.c[r[C.c]]||'', id:r[C.id], em:r[C.em], ob:r[C.ob], ug:r[C.ug]||'', vi:r[C.vi]||'', vf:r[C.vf]||'', cnpj:r[C.cn]||'', acao:(DIC.a||[])[r[C.ac]]||'(sem ação)'};
