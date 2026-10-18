@@ -27,6 +27,10 @@ D.forEach(o => {
   o.fxD = o.dsd===null ? 'Sem desembolso' : o.dsd<=90 ? 'Até 90 dias' : o.dsd<=180 ? '91 a 180 dias' : o.dsd<=365 ? '181 a 365 dias' : 'Mais de 365 dias';
   o.fxP = o.dsp===null ? 'Sem pagamento' : o.dsp<=30 ? 'Até 30 dias' : o.dsp<=90 ? '31 a 90 dias' : o.dsp<=180 ? '91 a 180 dias' : o.dsp<=365 ? '181 a 365 dias' : 'Mais de 365 dias';
   o.sE = null; o.sR = null; o.pS = null; o.tes = {};
+  // transferência de saldo (NS SALDO): a nota nova (UG de destino) é cópia de uma nota antiga (mesmo valor e data).
+  // O saldo vale só na nota nova; o da antiga não soma (senão o saldo e o empenho aparecem em dobro).
+  o.origemTransf = new Set();
+  o.nes.filter(x => x[5]).forEach(c => { const orig = o.nes.find(x => !x[5] && x[1]!==c[1] && x[2]===c[2] && Math.abs((x[3]||0)-(c[3]||0)) < 1 && !o.origemTransf.has(x[1]+'|'+x[0])); if(orig) o.origemTransf.add(orig[1]+'|'+orig[0]); });
   o.sobra = 0; estimarEmp(o);
 });
 const FX_V = ['Vencida','Até 30 dias','31 a 60 dias','61 a 90 dias','91 a 180 dias','181 a 365 dias','Mais de 1 ano'];
@@ -96,7 +100,8 @@ async function lerTesouro(){
   if(TES && TES.mapa){
     D.forEach(o => { let sE = 0, sR = 0, pg = 0, ach = 0; o.tes = {};
       o.nes.forEach(([ne, ug]) => { const t = TES.mapa[ug+'|'+ne]; if(!t) return; ach++; o.tes[ug+'|'+ne] = t;
-        if(t.exe){ sE += t.exe.saldo; pg += t.exe.pago; } if(t.rap){ sR += t.rap.saldo; pg += t.rap.pago; } });
+        const transf = o.origemTransf.has(ug+'|'+ne);   // nota antiga cujo saldo foi transferido: só o pago conta
+        if(t.exe){ if(!transf) sE += t.exe.saldo; pg += t.exe.pago; } if(t.rap){ if(!transf) sR += t.rap.saldo; pg += t.rap.pago; } });
       o.sE = sE; o.sR = sR; o.pS = pg; o.nAch = ach; estimarEmp(o);
       const s = sE + sR, falta = o.sit==='Em execução' ? o.aDes - s : -s;
       o.sobra = falta < -1 ? -falta : 0; estimarEmp(o); o.semSaldo = o.sit==='Em execução' && !o.reforco && falta > 1 ? falta : 0; });
@@ -105,7 +110,7 @@ async function lerTesouro(){
 }
 const ABERTO = new Set(), PAG = {};
 function ficha(o){
-  const linhaNE = ([ne, ug, data, valor, tipo, nsSaldo]) => { if(nsSaldo) tipo = (tipo||'')+' · transferência de saldo (NS SALDO): não soma'; const t = o.tes[ug+'|'+ne];
+  const linhaNE = ([ne, ug, data, valor, tipo, nsSaldo]) => { if(nsSaldo) tipo = (tipo||'')+' · nota da transferência de saldo (NS SALDO): o valor não soma de novo'; if(o.origemTransf.has(ug+'|'+ne)) tipo = (tipo||'')+' · saldo transferido para outra UG (o saldo desta nota não soma)'; const t = o.tes[ug+'|'+ne];
     const st = t ? [t.exe?`EXE: pago ${fm(t.exe.pago)} · saldo ${fm(t.exe.saldo)}`:'', t.rap?`RAP: pago ${fm(t.rap.pago)} · saldo ${fm(t.rap.saldo)}`:''].filter(Boolean).join('<br>') : (TES && TES.mapa ? '<span style="color:#7b8790">fora das bases de '+ANO+'</span>' : '—');
     return `<tr><td>${esc(ne)}</td><td>${esc(ug)}</td><td>${esc(data)}</td><td>${esc(tipo)}</td><td class="n">${fm(valor)}</td><td>${st}</td></tr>`; };
   return `<div class="ficha"><h4>Instrumento ${esc(o.n)} · ${esc(o.prop)}</h4>
