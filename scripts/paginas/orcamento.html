@@ -59,8 +59,8 @@ function render(){
     ${kpi('Dotação atual', fm(T.atu), pct(T.atu,T.ini)+' da Lei')}
     ${kpi('Bloqueado (crédito indisponível)', fm(T.indisp), pct(T.indisp,T.atu)+' da dotação atual', T.indisp>1?'red':'')}
   </div><div class="grp">Execução</div><div class="kp k4">
-    ${kpi('Provisionado às UGs', fm(T.provConc), pct(T.provConc,T.atu)+' da dotação atual')}
-    ${kpi('Empenhado', fm(T.emp), pct(T.emp,T.atu)+' da dotação atual', 'verde')}
+    ${kpi('Provisionado às UGs', fm(T.provRec), T.atu ? pct(T.provRec,T.atu)+' da dotação atual' : 'recebido por provisão · a dotação fica na setorial (130101)')}
+    ${kpi('Empenhado', fm(T.emp), T.atu ? pct(T.emp,T.atu)+' da dotação atual' : pct(T.emp,T.provRec)+' do provisionado', 'verde')}
     ${kpi('Pago', fm(T.pago), 'liquidado '+fm(T.liq)+' · '+pct(T.pago,T.emp)+' do empenhado')}
     ${kpi('Saldo livre para empenhar', fm(T.disp), 'crédito disponível (setorial + UGs)', T.disp>1?'amar':'')}
   </div><div class="g2">
@@ -68,7 +68,7 @@ function render(){
     <section class="card"><h3>Bloqueado por ação</h3><p class="d">crédito indisponível · clique para filtrar</p>${hbar([...porAc].map(([k,x]) => [k, x.indisp]).filter(x => x[1]>1).sort((a,b) => b[1]-a[1]), 'acaoN', '#c0392b', fm, k => pct(porAc.get(k).indisp, porAc.get(k).atu))}</section>
   </div>`;
   // tabela ação → PO (→ UG ao clicar)
-  const cols = [['Lei','ini'],['Supl.','sup'],['Cancel./reman.','canc'],['Dotação atual','atu'],['Bloqueado','indisp'],['Provisionado','provConc'],['Empenhado','emp'],['Liquidado','liq'],['Pago','pago'],['Disponível','disp']];
+  const cols = [['Lei','ini'],['Supl.','sup'],['Cancel./reman.','canc'],['Dotação atual','atu'],['Bloqueado','indisp'],['Provisionado','provRec'],['Empenhado','emp'],['Liquidado','liq'],['Pago','pago'],['Disponível','disp']];
   const cel = (x, k) => `<td class="${k==='indisp'&&x[k]>1?'bloq':k==='canc'&&x[k]<0?'neg':k==='canc'&&x[k]>0?'pos':''}">${f2(x[k])}</td>`;
   let h = `<table class="ot"><tr><th>Ação / plano orçamentário</th>${cols.map(c => `<th>${c[0]}</th>`).join('')}<th>% emp.</th></tr>`;
   [...porAc].sort((a,b) => b[1].atu-a[1].atu).forEach(([ac, x]) => {
@@ -84,7 +84,7 @@ function render(){
       }
     });
   });
-  document.getElementById('tabela').innerHTML = h + `<tr class="ac"><td>Total</td>${cols.map(c => cel(T,c[1])).join('')}<td>${pct(T.emp,T.atu)}</td></tr></table>`;
+  document.getElementById('tabela').innerHTML = h + `<tr class="ac"><td>Total</td>${cols.map(c => cel(T,c[1])).join('')}<td>${pct(T.emp,T.atu||T.provRec)}</td></tr></table>`;
 }
 document.getElementById('nota').innerHTML = `<b>Orçamento por ação</b> · Tesouro Gerencial (aba ORCAMENTO da BASE ORÇAMENTO SDR, lida pelo robô em __DATA__) · dotação, cortes e bloqueio na UG setorial (130101 · CGOF/MAPA); provisão, empenho e pagamento nas UGs da SDR · por padrão só as ações e POs acompanhados (2000 só 000H/000K, 00PN só 0003, 8606 só 0001). <b style="color:#c0392b">Teste</b>`;
 document.addEventListener('click', e => {
