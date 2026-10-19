@@ -338,6 +338,67 @@ def ler_nc(pasta_saida):
     return todas
 
 
+
+# ============== programações financeiras dos TEDs (relatório "TED SDR · PF", aba TESOURO TED PF) ==============
+CONFIG_PF = os.path.join(AQUI, '..', 'config', 'ted_tesouro_pf.txt')
+
+
+def interpretar_pf(linhas):
+    linhas = [[c.strip() for c in l] for l in linhas]
+    ih = next((i for i, l in enumerate(linhas[:40]) if any(na(c) == 'TRANSFERENCIA' for c in l) and any(na(c) == 'DOCUMENTO' for c in l)), None)
+    if ih is None:
+        raise ValueError('não achei as colunas "Transferência" e "Documento"')
+    H = [na(h) for h in linhas[ih]]
+    def col(rx):
+        return next((i for i, h in enumerate(H) if re.search(rx, h)), None)
+    def nome(i):
+        return i + 1 if i is not None and i + 1 < len(H) and not H[i + 1] else None
+    cT, cDoc, cDt, cFav, cObs = col(r'^TRANSFERENCIA$'), col(r'^DOCUMENTO$'), col(r'EMISSAO'), col(r'FAVORECIDO'), col(r'OBSERVACAO')
+    cCat, cFt = col(r'CATEGORIA'), col(r'FONTE')
+    cVal = col(r'MOVIM|SALDO|VALOR')
+    g = lambda l, i: l[i].strip() if i is not None and i < len(l) else ''
+    out = []
+    for l in linhas[ih + 1:]:
+        doc = g(l, cDoc)
+        if not re.search(r'\d{4}[A-Z]{2}\d{6}$', doc):
+            continue
+        ted = chave_ted(g(l, cT))
+        if not ted or ted in ('8', '-8'):
+            continue
+        v = num(g(l, cVal))
+        out.append({'ted': ted, 'data': g(l, cDt), 'doc': doc[-12:], 'tipo': doc[-8:-6], 'ug_emit': doc[:6] if len(doc) > 12 else '',
+                    'ug_fav': g(l, cFav), 'nome_fav': g(l, nome(cFav)), 'categoria': g(l, cCat), 'fonte': g(l, cFt), 'obs': g(l, cObs)[:300],
+                    'valor': v if v is not None else ''})
+    return out
+
+
+def ler_pf(pasta_saida):
+    if not os.path.exists(CONFIG_PF):
+        print('Tesouro TED PF: sem config/ted_tesouro_pf.txt', flush=True)
+        return []
+    urls = [l.strip() for l in open(CONFIG_PF, encoding='utf-8') if l.strip() and not l.strip().startswith('#')]
+    todas, info = [], []
+    for u in urls:
+        try:
+            out = interpretar_pf(list(csv.reader(io.StringIO(baixar(u)))))
+            todas += out
+            info.append({'link': u, 'linhas': len(out), 'ok': True})
+            print(f'Tesouro TED PF: {len(out)} documentos em {u[-60:]}', flush=True)
+        except Exception as e:
+            info.append({'link': u, 'erro': str(e)[:200], 'ok': False})
+            print(f'Tesouro TED PF: erro em {u[-60:]}: {e}', flush=True)
+    os.makedirs(os.path.join(pasta_saida, 'ted'), exist_ok=True)
+    campos = ['ted', 'data', 'doc', 'tipo', 'ug_emit', 'ug_fav', 'nome_fav', 'categoria', 'fonte', 'obs', 'valor']
+    with open(os.path.join(pasta_saida, 'ted', 'ted_tesouro_pf.csv'), 'w', encoding='utf-8', newline='') as fh:
+        w = csv.DictWriter(fh, fieldnames=campos)
+        w.writeheader()
+        w.writerows(todas)
+    json.dump({'gerado_em': time.strftime('%d/%m/%Y %H:%M'), 'fontes': info, 'linhas': len(todas)},
+              open(os.path.join(pasta_saida, 'ted', 'ted_tesouro_pf.json'), 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
+    return todas
+
+
 if __name__ == '__main__':
     ler(sys.argv[1] if len(sys.argv) > 1 else 'saida')
     ler_nc(sys.argv[1] if len(sys.argv) > 1 else 'saida')
+    ler_pf(sys.argv[1] if len(sys.argv) > 1 else 'saida')

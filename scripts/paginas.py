@@ -346,6 +346,9 @@ def ted(pasta):
     for x in ler(tp, 'ted_tesouro_nc.csv'):
         if x['ted']:
             ncT[x['ted']].append([x['nc'], x['data'], x['ug_emit'], x['ug_fav'], f(x['valor']), x['ptres'], x['pi'], x['nd'], x['rp'], 'Tesouro', '', x['acao'], x['obs'][:200]])
+    pfT = collections.defaultdict(list)
+    for x in ler(tp, 'ted_tesouro_pf.csv'):
+        pfT[x['ted']].append([x['doc'], x['data'], x['ug_emit'], x['ug_fav'], f(x['valor']), 'Tesouro · ' + (x['tipo'] or ''), x['obs'][:160]])
     usados = set()
     for o in linhas:
         k = ted_tesouro.chave_ted(o['n'])
@@ -360,6 +363,9 @@ def ted(pasta):
         o['tes'] = t
         nt = ncT.get(k, []) if k else []
         o['ncT'] = len(nt)
+        pt_ = pfT.get(k, []) if k else []
+        if pt_ and not o['pfs']:
+            o['pfs'] = pt_[:40]
         if nt and not o['ncs']:
             o['ncs'] = nt[:40]
             if not o['nc']:
@@ -388,7 +394,7 @@ def ted(pasta):
                            obj=t['obj'], sp='(só no Tesouro)', st=t['sit'] or '(sem termo)', fase='Só no Tesouro', sei=t['proc'], ass='', ini=t['ini'], fim=t['fim'],
                            dias=(lambda f: (datetime.datetime.strptime(f[:10], '%d/%m/%Y').date() - hoje).days if re.match(r'\d{2}/\d{2}/\d{4}', f or '') else None)(t['fim']),
                            fir=t['fir'] or 0, nc=t['nc'] or 0, op=0, pf=t['rep'] or 0, ar=t['aRep'] or 0, rp='', emd='', ult='', link='', ns='',
-                           ncs=ncT.get(k, [])[:40], pfs=[], cro=[], prox=None, par=[], met=[], org='Só no Tesouro', tes=t, dif=[], ncT=len(ncT.get(k, []))))
+                           ncs=ncT.get(k, [])[:40], pfs=pfT.get(k, [])[:40], cro=[], prox=None, par=[], met=[], org='Só no Tesouro', tes=t, dif=[], ncT=len(ncT.get(k, []))))
         o = linhas[-1]
         nt = ncT.get(k, [])
         if nt:
