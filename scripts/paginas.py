@@ -416,6 +416,36 @@ def ted(pasta):
             o['rp'] = ' | '.join(sorted({x[8] for x in nt if x[8]}))
             if not o['obj']:
                 o['obj'] = nt[0][12]
+    # ---- empenhos das unidades que receberam o TED (ted/ted_tesouro_ne.csv): liga pela UG favorecida + PTRES das NCs do TED
+    dig = lambda v: re.sub(r'\D', '', v or '')
+    idx = collections.defaultdict(set)
+    for o in linhas:
+        for x in (o['ncs'] or []) + ncT.get(ted_tesouro.chave_ted(o['n']) or '', []):
+            for pt in str(x[5] or '').split('|'):
+                if pt.strip() and x[3]:
+                    idx[(str(x[3]).strip(), pt.strip())].add(o['id'])
+    porId = {o['id']: o for o in linhas}
+    for o in linhas:
+        o['nes'], o['neT'] = [], [0.0, 0.0, 0.0, 0.0]
+    n_lig = 0
+    for e in ler(tp, 'ted_tesouro_ne.csv'):
+        cand = [porId[i] for i in idx.get((e['ug'], e['ptres']), ())]
+        if not cand:
+            continue
+        if len(cand) > 1:  # o mesmo UG+PTRES em mais de um TED: tenta pelo nº do TED ou pelo processo citado no empenho
+            txt = (e['desc'] + ' ' + e['processo']).upper()
+            m = [o for o in cand if (o['n'] and o['n'].upper() in txt) or (dig(o['sei']) and len(dig(o['sei'])) > 10 and dig(o['sei']) in dig(txt))]
+            cand = m or cand
+        comp = len(cand) > 1
+        v = [f(e['emp']), f(e['liq']), f(e['pago']), round(f(e['rpp']) + f(e['rpnp']), 2)]
+        n_lig += 1
+        for o in cand:
+            o['nes'].append([e['ne'], e['data'], e['fav_nome'] or e['fav'], e['ptres'], e['pi'], e['nd'], v[0], v[1], v[2], v[3], e['desc'][:220], 1 if comp else 0])
+            if not comp:
+                o['neT'] = [round(a_ + b_, 2) for a_, b_ in zip(o['neT'], v)]
+    for o in linhas:
+        o['nes'] = sorted(o['nes'], key=lambda x: (x[1][6:10], x[1][3:5], x[1][:2]), reverse=True)[:60]
+    print(f'empenhos ligados a TED: {n_lig}', flush=True)
     # ---- ajustes da equipe (aba TED ATUALIZADA): valem sobre a API e o Tesouro (a API guarda só a vigência original)
     pdata = lambda v: datetime.datetime.strptime(v[:10], '%d/%m/%Y').date() if re.match(r'\d{2}/\d{2}/\d{4}', v or '') else None
     aj = {x['ted'].upper(): x for x in ler(tp, 'ted_ajustes.csv')}
@@ -452,6 +482,7 @@ def ted(pasta):
             ('Descentralizado NC (API)', ap(lambda o: o['nc'])), ('NC no Tesouro', lambda o: round(sum(x[4] for x in o['ncs'] if x[9] == 'Tesouro'), 2) if o.get('ncT') else ''),
             ('Repassado PF (API)', ap(lambda o: o['pf'])), ('Repassado (Tesouro)', lambda o: tt(o, 'rep')), ('A repassar (Tesouro)', lambda o: tt(o, 'aRep')),
             ('A comprovar (Tesouro)', lambda o: tt(o, 'aComp')), ('Comprovado (Tesouro)', lambda o: tt(o, 'comp')),
+            ('Empenhado pela unidade (NE)', lambda o: o['neT'][0] if o.get('nes') else ''), ('Pago pela unidade (NE + RP)', lambda o: round(o['neT'][2] + o['neT'][3], 2) if o.get('nes') else ''),
             ('Notas de crédito', lambda o: ' | '.join(sorted({x[0] for x in o['ncs'] if x[0]}))), ('Programações financeiras', lambda o: ' | '.join(sorted({x[0] for x in o['pfs'] if x[0]}))),
             ('Divergências API x Tesouro', lambda o: ' · '.join(f'{r}: API {a_:,.2f} / Tesouro {b_:,.2f}' for r, a_, b_ in o.get('dif', [])))]
     with open(os.path.join(tp, 'ted_base_atualizada.csv'), 'w', encoding='utf-8', newline='') as fh:

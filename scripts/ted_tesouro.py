@@ -397,6 +397,78 @@ def ler_pf(pasta_saida):
               open(os.path.join(pasta_saida, 'ted', 'ted_tesouro_pf.json'), 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
     return todas
 
+# ---- empenhos feitos pelas unidades que receberam TED (relatório "EMPENHOS TED" · aba TESOURO TED NE)
+CONFIG_NE = os.path.join(AQUI, '..', 'config', 'ted_tesouro_ne.txt')
+ITENS_NE = [('emp', r'EMPENHAD'), ('rpp', r'RESTOS A PAGAR PROCESSADOS PAGOS'), ('rpnp', r'RESTOS A PAGAR NAO PROCESSADOS PAGOS'), ('liq', r'LIQUIDAD'), ('pago', r'^DESPESAS PAGAS')]
+
+
+def interpretar_ne(linhas):
+    linhas = [[c.strip() for c in l] for l in linhas]
+    ih = next((i for i, l in enumerate(linhas[:40]) if any(na(c) == 'UG EXECUTORA' for c in l) and any(na(c) == 'NE CCOR' for c in l)), None)
+    if ih is None:
+        raise ValueError('não achei as colunas "UG Executora" e "NE CCor"')
+    # títulos espalhados em até 3 linhas (o Tesouro põe "Natureza Despesa" na 3ª): usa o 1º não vazio de cada coluna
+    nC = max(len(l) for l in linhas[ih:ih + 3])
+    H = [next((na(l[i]) for l in linhas[ih:ih + 3] if i < len(l) and l[i].strip() and not re.fullmatch(r'\d+', l[i].strip())), '') for i in range(nC)]
+    H = [h if not re.search(r'SALDO|DESPESAS|RESTOS A PAGAR', h) else '' for h in H]
+    TT = [(i, na(c)) for l in linhas[ih:ih + 3] for i, c in enumerate(l) if c.strip()]
+    col = lambda rx: next((i for i, h in TT if re.search(rx, h)), None)
+    nome = lambda i: i + 1 if i is not None and i + 1 < len(H) and not H[i + 1] else None
+    cUG, cAc, cDt, cNE, cFav, cDesc, cProc, cPT, cPI, cND = (col(r'^UG EXECUTORA'), col(r'^ACAO GOVERNO'), col(r'DIA EMISSAO'), col(r'^NE CCOR$'),
+                                                          col(r'^NE CCOR - FAVORECIDO'), col(r'^NE CCOR - DESCRICAO'), col(r'PROCESSO'), col(r'^PTRES'), col(r'^PI$'), col(r'^NATUREZA DESPESA'))
+    # itens de informação: o nome vem numa das linhas logo abaixo do título (código numa linha, nome na outra)
+    itens = {}
+    for l in linhas[ih:ih + 3]:
+        for i, c in enumerate(l):
+            for k, rx in ITENS_NE:
+                if i not in itens and k not in itens.values() and re.search(rx, na(c)):
+                    itens[i] = k
+                    break
+    if not itens:
+        raise ValueError('não achei as colunas de empenhado / liquidado / pago')
+    g = lambda l, i: l[i].strip() if i is not None and i < len(l) else ''
+    out = {}
+    for l in linhas[ih + 1:]:
+        ne = g(l, cNE)
+        if not re.search(r'\d{4}NE\d{6}$', ne):
+            continue
+        ug = g(l, cUG)
+        k = (ne, g(l, cPT), g(l, cPI), g(l, cND))
+        o = out.get(k)
+        if not o:
+            o = out[k] = {'ne': ne[-12:], 'ug': ug, 'ug_nome': g(l, nome(cUG)), 'acao': g(l, cAc), 'data': g(l, cDt), 'fav': g(l, cFav), 'fav_nome': g(l, nome(cFav)),
+                          'desc': re.sub(r'\s+', ' ', g(l, cDesc))[:400], 'processo': g(l, cProc), 'ptres': g(l, cPT), 'pi': g(l, cPI), 'nd': g(l, cND),
+                          'emp': 0.0, 'liq': 0.0, 'pago': 0.0, 'rpp': 0.0, 'rpnp': 0.0}
+        for i, kk in itens.items():
+            v = num(g(l, i))
+            if v:
+                o[kk] = round(o[kk] + v, 2)
+    return list(out.values())
+
+
+def ler_ne(pasta_saida):
+    urls = [l.strip() for l in open(CONFIG_NE, encoding='utf-8') if l.strip() and not l.strip().startswith('#')] if os.path.exists(CONFIG_NE) else []
+    todas, info = [], []
+    for u in urls:
+        try:
+            out = interpretar_ne(list(csv.reader(io.StringIO(baixar(u)))))
+            todas += out
+            info.append({'link': u, 'linhas': len(out), 'ok': True})
+            print(f'Tesouro TED NE: {len(out)} empenhos em {u[-60:]}', flush=True)
+        except Exception as e:
+            info.append({'link': u, 'erro': str(e)[:200], 'ok': False})
+            print(f'Tesouro TED NE: erro em {u[-60:]}: {e}', flush=True)
+    os.makedirs(os.path.join(pasta_saida, 'ted'), exist_ok=True)
+    campos = ['ne', 'ug', 'ug_nome', 'acao', 'data', 'fav', 'fav_nome', 'desc', 'processo', 'ptres', 'pi', 'nd', 'emp', 'liq', 'pago', 'rpp', 'rpnp']
+    with open(os.path.join(pasta_saida, 'ted', 'ted_tesouro_ne.csv'), 'w', encoding='utf-8', newline='') as fh:
+        w = csv.DictWriter(fh, fieldnames=campos)
+        w.writeheader()
+        w.writerows(todas)
+    json.dump({'gerado_em': time.strftime('%d/%m/%Y %H:%M'), 'fontes': info, 'linhas': len(todas)},
+              open(os.path.join(pasta_saida, 'ted', 'ted_tesouro_ne.json'), 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
+    return todas
+
+
 # ---- ajustes da equipe (aba TED ATUALIZADA da BASE TED): fim da vigência prorrogado, fase e observação corrigidos à mão
 CONFIG_AJ = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'config', 'ted_ajustes.txt')
 
@@ -452,3 +524,4 @@ if __name__ == '__main__':
     ler_nc(sys.argv[1] if len(sys.argv) > 1 else 'saida')
     ler_pf(sys.argv[1] if len(sys.argv) > 1 else 'saida')
     ler_aj(sys.argv[1] if len(sys.argv) > 1 else 'saida')
+    ler_ne(sys.argv[1] if len(sys.argv) > 1 else 'saida')
