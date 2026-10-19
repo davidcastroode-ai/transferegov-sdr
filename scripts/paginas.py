@@ -628,9 +628,15 @@ def ted(pasta):
         t, e = o.get('tes') or {}, o.get('eq') or {}
         o['api'] = dict(fir=o['fir'], nc=o['nc'], pf=o['pf'], ar=o['ar'], ini=o['ini'], fim=o.get('fimApi') or o['fim'], ano=o['ano'])
         nt, pt_ = o.get('ncTes') or [], o.get('pfTes') or []
-        # valor firmado: Tesouro → planilha → API
+        # valor firmado: Tesouro → planilha → API.
+        # No SIAFI a supressão (ou o aditivo) não mexe em "valores firmados": zera/aumenta o "a repassar". O valor atual do TED é então
+        # a repassar + repassado (a comprovar, comprovado, a aprovar, aprovado/concluído) + devolvido. Ex.: 991352, firmado 10,2 Mi, 7,2 Mi suprimidos.
         if pct_(t.get('fir')) and t['fir'] > 0:
             o['fir'] = t['fir']
+            if t.get('aRep') is not None and t.get('rep') is not None:
+                atual = round(t['aRep'] + t['rep'] + (t.get('dev') or 0), 2)
+                if atual > 0 and abs(atual - t['fir']) > 1:
+                    o['firOrig'], o['ajValor'], o['fir'] = t['fir'], round(atual - t['fir'], 2), atual
         elif e.get('firm'):
             o['fir'] = e['firm']
         # descentralizado: NCs do Tesouro (sem repetição, devoluções negativas) → saldo do Tesouro → API
@@ -642,11 +648,9 @@ def ted(pasta):
                 o['acao'] = ' | '.join(dict.fromkeys(acT))
         elif pct_(t.get('nc')) is not None:
             o['nc'] = t['nc']
-        # repassado: a comprovar + comprovado no Tesouro (o que já saiu para a unidade) → conta de repasse do Tesouro → API
+        # repassado: o que já saiu para a unidade no Tesouro (a comprovar + comprovado + a aprovar + aprovado/concluído) → API
         # (a soma do relatório de PF ainda não é confiável: valores com dígito a mais e devoluções com sinal trocado; as PFs aparecem só na lista)
-        if pct_(t.get('aComp')) is not None or pct_(t.get('comp')) is not None:
-            o['pf'] = round((t.get('aComp') or 0) + (t.get('comp') or 0), 2)
-        elif pct_(t.get('rep')) is not None:
+        if pct_(t.get('rep')) is not None:
             o['pf'] = t['rep']
         if pt_:
             o['pfs'] = pt_[:40]

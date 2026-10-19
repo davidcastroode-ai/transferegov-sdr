@@ -198,8 +198,9 @@ def interpretar(linhas, origem=''):
         # (firmado − a repassar só como último recurso: "a repassar" zerado não quer dizer que tudo foi repassado — ex.: TED 991352,
         #  firmado 10,2 Mi, a repassar 0, mas só 3 Mi repassados)
         if o.get('rep') is None:
-            if o.get('aComp') is not None or o.get('comp') is not None:
-                o['rep'] = round((o.get('aComp') or 0) + (o.get('comp') or 0), 2)
+            ks = ('aComp', 'comp', 'aApr', 'apr')   # a comprovar → comprovado → a aprovar → aprovado/concluído: tudo isso já saiu
+            if any(o.get(k) is not None for k in ks):
+                o['rep'] = round(sum(o.get(k) or 0 for k in ks), 2)
             elif o['fir'] is not None and o['aRep'] is not None:
                 o['rep'] = round(o['fir'] - o['aRep'], 2)
     return out
