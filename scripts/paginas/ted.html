@@ -1,6 +1,7 @@
 <!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>TED API</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">__CSS__
 <style>
+.kp.k5{grid-template-columns:repeat(5,1fr)}@media(max-width:900px){.kp.k5{grid-template-columns:1fr 1fr}}
 #fundoF{position:fixed;inset:0;background:rgba(20,30,40,.6);z-index:9999;overflow:auto;padding:24px 12px}#fundoF[hidden]{display:none}.fjan{max-width:1040px;margin:0 auto}.fjan .fi{margin:0}
 
 .fi{background:#fff;border-radius:12px;box-shadow:0 3px 14px rgba(0,0,0,.1);overflow:hidden;margin:8px 4px 12px;text-align:left;white-space:normal}
@@ -88,6 +89,9 @@ const kpi = (rot, val, sub, cls, def) => { let a = '';
   return `<div class="k ${cls||''}"${a}><span>${rot}</span><b>${val}</b><small>${sub||''}</small></div>`; };
 
 const ABERTO = new Set(), PAG = {};
+// empenhado pela unidade maior que o crédito do TED (firmado ou descentralizado): pede verificação (aditivo? empenho de outro instrumento?)
+const credTED = o => (o.fir||0) > 0 ? o.fir : (o.nc||0);
+const empAcima = o => o.neT && o.neT[0] > credTED(o) + 1;
 const mesN = m => ['','jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'][m]||'';
 function ficha(o){
   const t = (cab, linhas) => `<div class="rolar"><table class="mini"><tr>${cab.map(c => `<th class="${/Valor|Qtd|Previsto|Repassado|Descentralizado|Empenhado|Liquidado|Pago/.test(c)?'n':''}">${c}</th>`).join('')}</tr>${linhas}</table></div>`;
@@ -102,7 +106,7 @@ function ficha(o){
   return `<div class="fi"><div class="fcab" style="--fc:${COR_F[o.fase]||'#1f4e79'}">
    <small>Termo de Execução Descentralizada · ${o.er==='Recebido'?'recebido pela':'enviado pela'} UG ${esc(o.er==='Recebido'?o.ugr:o.ugd)}</small>
    <h4>${o.n?'TED '+esc(o.n):'Plano de ação '+esc(o.cod)}</h4><p>${esc(o.unr)} · UG ${esc(o.ugr)}</p>
-   <span class="pl" style="background:${COR_F[o.fase]}">● ${esc(o.fase)}</span>${o.org?`<span class="pl az">${esc(o.org)}</span>`:''}${o.emd?`<span class="pl">Emenda ${esc(o.emd)}</span>`:''}${alerta?`<span class="pl vm">⚠ ${alerta}</span>`:''}
+   <span class="pl" style="background:${COR_F[o.fase]}">● ${esc(o.fase)}</span>${o.org?`<span class="pl az">${esc(o.org)}</span>`:''}${o.emd?`<span class="pl">Emenda ${esc(o.emd)}</span>`:''}${alerta?`<span class="pl vm">⚠ ${alerta}</span>`:''}${empAcima(o)?`<span class="pl vm">⚠ Empenhado (${fm(o.neT[0])}) acima do valor do TED (${fm(credTED(o))}): verificar</span>`:''}
    <div class="cx"><div>Ano<b>${esc(o.ano)}</b></div><div>Departamento<b>${esc(o.dep)}</b></div><div>UF<b>${esc(o.uf)||'—'}</b></div><div>Ação<b>${esc(o.acao)}</b></div><div>RP<b>${esc(o.rpN)}</b></div><div>Situação do termo<b>${esc(o.stN)}</b></div><div>Órgão de quem recebe<b>${esc(o.orr)}</b></div></div>
    <div class="fa"><button type="button" data-imp="${esc(o.id)}">🖨 Imprimir / PDF</button><button type="button" data-fecha title="Fechar (Esc)">✕</button></div></div>
   <div class="fcorpo">
@@ -183,11 +187,12 @@ function telaTED(L){
     ${kpi('A repassar', fm(soma(L,'ar')), n(ard.length)+' TEDs com financeiro a repassar', 'amar', {l: ard, s:(a,b)=>b.ar-a.ar, c:[['Firmado',o=>fm(o.fir),'n'],['A repassar',o=>fm(o.ar),'n']]})}
   </div>`;
   const vcol = [['Fim da vigência',o=>esc(o.fim)+`<small>${o.dias===null?'':o.dias<0?'vencida há '+(-o.dias)+' d':'faltam '+o.dias+' d'}</small>`,'n'],['A repassar',o=>fm(o.ar),'n']];
-  const kp2 = `<div class="grp">Acompanhamento</div><div class="kp k4">
+  const kp2 = `<div class="grp">Acompanhamento</div><div class="kp k5">
     ${kpi('Em execução', n(vig.length), fm(soma(vig,'fir'))+' firmados', '', {l: vig, s:(a,b)=>a.dias-b.dias, c: vcol})}
     ${kpi('Vigência vence em 90 dias', n(v90.length), 'termos em execução', v90.length?'amar':'', {l: v90, s:(a,b)=>a.dias-b.dias, c: vcol})}
     ${kpi('Vigência vencida sem prestação', n(venc.length), 'termo ainda "em execução"', venc.length?'red':'', {l: venc, s:(a,b)=>a.dias-b.dias, c: vcol})}
     ${kpi('Em prestação de contas', n(pc.length), 'cumprimento do objeto iniciado ou em análise', '', {l: pc, c:[['Situação do termo',o=>esc(o.stN)],['Firmado',o=>fm(o.fir),'n']]})}
+    ${(() => { const ac = L.filter(empAcima); return kpi('Empenhado acima do valor do TED', n(ac.length), 'verificar: aditivo de valor ou empenho de outro instrumento', ac.length?'red':'', {l: ac, s:(a,b)=>(b.neT[0]-credTED(b))-(a.neT[0]-credTED(a)), c:[['Firmado',o=>fm(o.fir),'n'],['Descentralizado',o=>fm(o.nc),'n'],['Empenhado',o=>fm(o.neT[0]),'n'],['Diferença',o=>fm(o.neT[0]-credTED(o)),'n']]}); })()}
   </div>`;
   const tesL = L.filter(o => o.tes), so = L.filter(o => o.org==='Só no Tesouro'), dif = L.filter(o => o.dif && o.dif.length), soAPI = L.filter(o => o.org==='Só na API');
   const sT = k => tesL.reduce((a,o) => a+(o.tes[k]||0), 0);
