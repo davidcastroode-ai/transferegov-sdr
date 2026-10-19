@@ -7,12 +7,12 @@ function alternar(k, v){ v = String(v); const s = _selArr(k) || (SEL[k] = []); c
 function _baseF(){ return typeof base === 'function' ? base() : D; }
 function filtrar(exceto){
   const at = FIL.filter(([k]) => k !== exceto && _selArr(k)).map(([k]) => [k, new Set(SEL[k])]);
-  return _baseF().filter(o => at.every(([k, s]) => s.has(String(o[k]))));
+  return _baseF().filter(o => at.every(([k, s]) => Array.isArray(o[k]) ? o[k].some(x => s.has(String(x))) : s.has(String(o[k]))));
 }
 function _rotF(k, v){ return (typeof ROTULO_F === 'object' && ROTULO_F[k]) ? ROTULO_F[k](v) : v; }
 const _semAc = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase();
 function _opcoesF(k){
-  const c = new Map(); filtrar(k).forEach(o => { const v = String(o[k]); c.set(v, (c.get(v) || 0) + 1); });
+  const c = new Map(); filtrar(k).forEach(o => (Array.isArray(o[k]) ? o[k] : [o[k]]).forEach(x => { const v = String(x); c.set(v, (c.get(v) || 0) + 1); }));
   (_selArr(k) || []).forEach(v => { if(!c.has(v)) c.set(v, 0); });
   return [...c.entries()].sort((a, b) => /^ano/i.test(k) ? b[0].localeCompare(a[0]) : (b[1] - a[1]) || a[0].localeCompare(b[0], 'pt'));
 }

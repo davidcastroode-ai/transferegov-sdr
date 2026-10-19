@@ -612,6 +612,20 @@ def ted(pasta):
         e = o.get('eq') or {}
         o['dep'] = (e.get('dep') or '').upper() or '(sem departamento)'
         o['uf'] = (e.get('uf') or '').upper()
+        # ação sempre em maiúsculas, sem repetir (20zv e 20ZV eram contadas como ações diferentes); 20VZ é erro de digitação de 20ZV
+        ac = []
+        for a_ in re.split(r'[|;,/]', o.get('acao') or ''):
+            a_ = a_.strip().upper()
+            a_ = {'20VZ': '20ZV'}.get(a_, a_)
+            if a_ and a_ != '(SEM AÇÃO)' and a_ not in ac:
+                ac.append(a_)
+        o['acao'] = ' | '.join(ac) or '(sem ação)'
+        # ano: TED antigo (só no SIAFI) vem sem ano no relatório; usa o início da vigência ou a 1ª nota de crédito
+        if not re.fullmatch(r'\d{4}', str(o.get('ano') or '')):
+            anos = [d[-4:] for d in [o.get('ini') or o.get('ass') or ''] + sorted((x[1] for x in o.get('ncs') or [] if x[1]), key=lambda d: d[-4:] + d[3:5] + d[:2])
+                    if re.fullmatch(r'\d{2}/\d{2}/\d{4}', d or '')]
+            if anos:
+                o['ano'], o['anoInf'] = anos[0], True
     print(f'controle interno: {n_eq} TEDs completados, {n_so} só no controle', flush=True)
     tesInfo = {'carregado': bool(tes), 'gerado_em': tes_meta.get('gerado_em', ''), 'teds': len(tes), 'soTesouro': len(tes) - len(usados),
                'erros': [x.get('erro') for x in tes_meta.get('fontes', []) if not x.get('ok')]}

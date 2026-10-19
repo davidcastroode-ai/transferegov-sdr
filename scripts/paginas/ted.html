@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>TED API</title>
+<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>TED GERAL SDR</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">__CSS__
 <style>
 .kp.k5{grid-template-columns:repeat(5,1fr)}@media(max-width:900px){.kp.k5{grid-template-columns:1fr 1fr}}
@@ -39,7 +39,36 @@
 <div id="corpo"></div>
 <section class="card"><h3>Detalhamento dos TEDs</h3><p class="d">clique na linha para abrir a ficha</p><input class="busca" id="busca" placeholder="Buscar nº TED, plano, unidade, objeto, SEI…"><div id="lista"></div></section>
 </div>
-<script>
+<script>__MAPA__</script><script>
+function normAccent(s){ return (s||'').toString().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().replace(/\s+/g,' ').trim(); }
+const UF_NOMES = {AC:'Acre',AL:'Alagoas',AM:'Amazonas',AP:'Amapá',BA:'Bahia',CE:'Ceará',DF:'Distrito Federal',ES:'Espírito Santo',GO:'Goiás',MA:'Maranhão',MG:'Minas Gerais',MS:'Mato Grosso do Sul',MT:'Mato Grosso',PA:'Pará',PB:'Paraíba',PE:'Pernambuco',PI:'Piauí',PR:'Paraná',RJ:'Rio de Janeiro',RN:'Rio Grande do Norte',RO:'Rondônia',RR:'Roraima',RS:'Rio Grande do Sul',SC:'Santa Catarina',SE:'Sergipe',SP:'São Paulo',TO:'Tocantins'};
+const UF_PISTAS = [
+  ['MATO GROSSO DO SUL','MS'],['RIO GRANDE DO SUL','RS'],['RIO GRANDE DO NORTE','RN'],['ESPIRITO SANTO','ES'],['SANTA CATARINA','SC'],['MINAS GERAIS','MG'],['SAO PAULO','SP'],
+  ['RIO DE JANEIRO','RJ'],['MATO GROSSO','MT'],['DISTRITO FEDERAL','DF'],['PERNAMBUCO','PE'],['PARAIBA','PB'],['ALAGOAS','AL'],['SERGIPE','SE'],['BAHIA','BA'],['CEARA','CE'],
+  ['MARANHAO','MA'],['PIAUI','PI'],['TOCANTINS','TO'],['GOIAS','GO'],['RONDONIA','RO'],['RORAIMA','RR'],['AMAZONAS','AM'],['AMAPA','AP'],['ACRE','AC'],['PARANA','PR'],['PARAENSE','PA'],[' DO PARA','PA'],
+  ['VICOSA','MG'],['LAVRAS','MG'],['UBERLANDIA','MG'],['JUIZ DE FORA','MG'],['OURO PRETO','MG'],['UFMG','MG'],['UFV','MG'],['UFLA','MG'],['PELOTAS','RS'],['SANTA MARIA','RS'],['PAMPA','RS'],
+  ['UFRGS','RS'],['PORTO ALEGRE','RS'],['FLORIANOPOLIS','SC'],['UFSC','SC'],['FRONTEIRA SUL','SC'],['CURITIBA','PR'],['LONDRINA','PR'],['MARINGA','PR'],['UTFPR','PR'],['UFPR','PR'],
+  ['CAMPINAS','SP'],['PIRACICABA','SP'],['ESALQ','SP'],['UNESP','SP'],['UFSCAR','SP'],['SEROPEDICA','RJ'],['UFRRJ','RJ'],['NITEROI','RJ'],['FIOCRUZ','RJ'],['GOIANIA','GO'],['UFG','GO'],['IFG','GO'],
+  ['CUIABA','MT'],['UFMT','MT'],['IFMT','MT'],['DOURADOS','MS'],['CAMPO GRANDE','MS'],['UFMS','MS'],['RECIFE','PE'],['UFRPE','PE'],['UFPE','PE'],['CAMPINA GRANDE','PB'],['UFPB','PB'],
+  ['MOSSORO','RN'],['UFERSA','RN'],['UFRN','RN'],['FORTALEZA','CE'],['UFC ','CE'],['TERESINA','PI'],['UFPI','PI'],['SAO LUIS','MA'],['UFMA','MA'],['PALMAS','TO'],['UFT','TO'],
+  ['PORTO VELHO','RO'],['RIO BRANCO','AC'],['MACAPA','AP'],['BOA VISTA','RR'],['ARACAJU','SE'],['UFS ','SE'],['MACEIO','AL'],['UFAL','AL'],['SALVADOR','BA'],['CRUZ DAS ALMAS','BA'],['UFRB','BA'],
+  ['UFBA','BA'],['MANAUS','AM'],['UFAM','AM'],['INPA','AM'],['BELEM','PA'],['UFPA','PA'],['UFRA','PA'],['VITORIA','ES'],['UFES','ES'],['BRASILIA','DF'],['UNB','DF'],['CNPQ','DF'],
+  ['CONSELHO NAC','DF'],['MRE','DF'],['MINISTERIO','DF'],['CODEVASF','DF'],['VALES DO SAO FRANCISCO','DF'],['CONAB','DF'],['INCRA','DF']];
+// unidades da Embrapa e outras entidades pela sede
+const EMBRAPA_UF = [['AGROBIOLOGIA','RJ'],['CAFE','DF'],['CERRADOS','DF'],['CPAC','DF'],['TERRITORIAL','SP'],['UVA E VINHO','RS'],['AGROENERGIA','DF'],['CENARGEN','DF'],['RECURSOS GENETICOS','DF'],
+  ['CNPAF','GO'],['ARROZ E FEIJAO','GO'],['CNPASA','TO'],['PESCA E AQUICULTURA','TO'],['CNPC','CE'],['CAPRINOS','CE'],['CNPGL','MG'],['GADO DE LEITE','MG'],['CNPH','DF'],['HORTALICAS','DF'],
+  ['CNPMA','SP'],['MEIO AMBIENTE','SP'],['CNPMS','MG'],['MILHO E SORGO','MG'],['CNPS','RJ'],['SOLOS','RJ'],['CPACT','RS'],['CLIMA TEMPERADO','RS'],['CPAF ACRE','AC'],['ACRE','AC'],
+  ['CPAF RONDONIA','RO'],['RONDONIA','RO'],['CPAMT','PI'],['MEIO NORTE','PI'],['CTAA','RJ'],['AGROINDUSTRIA DE ALIMENTOS','RJ'],['CNPTIA','SP'],['AGRICULTURA DIGITAL','SP'],
+  ['AGROSSILVIPASTORIL','MT'],['ALGODAO','PB'],['AMAPA','AP'],['AMAZONIA ORIENTAL','PA'],['GADO DE CORTE','MS'],['SOJA','PR'],['TRIGO','RS'],['CNAT','CE'],['AGROINDUSTRIA TROPICAL','CE']];
+const UF_PISTAS_EXTRA = [['SANTA CATAR','SC'],['ESPIRITO SA','ES'],['SEMI','RN'],['FLUMINENSE','RJ'],['VALE SAO FRANCISCO','PE'],['SERTAOPE','PE'],['SERVICO FLORESTAL','DF'],['RECURSOS MINERAIS','DF'],['RIO GRANDE','RS']];
+function ufDoNome(nome){
+  const n = ' '+normAccent(nome).replace(/[^A-Z0-9 ]/g,' ').replace(/\s+/g,' ')+' ';
+  if(n.includes(' EMBRAPA ')){ for(const [p,uf] of EMBRAPA_UF) if(n.includes(' '+p+' ')) return uf; }
+  const sig = normAccent(nome).match(/[\/\-–(]\s*([A-Z]{2})\s*\)?\s*$/); if(sig && UF_NOMES[sig[1]]) return sig[1];
+  for(const [p,uf] of UF_PISTAS.concat(UF_PISTAS_EXTRA)){ const t = ' '+p.trim()+' '; if(n.includes(t) || (p.endsWith(' ') && n.includes(' '+p))) return uf; }
+  return '';
+}
+
 const P = __DADOS__, D = P.linhas, ANO = P.ano;
 const FASES = ['Em execução','Vigência vencida','Prestação de contas','Concluído','Dispensa de TED','Recebido sem nº de TED','Em formalização','Só no Tesouro','Plano em análise','Plano rejeitado'];
 const TES = P.tes || {};
@@ -55,10 +84,18 @@ D.forEach(o => {
   o.ugdN = o.er==='Recebido' ? (UGN[o.ugr] || o.ugr)+' · recebido' : (UGN[o.ugd] || o.ugd);   // a UG da SDR: quem enviou ou, no recebido, quem recebeu
   o.spN = sitN(o.sp); o.stN = o.st==='(sem termo)' ? '(sem termo)' : sitN(o.st);
   o.chave = o.n || 'PA '+o.cod;
+  // ações do TED separadas (TED com mais de uma ação conta em cada uma) e o valor firmado repartido pelas notas de crédito de cada ação
+  o.ac = o.acao==='(sem ação)' ? ['(sem ação)'] : o.acao.split(' | ');
+  const pn = {}; (o.nca||[]).forEach(x => { const a = String(x[0]||'').toUpperCase(); if(o.ac.includes(a)) pn[a] = (pn[a]||0) + Math.max(0, x[5]||0); });
+  const tn = Object.values(pn).reduce((a,b) => a+b, 0);
+  o.acPeso = Object.fromEntries(o.ac.map(a => [a, tn ? (pn[a]||0)/tn : 1/o.ac.length]));
+  // UF: a do controle interno; sem ela, pelo nome da unidade que recebe
+  if(!o.uf){ const u = ufDoNome([o.unr, o.tes && o.tes.nome].filter(Boolean).join(' ')); if(u){ o.uf = u; o.ufInf = true; } }
+  o.ufF = o.uf && MAPA_BR.ufs[o.uf] ? o.uf : '(sem UF)';
 });
 const FX_V = ['Vencida','Até 30 dias','31 a 60 dias','61 a 90 dias','91 a 180 dias','181 a 365 dias','Mais de 1 ano'];
 const FIL = [['ano','Ano do TED'],['fase','Fase'],['dep','Departamento'],['ugdN','UG da SDR'],['er','Enviado / recebido'],['orr','Órgão descentralizado'],
-  ['unr','Unidade descentralizada'],['acao','Ação orçamentária'],['rpN','Resultado primário'],['stN','Situação do termo'],['fx','Vencimento da vigência'],['org','Origem (Tesouro × API)']];
+  ['unr','Unidade descentralizada'],['ufF','UF'],['ac','Ação orçamentária'],['rpN','Resultado primário'],['stN','Situação do termo'],['fx','Vencimento da vigência'],['org','Origem (Tesouro × API)']];
 const SEL = {};
 function base(){ return document.getElementById('rej').checked ? D : D.filter(o => o.fase!=='Plano rejeitado'); }
 const esc = s => String(s??'').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -79,6 +116,14 @@ function colunas(lista, campo, cor, fmt){
   return `<div class="bx">${lista.map(([k,v,c2]) => `<div class="${campo && ehSel(campo,k)?'sel':''}" ${campo?`data-k="${campo}" data-v="${esc(k)}"`:''} title="${esc(k)}: ${fmt?fmt(v):n(v)}"><em>${fmt?fmt(v):n(v)}</em><i style="height:${Math.max(2,v/mx*100)}%;background:${c2||cor}"></i><small>${esc(k)}</small></div>`).join('')}</div>`;
 }
 const agrupar = (L, k, val) => { const m = {}; L.forEach(o => { const c = o[k]; m[c] = (m[c]||0) + (val ? val(o) : 1); }); return Object.entries(m).sort((a,b) => b[1]-a[1]); };
+function porAcao(L){ const m = {}; L.forEach(o => o.ac.forEach(a => m[a] = (m[a]||0) + (o.fir||0)*o.acPeso[a])); return Object.entries(m).sort((a,b) => b[1]-a[1]); }
+function mapaTED(L){
+  const v = {}, q = {}; L.forEach(o => { if(o.ufF==='(sem UF)') return; v[o.ufF] = (v[o.ufF]||0) + (o.fir||0); q[o.ufF] = (q[o.ufF]||0) + 1; });
+  const mx = Math.max(1,...Object.values(v));
+  const est = Object.entries(MAPA_BR.ufs).map(([uf,d]) => `<path class="uf ${ehSel('ufF',uf)?'sel':''}" d="${d}" data-k="ufF" data-v="${uf}" style="fill:${v[uf]?`color-mix(in srgb,#1f4e79 ${Math.round((.12+.7*Math.sqrt(v[uf]/mx))*100)}%,#eef1ee)`:'#eef1f4'}"><title>${uf} · ${UF_NOMES[uf]||''}: ${q[uf]||0} TED(s) · ${fm(v[uf]||0)}</title></path>`).join('');
+  const rot = Object.entries(MAPA_BR.centro).map(([uf,[x,y]]) => `<text class="rot" x="${x}" y="${y}">${uf}</text>`).join('');
+  return `<svg viewBox="0 0 ${MAPA_BR.w} ${MAPA_BR.h}" style="width:100%;max-height:430px;display:block">${est}${rot}</svg>`;
+}
 const sec = (tit, desc, corpo, cls) => `<section class="card ${cls||''}"><h3>${tit}</h3><p class="d">${desc}</p>${corpo}</section>`;
 const tedId = o => `<b>${o.n?'TED '+esc(o.n):o.org==='Recebido sem nº de TED'?'Sem nº de TED · '+esc(o.cod):o.org==='Só no controle interno'?'Processo '+esc(o.sei||o.cod):'Plano '+esc(o.cod)}</b><small>${o.n&&o.cod?'plano '+esc(o.cod)+' · ':''}${esc(o.ano)}${TES.carregado && o.org!=='Tesouro e API' && (o.n || o.org==='Só no controle interno') ? ` · <span style="color:${o.org==='Só no controle interno'?'#c8742f':o.org==='Só no Tesouro'?'#16a085':/diferentes/.test(o.org)?'#c0392b':'#b7860b'}">${esc(o.org)}</span>` : ''}</small>`;
 const unid = o => `${esc(o.unr.length>52?o.unr.slice(0,52)+'…':o.unr)}<small>UG ${esc(o.ugr)} · ${esc(o.orr)}</small>`;
@@ -108,7 +153,7 @@ function ficha(o){
    <small>Termo de Execução Descentralizada · ${o.er==='Recebido'?'recebido pela':'enviado pela'} UG ${esc(o.er==='Recebido'?o.ugr:o.ugd)}</small>
    <h4>${o.n?'TED '+esc(o.n):'Plano de ação '+esc(o.cod)}</h4><p>${esc(o.unr)} · UG ${esc(o.ugr)}</p>
    <span class="pl" style="background:${COR_F[o.fase]}">● ${esc(o.fase)}</span>${o.org?`<span class="pl az">${esc(o.org)}</span>`:''}${o.emd?`<span class="pl">Emenda ${esc(o.emd)}</span>`:''}${alerta?`<span class="pl vm">⚠ ${alerta}</span>`:''}${empAcima(o)?`<span class="pl vm">⚠ Empenhado (${fm(o.neT[0])}) acima do valor do TED (${fm(credTED(o))}): verificar</span>`:''}
-   <div class="cx"><div>Ano<b>${esc(o.ano)}</b></div><div>Departamento<b>${esc(o.dep)}</b></div><div>UF<b>${esc(o.uf)||'—'}</b></div><div>Ação<b>${esc(o.acao)}</b></div><div>RP<b>${esc(o.rpN)}</b></div><div>Situação do termo<b>${esc(o.stN)}</b></div><div>Órgão de quem recebe<b>${esc(o.orr)}</b></div></div>
+   <div class="cx"><div>Ano<b>${esc(o.ano)}${o.anoInf?' <small>(1ª NC / vigência)</small>':''}</b></div><div>Departamento<b>${esc(o.dep)}</b></div><div>UF<b>${esc(o.uf)||'—'}${o.ufInf?' <small>(pelo nome)</small>':''}</b></div><div>Ação<b>${esc(o.acao)}</b></div><div>RP<b>${esc(o.rpN)}</b></div><div>Situação do termo<b>${esc(o.stN)}</b></div><div>Órgão de quem recebe<b>${esc(o.orr)}</b></div></div>
    <div class="fa"><button type="button" data-imp="${esc(o.id)}">🖨 Imprimir / PDF</button><button type="button" data-fecha title="Fechar (Esc)">✕</button></div></div>
   <div class="fcorpo">
    <div class="vl"><div style="--c:#1f4e79"><span>Valor firmado</span><b>${R$(o.fir)}</b></div><div style="--c:#2e8a57"><span>Descentralizado (NC)</span><b>${R$(o.nc)}</b></div>
@@ -210,14 +255,14 @@ function telaTED(L){
   const anos = [...new Set(L.map(o => o.ano))].sort();
   const porAno = anos.map(a => [a, soma(L.filter(o => o.ano===a),'fir')]);
   const vf = FX_V.map(f => [f, L.filter(o => o.fx===f && (o.fase==='Em execução' || o.fase==='Vigência vencida')).length, f==='Vencida'?'#c0392b':'#2e8a57']);
-  return kp1 + kp2 + kp3 + `<div class="g2">
+  return kp1 + kp2 + kp3 + `<div class="g2">${sec('TEDs por localização', 'cor do estado pelo valor firmado · clique no estado para filtrar', mapaTED(L), 'mapa')}${sec('Por UF', 'valor firmado · '+n(L.filter(o => o.ufInf).length)+' com UF identificada pelo nome da unidade · '+n(L.filter(o => o.ufF==='(sem UF)').length)+' sem UF', hbar(agrupar(L,'ufF',o=>o.fir).slice(0,14), 'ufF', '#1f4e79', fm, fir))}</div><div class="g2">
     ${sec('Por fase', 'quantidade de planos de ação · clique para filtrar', hbar(porFase, 'fase', k => COR_F[k], null, L.length))}
     ${sec('Valor firmado por ano', 'ano do TED · clique para filtrar', colunas(porAno, 'ano', '#1f4e79', fm))}
     ${sec('Por UG descentralizadora', 'valor firmado', hbar(agrupar(L,'ugdN',o=>o.fir), 'ugdN', '#3a6f9f', fm, fir))}
     ${sec('Vencimento da vigência', 'termos em execução (inclusive os vencidos)', colunas(vf, 'fx', '#2e8a57', null))}
     ${sec('Órgão descentralizado', 'para quem vai o recurso · valor firmado', hbar(agrupar(L,'orr',o=>o.fir).slice(0,10), 'orr', '#2e8a57', fm, fir))}
     ${sec('Unidades descentralizadas', 'as 12 maiores · valor firmado', hbar(agrupar(L,'unr',o=>o.fir).slice(0,12), 'unr', '#6c8fb3', fm, fir))}
-    ${sec('Ação orçamentária', 'valor firmado', hbar(agrupar(L,'acao',o=>o.fir).slice(0,10), 'acao', '#b7860b', fm, fir))}
+    ${sec('Ação orçamentária', 'valor firmado · TED com mais de uma ação é repartido pelas notas de crédito de cada ação', hbar(porAcao(L).slice(0,12), 'ac', '#b7860b', fm, fir))}
     ${sec('Resultado primário', 'valor firmado', hbar(agrupar(L,'rpN',o=>o.fir), 'rpN', '#8e6bbf', fm, fir))}
     ${TES.carregado ? sec('Origem do TED', 'Tesouro Gerencial × API do Transferegov · quantidade', hbar(agrupar(L,'org'), 'org', k => /diferentes/.test(k)?'#c0392b':/Só no Tesouro/.test(k)?'#16a085':/Só na API|sem nº/.test(k)?'#b7860b':'#2e8a57', null, L.length)) : ''}
   </div>`;
@@ -235,7 +280,7 @@ function render(){
     ['Fim vigência',o=>(esc(o.fim)||'—')+`<small>${o.dias===null?'':o.dias<0?'vencida':'faltam '+o.dias+' d'}</small>`,'n']];
   document.getElementById('lista').innerHTML = tabela('l', lista, cols, 15);
 }
-document.getElementById('nota').innerHTML = `<b>TED SDR</b> · Termos de Execução Descentralizada das UGs 130010, 130141, 130255, 135098 e 420013 · API de TED do Transferegov, dados de __DATA__ · ${TES.carregado ? 'Tesouro Gerencial: relatório de '+esc(TES.gerado_em)+' · ' : ''}planos rejeitados ficam fora (marque “incluir planos rejeitados”) · clique nos cartões para ver a lista, nos gráficos para filtrar e na linha para abrir a ficha.`;
+document.getElementById('nota').innerHTML = `<b>TED GERAL SDR</b> · Termos de Execução Descentralizada das UGs 130010, 130141, 130255, 135098 e 420013 · API de TED do Transferegov, dados de __DATA__ · ${TES.carregado ? 'Tesouro Gerencial: relatório de '+esc(TES.gerado_em)+' · ' : ''}planos rejeitados ficam fora (marque “incluir planos rejeitados”) · clique nos cartões para ver a lista, nos gráficos para filtrar e na linha para abrir a ficha.`;
 document.addEventListener('click', e => {
   const imp = e.target.closest('[data-imp]'); if(imp){ e.stopPropagation(); const f = imp.closest('.fi'); f.classList.add('imp'); document.body.classList.add('imp');
     f.querySelectorAll('details').forEach(d => d.open = true); window.print(); f.classList.remove('imp'); document.body.classList.remove('imp'); return; }
