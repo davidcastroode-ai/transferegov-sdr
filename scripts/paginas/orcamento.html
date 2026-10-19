@@ -63,7 +63,7 @@ const ABERTO = new Set();
 function render(){
   desenharFiltros();
   const L = filtrar(), T = {}; M.forEach(k => T[k] = soma(L,k));
-  document.getElementById('contagem').textContent = n(L.length)+' linhas no recorte';
+  document.getElementById('contagem').textContent = n(L.length)+' linhas no recorte' + (SEL.ugN && !/^130101/.test(SEL.ugN) ? ' · dotação, cortes e bloqueio: setorial 130101 nos PTRES só desta UG (PTRES compartilhados com outras UGs ficam fora)' : '');
   const remanej = T.sup + T.canc, porAc = agr(L,'acaoN');
   document.getElementById('corpo').innerHTML = `<div class="grp">Dotação</div><div class="kp k4">
     ${kpi('Lei (dotação inicial)', fm(T.ini), R$(T.ini), 'dest')}
@@ -143,5 +143,17 @@ document.addEventListener('click', e => {
 document.getElementById('limpar').onclick = () => { for(const k in SEL) delete SEL[k]; render(); };
 document.getElementById('todas').onchange = () => render();
 __FILTRO__
+// UG executora escolhida: a dotação, os cortes e o bloqueio ficam na setorial (130101); junta as linhas da 130101
+// nos mesmos PTRES que a UG executa, para os cartões de dotação não ficarem zerados
+{ const _f = filtrar;
+  filtrar = function(exceto){
+    const L = _f(exceto);
+    if(!SEL.ugN || exceto==='ugN' || /^130101/.test(SEL.ugN)) return L;
+    // só PTRES exclusivos desta UG (se outras UGs também executam o PTRES, a dotação é compartilhada e fica de fora)
+    const exec = new Map(); D.forEach(o => { if(o.ug!=='130101' && (o.ug in UGN) && (o.provRec || o.emp)) (exec.get(o.ptres) || exec.set(o.ptres, new Set()).get(o.ptres)).add(o.ugN); });
+    const pts = new Set(L.map(o => o.ptres).filter(pt => (exec.get(pt)||new Set()).size === 1)), ug = SEL.ugN;
+    delete SEL.ugN; const set = _f(exceto).filter(o => o.ug==='130101' && pts.has(o.ptres)); SEL.ugN = ug;
+    return L.concat(set);
+  }; }
 render();
 </script></body></html>
