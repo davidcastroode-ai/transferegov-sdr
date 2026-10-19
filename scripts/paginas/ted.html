@@ -239,7 +239,13 @@ function telaTED(L){
     ${kpi('Vigência vencida sem prestação', n(venc.length), 'termo ainda "em execução"', venc.length?'red':'', {l: venc, s:(a,b)=>a.dias-b.dias, c: vcol})}
     ${kpi('Em prestação de contas', n(pc.length), 'cumprimento do objeto iniciado ou em análise', '', {l: pc, c:[['Situação do termo',o=>esc(o.stN)],['Firmado',o=>fm(o.fir),'n']]})}
     ${(() => { const ac = L.filter(empAcima); return kpi('Empenhado acima do valor do TED', n(ac.length), 'verificar: aditivo de valor ou empenho de outro instrumento', ac.length?'red':'', {l: ac, s:(a,b)=>(b.neT[0]-credTED(b))-(a.neT[0]-credTED(a)), c:[['Firmado',o=>fm(o.fir),'n'],['Descentralizado',o=>fm(o.nc),'n'],['Empenhado',o=>fm(o.neT[0]),'n'],['Diferença',o=>fm(o.neT[0]-credTED(o)),'n']]}); })()}
-  </div>`;
+  </div>`
+  + (() => { const sup = L.filter(o => o.ajValor < 0), adi = L.filter(o => o.ajValor > 0);
+      const cols = [['Firmado original',o=>fm(o.firOrig),'n'],['Valor atual (Tesouro)',o=>fm(o.fir),'n'],['Diferença',o=>(o.ajValor<0?'−':'+')+fm(Math.abs(o.ajValor)),'n'],['Repassado',o=>fm(o.pf),'n']];
+      return `<div class="grp">Alertas de valor · Tesouro (SIAFI)</div><div class="kp" style="grid-template-columns:repeat(2,1fr)">
+      ${kpi('Supressão de valor', n(sup.length), sup.length ? fm(-soma(sup,'ajValor'))+' suprimidos · o SIAFI não baixa “valores firmados”, só o “a repassar”' : 'nenhuma no recorte', sup.length?'red':'', {l: sup, s:(a,b)=>a.ajValor-b.ajValor, c: cols})}
+      ${kpi('Aditivo ou repasse acima do firmado', n(adi.length), adi.length ? '+'+fm(soma(adi,'ajValor'))+' · conferir: aditivo de valor ou repasse refeito após devolução' : 'nenhum no recorte', adi.length?'amar':'', {l: adi, s:(a,b)=>b.ajValor-a.ajValor, c: cols})}
+    </div>`; })();
   const tesL = L.filter(o => o.tes), so = L.filter(o => o.org==='Só no Tesouro'), dif = L.filter(o => o.dif && o.dif.length), soAPI = L.filter(o => o.org==='Só na API');
   const sT = k => tesL.reduce((a,o) => a+(o.tes[k]||0), 0);
   const kp3 = !TES.carregado ? `<div class="grp">Tesouro Gerencial (SIAFI)</div><div class="nota" style="background:#eef4fa;border-color:#b9c7d3">${TES.erros && TES.erros.length ? 'Não consegui ler o relatório do Tesouro: '+esc(TES.erros.join(' · ')) : 'O relatório do Tesouro ainda não foi ligado. Quando o link da aba estiver no robô, aparecem aqui: a comprovar, comprovado, TEDs que só estão no Tesouro e as diferenças entre Tesouro e API.'}</div>`

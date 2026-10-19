@@ -725,7 +725,7 @@ def ted(pasta):
         t = o.get('tes') or {}
         fic[k] = dict(fir=o.get('fir') or 0, nc=o.get('nc') or 0, pf=o.get('pf') or 0, ar=o.get('ar') or 0, neT=o.get('neT') or [0, 0, 0, 0],
                       tes={c: t.get(c) for c in ('fir', 'nc', 'rep', 'aRep', 'aComp', 'comp')} if t else None,
-                      ncs=o.get('ncs') or [], pfs=o.get('pfs') or [], nes=o.get('nes') or [], nca=o.get('nca') or [], acao=o.get('acao', ''), fase=o.get('fase', ''))
+                      ncs=o.get('ncs') or [], pfs=o.get('pfs') or [], nes=o.get('nes') or [], nca=o.get('nca') or [], acao=o.get('acao', ''), fase=o.get('fase', ''), firOrig=o.get('firOrig'), ajValor=o.get('ajValor'))
     with open(os.path.join(tp, 'ted_ficha.json'), 'w', encoding='utf-8') as fh:
         json.dump(fic, fh, ensure_ascii=False, separators=(',', ':'))
     print(f'ted/ted_ficha.json · {len(fic)} TEDs', flush=True)
