@@ -100,6 +100,12 @@ function render(){
 }
 document.getElementById('nota').innerHTML = `<b>Orçamento por ação</b> · Tesouro Gerencial (aba ORCAMENTO da BASE ORÇAMENTO SDR, lida pelo robô em __DATA__) · dotação, cortes e bloqueio na UG setorial (130101 · CGOF/MAPA); provisão, empenho e pagamento nas UGs da SDR · por padrão só as ações e POs acompanhados (2000 só 000H/000K, 00PN só 0003, 8606 só 0001). <b style="color:#c0392b">Teste</b>`;
 
+// a página fica dentro de um iframe que cresce com o conteúdo: a janela da ficha abre na parte que a pessoa está vendo
+function posModal(f){
+  try{ const fe = window.frameElement; if(!fe) return; const r = fe.getBoundingClientRect(), vh = window.parent.innerHeight;
+    const top = Math.max(0, -r.top); f.style.position = 'absolute'; f.style.top = top+'px'; f.style.bottom = 'auto'; f.style.left = '0'; f.style.right = '0';
+    f.style.height = Math.max(300, Math.min(vh, document.documentElement.scrollHeight - top))+'px'; }catch(e){}
+}
 function fichaOrc(ac){
   const L = filtrar('acaoN').filter(o => o.acaoN===ac); if(!L.length) return;
   const T = {}; M.forEach(k => T[k] = soma(L,k));
@@ -126,7 +132,7 @@ function fichaOrc(ac){
     ${tab('Por plano orçamentário', 'poN', 'PO')}
     ${tab('Por UG', 'ugN', 'UG')}
     <p style="margin-top:10px;font-size:12px;color:#7b8790">Recorte atual dos filtros (menos o filtro de ação) · dotação e bloqueio ficam na setorial 130101; provisão, empenho e pagamento nas UGs.</p></div></div>`;
-  document.getElementById('fundoF').hidden = false;
+  const f = document.getElementById('fundoF'); f.hidden = false; posModal(f); f.scrollTop = 0;
 }
 document.addEventListener('click', e => {
   const fb = e.target.closest('[data-ficha]'); if(fb){ e.stopPropagation(); fichaOrc(fb.dataset.ficha); return; }

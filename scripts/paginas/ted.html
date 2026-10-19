@@ -128,11 +128,17 @@ function ficha(o){
    ${TES.carregado?`<details><summary>Tesouro Gerencial · contas e diferenças</summary>${fichaTes(o)}</details>`:''}
   </div></div>`;
 }
+// a página fica dentro de um iframe que cresce com o conteúdo: a janela da ficha abre na parte que a pessoa está vendo
+function posModal(f){
+  try{ const fe = window.frameElement; if(!fe) return; const r = fe.getBoundingClientRect(), vh = window.parent.innerHeight;
+    const top = Math.max(0, -r.top); f.style.position = 'absolute'; f.style.top = top+'px'; f.style.bottom = 'auto'; f.style.left = '0'; f.style.right = '0';
+    f.style.height = Math.max(300, Math.min(vh, document.documentElement.scrollHeight - top))+'px'; }catch(e){}
+}
 function abrirFicha(id){
   const o = D.find(x => String(x.id)===String(id)); if(!o) return;
-  const f = document.getElementById('fundoF'); f.innerHTML = `<div class="fjan">${ficha(o)}</div>`; f.hidden = false; document.body.style.overflow = 'hidden'; f.scrollTop = 0;
+  const f = document.getElementById('fundoF'); f.innerHTML = `<div class="fjan">${ficha(o)}</div>`; f.hidden = false; posModal(f); f.scrollTop = 0;
 }
-function fecharFicha(){ const f = document.getElementById('fundoF'); f.hidden = true; f.innerHTML = ''; document.body.style.overflow = ''; }
+function fecharFicha(){ const f = document.getElementById('fundoF'); f.hidden = true; f.innerHTML = ''; }
 document.addEventListener('keydown', e => { if(e.key==='Escape') fecharFicha(); });
 function fichaNE(o, t){
   const L = o.nes || [];
