@@ -417,12 +417,14 @@ def interpretar_aj(linhas):
     H = [na(c) for c in linhas[ih]]
     col = lambda rx: next((i for i, h in enumerate(H) if re.search(rx, h)), None)
     cN, cF, cS, cO = col(r'^N.? TED$'), col(r'^AJUSTE.*FIM'), col(r'^AJUSTE.*FASE'), col(r'^AJUSTE.*OBS')
+    cD, cT, cU, cUF = col(r'^DEPARTAMENTO$'), col(r'^FISCAL TITULAR$'), col(r'^FISCAL SUPLENTE$'), col(r'^UF$')
     g = lambda l, i: (l[i] or '').strip() if i is not None and i < len(l) else ''
     out = []
     for l in linhas[ih + 1:]:
         ted, fim, fase, obs = g(l, cN).upper(), _data_aj(g(l, cF)), g(l, cS), g(l, cO)
-        if ted and (fim or fase or obs):
-            out.append({'ted': ted, 'fim': fim, 'fase': fase, 'obs': obs[:400]})
+        ex = {'dep': g(l, cD).upper(), 'fiscT': g(l, cT), 'fiscS': g(l, cU), 'uf': g(l, cUF).upper()[:2]}
+        if ted and (fim or fase or obs or any(ex.values())):
+            out.append({'ted': ted, 'fim': fim, 'fase': fase, 'obs': obs[:400], **ex})
     return out
 
 
@@ -439,7 +441,7 @@ def ler_aj(pasta_saida):
             print(f'Ajustes TED: erro em {u[-60:]}: {e}', flush=True)
     os.makedirs(os.path.join(pasta_saida, 'ted'), exist_ok=True)
     with open(os.path.join(pasta_saida, 'ted', 'ted_ajustes.csv'), 'w', encoding='utf-8', newline='') as fh:
-        w = csv.DictWriter(fh, fieldnames=['ted', 'fim', 'fase', 'obs'])
+        w = csv.DictWriter(fh, fieldnames=['ted', 'fim', 'fase', 'obs', 'dep', 'fiscT', 'fiscS', 'uf'])
         w.writeheader()
         w.writerows(todas)
     return todas

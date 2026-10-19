@@ -12,6 +12,16 @@
 .ot .neg{color:#c0392b}.ot .pos{color:#2e8a57}.ot .bloq{color:#c0392b;font-weight:700}.ot small{display:block;color:#7b8790;font-weight:400;font-size:11px}
 .esc{font-size:13px;color:#3a4a55;margin-left:14px;cursor:pointer}.esc input{vertical-align:middle}
 .rolar{overflow:auto}
+.bf{border:0;background:#1f4e79;color:#fff;border-radius:6px;padding:2px 8px;font:600 11px Barlow,sans-serif;cursor:pointer;margin-left:6px;vertical-align:middle}
+#fundoF{position:fixed;inset:0;background:rgba(20,30,40,.55);z-index:9999;overflow:auto;padding:24px 12px}#fundoF[hidden]{display:none}
+.fo{max-width:980px;margin:0 auto;background:#fff;border-radius:14px;box-shadow:0 8px 30px rgba(0,0,0,.25);overflow:hidden;font-family:Barlow,sans-serif}
+.fo .cab{background:linear-gradient(120deg,#163e63,#2a6aa3);color:#fff;padding:16px 20px;position:relative}.fo .cab small{opacity:.85;font-size:12px;letter-spacing:.04em;text-transform:uppercase}
+.fo .cab h2{margin:2px 0 6px;font-size:22px;padding-right:150px}.fo .pill{display:inline-block;border-radius:20px;padding:3px 10px;font-size:12px;font-weight:700;margin:2px 4px 2px 0;background:rgba(255,255,255,.2)}.fo .pill.vm{background:#c0392b}
+.fo .acoes{position:absolute;right:16px;top:14px;display:flex;gap:6px}.fo .acoes button{border:0;border-radius:8px;padding:6px 10px;background:rgba(255,255,255,.2);color:#fff;font:600 12px Barlow;cursor:pointer}
+.fo .corpo{padding:14px 20px 20px}.fo h3{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:#1f4e79;border-bottom:2px solid #e3e8ee;padding-bottom:4px;margin:16px 0 8px}
+.fl{display:grid;grid-template-columns:170px 1fr 110px 50px;gap:8px;align-items:center;font-size:12.5px;margin-bottom:5px}.fl i{display:block;height:15px;border-radius:4px}.fl b{text-align:right}.fl small{color:#7b8790;text-align:right}
+@media(max-width:700px){.fl{grid-template-columns:105px 1fr 90px}.fl small{display:none}.fo .cab h2{padding-right:0}.fo .acoes{position:static;margin-top:8px}}
+@media print{body>*:not(#fundoF){display:none!important}#fundoF{position:static;background:none;padding:0}.fo .acoes{display:none}}
 </style></head><body>
 <div class="wrap">
 <div class="nota" id="nota"></div>
@@ -19,17 +29,19 @@
  <label class="esc"><input type="checkbox" id="todas"> mostrar todas as ações do MAPA</label>
  <span id="contagem" style="font-size:13px;color:#66727c;margin-left:12px"></span></section>
 <div id="corpo"></div>
-<section class="card"><h3>Orçamento por ação e plano orçamentário</h3><p class="d">clique no PO para ver como o crédito foi distribuído entre as UGs</p><div class="rolar" id="tabela"></div></section>
+<section class="card"><h3>Orçamento por ação e plano orçamentário</h3><p class="d">clique em <b>ficha</b> para abrir a ficha da ação · clique no PO para ver como o crédito foi distribuído entre as UGs</p><div class="rolar" id="tabela"></div></section>
 </div>
+<div id="fundoF" hidden></div>
 <script>
 const P = __DADOS__, R = P.linhas;
 // ações e POs acompanhados (memória da SDR): null = todos os POs da ação
 const ESCOPO = {'20ZV':null,'20ZY':null,'2000':['000H','000K'],'215A':null,'8593':null,'214Z':null,'00PN':['0003'],'8622':null,'21B6':null,'8606':['0001']};
 const UGN = {'130101':'130101 · CGOF/MAPA (setorial)','130010':'130010 · CEPLAC','130141':'130141 · CGPI/SDR','130255':'130255 · CGMAP/SDR','135098':'135098 · Caixa/MA','420013':'420013 · SDR'};
+const GNDN = {'1':'Pessoal','2':'Juros','3':'Outras despesas correntes','4':'Investimentos','5':'Inversões financeiras','6':'Amortização'};
 const M = ['ini','sup','canc','atu','indisp','provConc','provRec','destConc','disp','emp','liq','pago'];
-const D = R.map(r => { const o = {ug:r[0], acao:r[1], acaoN:r[1]+' · '+r[2], po:r[3], poN:r[3]+' · '+r[4], ptres:r[5], gnd:'GND '+r[6], rp:'RP '+r[7]};
+const D = R.map(r => { const o = {ug:r[0], acao:r[1], acaoN:r[1]+' · '+r[2], po:r[3], poN:r[3]+' · '+r[4], ptres:r[5], gnd:'GND '+r[6]+(GNDN[r[6]]?' · '+GNDN[r[6]]:''), gndC:r[6], rp:'RP '+r[7]};
   M.forEach((k,i) => o[k] = r[8+i]||0); o.ugN = UGN[o.ug] || o.ug; if(/^\d{1,3}$/.test(o.po)) o.po = o.po.padStart(4,'0'); if(/^\d{1,3}$/.test(o.acao)) o.acao = o.acao.padStart(4,'0'); o.noEscopo = o.acao in ESCOPO && (!ESCOPO[o.acao] || ESCOPO[o.acao].includes(o.po)); return o; });
-const FIL = [['acaoN','Ação'],['poN','Plano orçamentário'],['gnd','GND'],['rp','Resultado primário'],['ugN','UG']];
+const FIL = [['acaoN','Ação'],['poN','Plano orçamentário'],['ptres','PTRES'],['gnd','Grupo de despesa (GND)'],['rp','Resultado primário'],['ugN','UG']];
 const SEL = {};
 function base(){ return document.getElementById('todas').checked ? D : D.filter(o => o.noEscopo); }
 const esc = s => String(s??'').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -72,7 +84,7 @@ function render(){
   const cel = (x, k) => `<td class="${k==='indisp'&&x[k]>1?'bloq':k==='canc'&&x[k]<0?'neg':k==='canc'&&x[k]>0?'pos':''}">${f2(x[k])}</td>`;
   let h = `<table class="ot"><tr><th>Ação / plano orçamentário</th>${cols.map(c => `<th>${c[0]}</th>`).join('')}<th>% emp.</th></tr>`;
   [...porAc].sort((a,b) => b[1].atu-a[1].atu).forEach(([ac, x]) => {
-    h += `<tr class="ac"><td>${esc(ac)}</td>${cols.map(c => cel(x,c[1])).join('')}<td>${pct(x.emp,x.atu)}</td></tr>`;
+    h += `<tr class="ac"><td>${esc(ac)} <button type="button" class="bf" data-ficha="${esc(ac)}">ficha</button></td>${cols.map(c => cel(x,c[1])).join('')}<td>${pct(x.emp,x.atu)}</td></tr>`;
     const LA = L.filter(o => o.acaoN===ac), porPO = agr(LA,'poN');
     [...porPO].sort((a,b) => a[0].localeCompare(b[0])).forEach(([po, y]) => {
       const ch = ac+'|'+po, ab = ABERTO.has(ch);
@@ -87,7 +99,35 @@ function render(){
   document.getElementById('tabela').innerHTML = h + `<tr class="ac"><td>Total</td>${cols.map(c => cel(T,c[1])).join('')}<td>${pct(T.emp,T.atu||T.provRec)}</td></tr></table>`;
 }
 document.getElementById('nota').innerHTML = `<b>Orçamento por ação</b> · Tesouro Gerencial (aba ORCAMENTO da BASE ORÇAMENTO SDR, lida pelo robô em __DATA__) · dotação, cortes e bloqueio na UG setorial (130101 · CGOF/MAPA); provisão, empenho e pagamento nas UGs da SDR · por padrão só as ações e POs acompanhados (2000 só 000H/000K, 00PN só 0003, 8606 só 0001). <b style="color:#c0392b">Teste</b>`;
+
+function fichaOrc(ac){
+  const L = filtrar('acaoN').filter(o => o.acaoN===ac); if(!L.length) return;
+  const T = {}; M.forEach(k => T[k] = soma(L,k));
+  const base_ = Math.max(T.ini, T.atu, T.provRec, 1);
+  const lin = (rot, v, cor, ref) => `<div class="fl"><span>${rot}</span><i style="width:${Math.min(100,Math.abs(v)/base_*100).toFixed(1)}%;background:${cor}"></i><b>${fm(v)}</b><small>${ref?pct(v,ref):''}</small></div>`;
+  const cols = [['Dotação atual','atu'],['Bloqueado','indisp'],['Provisionado','provRec'],['Empenhado','emp'],['Liquidado','liq'],['Pago','pago'],['Livre','disp']];
+  const tab = (tit, chave, extra) => { const g = agr(L, chave);
+    return `<h3>${tit}</h3><div class="rolar"><table class="ot"><tr><th>${extra}</th>${cols.map(c => `<th>${c[0]}</th>`).join('')}<th>% emp.</th></tr>${[...g].filter(([k,x]) => M.some(c => Math.abs(x[c]||0) > 0.005)).sort((a,b) => String(a[0]).localeCompare(String(b[0]))).map(([k,x]) => `<tr><td>${esc(k)}</td>${cols.map(c => `<td class="${c[1]==='indisp'&&x[c[1]]>1?'bloq':''}">${f2(x[c[1]])}</td>`).join('')}<td>${pct(x.emp, x.atu||x.provRec)}</td></tr>`).join('')}</table></div>`; };
+  // PTRES × PO × GND × RP numa tabela só
+  L.forEach(o => o.chPT = o.ptres+' · PO '+o.po+' · '+o.gnd+' · '+o.rp);
+  const pos = [...new Set(L.map(o => o.po))].sort(), gnds = [...new Set(L.map(o => o.gnd))].sort();
+  document.getElementById('fundoF').innerHTML = `<div class="fo"><div class="cab"><small>Ficha do orçamento · ação orçamentária</small><h2>${esc(ac)}</h2>
+    ${T.indisp>1?`<span class="pill vm">Bloqueado ${fm(T.indisp)}</span>`:''}<span class="pill">POs ${esc(pos.join(', '))}</span><span class="pill">${esc(gnds.join(' · '))}</span><span class="pill">${n(new Set(L.map(o => o.ptres)).size)} PTRES</span>
+    <div class="acoes"><button type="button" onclick="window.print()">🖨 Imprimir / PDF</button><button type="button" data-fecha>✕</button></div></div>
+    <div class="corpo"><h3>Caminho do dinheiro</h3>
+    ${lin('Lei (dotação inicial)', T.ini, '#1f4e79', T.ini)}${lin('Créditos e cortes', T.sup+T.canc, T.sup+T.canc<0?'#c0392b':'#2e8a57', T.ini)}${lin('Dotação atual', T.atu, '#1f4e79', T.ini)}
+    ${lin('Bloqueado', T.indisp, '#c0392b', T.atu)}${lin('Provisionado às UGs', T.provRec, '#5b6eae', T.atu)}${T.destConc>1?lin('Destaque concedido (TED)', T.destConc, '#8e44ad', T.atu):''}
+    ${lin('Empenhado', T.emp, '#2e8a57', T.atu||T.provRec)}${lin('Liquidado', T.liq, '#7fb98f', T.atu||T.provRec)}${lin('Pago', T.pago, '#1e6b45', T.atu||T.provRec)}${lin('Saldo livre', T.disp, '#d4a017', T.atu||T.provRec)}
+    ${tab('Por PTRES · PO · grupo de despesa · RP', 'chPT', 'PTRES · PO · GND · RP')}
+    ${tab('Por grupo de despesa (GND)', 'gnd', 'GND')}
+    ${tab('Por plano orçamentário', 'poN', 'PO')}
+    ${tab('Por UG', 'ugN', 'UG')}
+    <p style="margin-top:10px;font-size:12px;color:#7b8790">Recorte atual dos filtros (menos o filtro de ação) · dotação e bloqueio ficam na setorial 130101; provisão, empenho e pagamento nas UGs.</p></div></div>`;
+  document.getElementById('fundoF').hidden = false;
+}
 document.addEventListener('click', e => {
+  const fb = e.target.closest('[data-ficha]'); if(fb){ e.stopPropagation(); fichaOrc(fb.dataset.ficha); return; }
+  if(e.target.closest('[data-fecha]') || e.target.id==='fundoF'){ document.getElementById('fundoF').hidden = true; return; }
   const ab = e.target.closest('[data-ab]'); if(ab){ const k = ab.dataset.ab; ABERTO.has(k) ? ABERTO.delete(k) : ABERTO.add(k); render(); return; }
   const f = e.target.closest('[data-k][data-v]'); if(f){ alternar(f.dataset.k, f.dataset.v); render(); }
 });

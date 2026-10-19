@@ -367,6 +367,10 @@ def ted(pasta):
         o['tes'] = t
         nt = ncT.get(k, []) if k else []
         o['ncT'] = len(nt)
+        ag = collections.defaultdict(float)
+        for x in nt:
+            ag[(x[11] or '', x[5] or '', x[6] or '', x[7] or '', x[8] or '')] += x[4]
+        o['nca'] = [list(k) + [round(v, 2)] for k, v in sorted(ag.items(), key=lambda kv: -kv[1])][:20]
         pt_ = pfT.get(k, []) if k else []
         if pt_ and not o['pfs']:
             o['pfs'] = pt_[:40]
@@ -401,6 +405,10 @@ def ted(pasta):
                            ncs=ncT.get(k, [])[:40], pfs=pfT.get(k, [])[:40], cro=[], prox=None, par=[], met=[], org='Só no Tesouro', tes=t, dif=[], ncT=len(ncT.get(k, []))))
         o = linhas[-1]
         nt = ncT.get(k, [])
+        ag = collections.defaultdict(float)
+        for x in nt:
+            ag[(x[11] or '', x[5] or '', x[6] or '', x[7] or '', x[8] or '')] += x[4]
+        o['nca'] = [list(k) + [round(v, 2)] for k, v in sorted(ag.items(), key=lambda kv: -kv[1])][:20]
         if nt:
             o['nc'] = round(sum(x[4] for x in nt), 2)
             ac = sorted({x[11] for x in nt if x[11]})
@@ -420,6 +428,7 @@ def ted(pasta):
         if not a_:
             continue
         o['aj'] = [a_['fim'], a_['fase'], a_['obs']]
+        o['dep'], o['fiscT'], o['fiscS'], o['uf'] = a_.get('dep', ''), a_.get('fiscT', ''), a_.get('fiscS', ''), a_.get('uf', '')
         fa = pdata(a_['fim'])
         if fa:
             o['fim'], o['dias'] = a_['fim'], (fa - hoje).days
@@ -450,6 +459,37 @@ def ted(pasta):
         w.writerow([h for h, _ in BASE])
         for o in sorted(linhas, key=lambda o: (o['fase'] == 'Plano rejeitado', o['ugd'], o['n'] or o['cod'])):
             w.writerow([fn(o) for _, fn in BASE])
+    # ---- ações usadas em cada TED (pelos eventos das NCs da API; TED só no Tesouro: pelas NCs do Tesouro) + nomes da base de orçamento
+    nomeA, nomePO, ptPO = {}, {}, {}
+    for x in ler(os.path.join(pasta, 'orcamento'), 'orcamento.csv'):
+        nomeA.setdefault(x['acao'], x['acao_nome'])
+        nomePO.setdefault((x['acao'], x['po']), x['po_nome'])
+        if x['ptres']:
+            ptPO.setdefault(x['ptres'], (x['acao'], x['po']))
+    nota_pa = {x['id_nota']: x['id_plano_acao'] for x in ler(tp, 'ted_notas_credito.csv')}
+    acs = collections.defaultdict(lambda: collections.defaultdict(float))
+    for e in ler(tp, 'ted_eventos.csv'):
+        pa = nota_pa.get(e['id_nota'])
+        pg = (e.get('ptres_programa_trabalho') or '').strip()
+        if not pa:
+            continue
+        ac = pg[9:13] if len(pg) >= 13 else ''
+        po = (e.get('ptres_plano_orcamentario') or '').strip()
+        try:
+            nd = json.loads(e.get('natureza_despesa_evento') or '{}').get('codigo_natureza', '')
+        except Exception:
+            nd = ''
+        acs[pa][(ac, po, e.get('cd_ptres_evento', '').strip(), (e.get('ptres_resultado_primario') or '').strip(), nd)] += f(e.get('vl_evento'))
+    for o in linhas:
+        if o['id'] in acs:
+            L_ = acs[o['id']]
+        else:
+            L_ = collections.defaultdict(float)
+            for x in (o['ncs'] if o.get('org') == 'Só no Tesouro' else []):
+                ac, po = ptPO.get(x[5], (x[11], ''))
+                L_[(x[11] or ac, po, x[5], x[8], x[7])] += x[4]
+        o['acs'] = [[ac, nomeA.get(ac, ''), po, nomePO.get((ac, po), ''), pt, rp, nd, round(v, 2)]
+                    for (ac, po, pt, rp, nd), v in sorted(L_.items(), key=lambda kv: -kv[1]) if abs(v) > 0.005][:20]
     tesInfo = {'carregado': bool(tes), 'gerado_em': tes_meta.get('gerado_em', ''), 'teds': len(tes), 'soTesouro': len(tes) - len(usados),
                'erros': [x.get('erro') for x in tes_meta.get('fontes', []) if not x.get('ok')]}
     data = (meta.get('data_api') or {}).get('data_ultima_atualizacao', '').replace('T', ' ')[:16]
