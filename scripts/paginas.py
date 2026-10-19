@@ -354,7 +354,26 @@ def ted(pasta):
             ac_orc.setdefault(x['ptres'].strip(), x['acao'].strip().zfill(4) if x['acao'].strip().isdigit() else x['acao'].strip())
     ncT = collections.defaultdict(list)
     semTED, acoesSDR = [], set()   # NCs que outros órgãos mandaram para a SDR sem nº de TED
-    for x in ler(tp, 'ted_tesouro_nc.csv'):
+    # o relatório de NC repete o mesmo item da nota uma vez para cada "Ação Governo" ligada ao PTRES (ex.: 2022NC800053 em 20ZV e 8593),
+    # o que dobrava o valor descentralizado. Fica uma linha por item: a ação do PTRES na base de orçamento, senão a mais vista nesse PTRES
+    nc_lin = ler(tp, 'ted_tesouro_nc.csv')
+    grp = collections.OrderedDict()
+    for x in nc_lin:
+        grp.setdefault((x['nc_completa'] or x['nc'], x['ted'], x['ug_emit'], x['ug_fav'], x['nd'], x['pi'], x['ptres'], x['fonte'], x['valor'], x['data']), []).append(x)
+    freq = collections.Counter((g[0]['ptres'].strip(), g[0]['acao']) for g in grp.values() if len({y['acao'] for y in g}) == 1)
+    nc_uni, n_dup = [], 0
+    for g in grp.values():
+        acs = []
+        for y in g:
+            if y['acao'] not in [a['acao'] for a in acs]:
+                acs.append(y)
+        if len(acs) > 1:
+            pt = acs[0]['ptres'].strip()
+            n_dup += len(acs) - 1
+            acs.sort(key=lambda y: (y['acao'] != ac_orc.get(pt), -freq[(pt, y['acao'])]))
+        nc_uni.append(acs[0])
+    print(f'NC do Tesouro: {len(nc_lin)} linhas, {n_dup} repetidas por ação descartadas', flush=True)
+    for x in nc_uni:
         if not x['acao'] and x['ptres'].strip() in ac_orc:   # sem ação no relatório nem no mapa da API: usa a base de orçamento
             x['acao'] = ac_orc[x['ptres'].strip()]
         if x['ted']:
@@ -399,8 +418,18 @@ def ted(pasta):
             ac = sorted({x[11] for x in nt if x[11]})
             if ac:
                 o['acao'] = ' | '.join(ac)
-        if nt and not o['rp']:
-            o['rp'] = ' | '.join(sorted({x[8] for x in nt if x[8]}))
+        # RP: o do SIAFI (relatório de NC do Tesouro) vale mais que o da API; nota sem RP no Tesouro fica com o RP da API
+        if nt:
+            rpT = {}
+            for x in nt:
+                if x[8]:
+                    rpT.setdefault(x[0], set()).add(x[8])
+            rps = set().union(*rpT.values()) if rpT else set()
+            for x in o['ncs']:
+                if x[0] not in rpT and x[8]:
+                    rps.update(r.strip() for r in str(x[8]).split('|') if r.strip())
+            if rps:
+                o['rp'] = ' | '.join(sorted(rps))
         if t and not o['obj'] and t.get('obj'):
             o['obj'] = t['obj']
         o['dif'] = []
