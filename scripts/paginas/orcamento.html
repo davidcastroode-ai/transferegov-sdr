@@ -1,0 +1,98 @@
+<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Orçamento por ação</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">__CSS__
+<style>
+.grp{font-size:12px;font-weight:700;color:#1f4e79;text-transform:uppercase;letter-spacing:.6px;margin:2px 0 6px 2px}
+.kp.k4{grid-template-columns:repeat(4,1fr)}@media(max-width:900px){.kp.k4{grid-template-columns:1fr 1fr}}
+.k.amar b{color:#b7860b}.k.verde b{color:#2e8a57}.k.red b{color:#c0392b}
+.hb{grid-template-columns:minmax(150px,40%) 1fr 78px 44px}.hb .hbr{white-space:normal;line-height:1.2;font-size:12.5px}
+.ot{width:100%;border-collapse:collapse;font-size:12.5px}.ot th{background:#1f4e79;color:#fff;padding:7px 8px;text-align:right;font-weight:600;white-space:nowrap}.ot th:first-child{text-align:left}
+.ot td{padding:6px 8px;border-bottom:1px solid #eef2f5;text-align:right;white-space:nowrap}.ot td:first-child{text-align:left;white-space:normal}
+.ot tr.ac td{background:#e3edf7;font-weight:700;border-top:2px solid #b9c7d3}.ot tr.po{cursor:pointer}.ot tr.po:hover td{background:#f5f8fb}.ot tr.po.aberto td{background:#fff8e1}
+.ot tr.ug td{background:#fbfcfd;font-size:11.5px;color:#3a4a55}.ot tr.ug td:first-child{padding-left:26px}
+.ot .neg{color:#c0392b}.ot .pos{color:#2e8a57}.ot .bloq{color:#c0392b;font-weight:700}.ot small{display:block;color:#7b8790;font-weight:400;font-size:11px}
+.esc{font-size:13px;color:#3a4a55;margin-left:14px;cursor:pointer}.esc input{vertical-align:middle}
+.rolar{overflow:auto}
+</style></head><body>
+<div class="wrap">
+<div class="nota" id="nota"></div>
+<section class="card"><div class="filtros" id="filtros"></div><button class="btn" id="limpar">Limpar filtros</button>
+ <label class="esc"><input type="checkbox" id="todas"> mostrar todas as ações do MAPA</label>
+ <span id="contagem" style="font-size:13px;color:#66727c;margin-left:12px"></span></section>
+<div id="corpo"></div>
+<section class="card"><h3>Orçamento por ação e plano orçamentário</h3><p class="d">clique no PO para ver como o crédito foi distribuído entre as UGs</p><div class="rolar" id="tabela"></div></section>
+</div>
+<script>
+const P = __DADOS__, R = P.linhas;
+// ações e POs acompanhados (memória da SDR): null = todos os POs da ação
+const ESCOPO = {'20ZV':null,'20ZY':null,'2000':['000H','000K'],'215A':null,'8593':null,'214Z':null,'00PN':['0003'],'8622':null,'21B6':null,'8606':['0001']};
+const UGN = {'130101':'130101 · CGOF/MAPA (setorial)','130010':'130010 · CEPLAC','130141':'130141 · CGPI/SDR','130255':'130255 · CGMAP/SDR','135098':'135098 · Caixa/MA','420013':'420013 · SDR'};
+const M = ['ini','sup','canc','atu','indisp','provConc','provRec','destConc','disp','emp','liq','pago'];
+const D = R.map(r => { const o = {ug:r[0], acao:r[1], acaoN:r[1]+' · '+r[2], po:r[3], poN:r[3]+' · '+r[4], ptres:r[5], gnd:'GND '+r[6], rp:'RP '+r[7]};
+  M.forEach((k,i) => o[k] = r[8+i]||0); o.ugN = UGN[o.ug] || o.ug; o.noEscopo = o.acao in ESCOPO && (!ESCOPO[o.acao] || ESCOPO[o.acao].includes(o.po)); return o; });
+const FIL = [['acaoN','Ação'],['poN','Plano orçamentário'],['gnd','GND'],['rp','Resultado primário'],['ugN','UG']];
+const SEL = {};
+function base(){ return document.getElementById('todas').checked ? D : D.filter(o => o.noEscopo); }
+const esc = s => String(s??'').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fm = v => { const a = Math.abs(v||0), s = v<0?'−':''; return s+(a>=1e9 ? (a/1e9).toFixed(2).replace('.',',')+' Bi' : a>=1e6 ? (a/1e6).toFixed(2).replace('.',',')+' Mi' : (a/1e3).toFixed(1).replace('.',',')+' Mil'); };
+const f2 = v => Math.abs(v||0) < 0.005 ? '—' : Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+const R$ = v => 'R$ '+Number(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+const pct = (a,b) => b ? Math.round(a/b*100)+'%' : '—';
+const n = x => Number(x||0).toLocaleString('pt-BR');
+const soma = (L,k) => L.reduce((a,o) => a+(o[k]||0), 0);
+function filtrar(exceto){ return base().filter(o => FIL.every(([k]) => k===exceto || !SEL[k] || String(o[k])===SEL[k])); }
+function desenharFiltros(){}
+function hbar(lista, campo, cor, fmt, tot){
+  const mx = Math.max(1,...lista.map(x => Math.abs(x[1])));
+  return lista.map(([k,v]) => `<div class="hb ${ehSel(campo,k)?'sel':''}" data-k="${campo}" data-v="${esc(k)}" title="${esc(k)}"><span class="hbr">${esc(k)}</span><div><i style="width:${Math.abs(v)/mx*100}%;background:${cor}"></i></div><b>${fmt(v)}</b><em>${tot!==undefined?tot(k):''}</em></div>`).join('') || '<p class="d">nada neste recorte</p>';
+}
+const agr = (L, k) => { const m = new Map(); L.forEach(o => { const x = m.get(o[k]) || m.set(o[k], {}).get(o[k]); M.forEach(c => x[c] = (x[c]||0) + o[c]); }); return m; };
+const kpi = (rot, val, sub, cls) => `<div class="k ${cls||''}"><span>${rot}</span><b>${val}</b><small>${sub||''}</small></div>`;
+const ABERTO = new Set();
+function render(){
+  desenharFiltros();
+  const L = filtrar(), T = {}; M.forEach(k => T[k] = soma(L,k));
+  document.getElementById('contagem').textContent = n(L.length)+' linhas no recorte';
+  const remanej = T.sup + T.canc, porAc = agr(L,'acaoN');
+  document.getElementById('corpo').innerHTML = `<div class="grp">Dotação</div><div class="kp k4">
+    ${kpi('Lei (dotação inicial)', fm(T.ini), R$(T.ini), 'dest')}
+    ${kpi('Créditos e cortes no ano', fm(remanej), 'suplementação '+fm(T.sup)+' · cancelado/remanejado '+fm(T.canc), remanej<0?'red':'verde')}
+    ${kpi('Dotação atual', fm(T.atu), pct(T.atu,T.ini)+' da Lei')}
+    ${kpi('Bloqueado (crédito indisponível)', fm(T.indisp), pct(T.indisp,T.atu)+' da dotação atual', T.indisp>1?'red':'')}
+  </div><div class="grp">Execução</div><div class="kp k4">
+    ${kpi('Provisionado às UGs', fm(T.provConc), pct(T.provConc,T.atu)+' da dotação atual')}
+    ${kpi('Empenhado', fm(T.emp), pct(T.emp,T.atu)+' da dotação atual', 'verde')}
+    ${kpi('Pago', fm(T.pago), 'liquidado '+fm(T.liq)+' · '+pct(T.pago,T.emp)+' do empenhado')}
+    ${kpi('Saldo livre para empenhar', fm(T.disp), 'crédito disponível (setorial + UGs)', T.disp>1?'amar':'')}
+  </div><div class="g2">
+    <section class="card"><h3>Empenhado × dotação atual, por ação</h3><p class="d">percentual empenhado · clique para filtrar</p>${hbar([...porAc].map(([k,x]) => [k, x.emp]).sort((a,b) => b[1]-a[1]), 'acaoN', '#2e8a57', fm, k => pct(porAc.get(k).emp, porAc.get(k).atu))}</section>
+    <section class="card"><h3>Bloqueado por ação</h3><p class="d">crédito indisponível · clique para filtrar</p>${hbar([...porAc].map(([k,x]) => [k, x.indisp]).filter(x => x[1]>1).sort((a,b) => b[1]-a[1]), 'acaoN', '#c0392b', fm, k => pct(porAc.get(k).indisp, porAc.get(k).atu))}</section>
+  </div>`;
+  // tabela ação → PO (→ UG ao clicar)
+  const cols = [['Lei','ini'],['Supl.','sup'],['Cancel./reman.','canc'],['Dotação atual','atu'],['Bloqueado','indisp'],['Provisionado','provConc'],['Empenhado','emp'],['Liquidado','liq'],['Pago','pago'],['Disponível','disp']];
+  const cel = (x, k) => `<td class="${k==='indisp'&&x[k]>1?'bloq':k==='canc'&&x[k]<0?'neg':k==='canc'&&x[k]>0?'pos':''}">${f2(x[k])}</td>`;
+  let h = `<table class="ot"><tr><th>Ação / plano orçamentário</th>${cols.map(c => `<th>${c[0]}</th>`).join('')}<th>% emp.</th></tr>`;
+  [...porAc].sort((a,b) => b[1].atu-a[1].atu).forEach(([ac, x]) => {
+    h += `<tr class="ac"><td>${esc(ac)}</td>${cols.map(c => cel(x,c[1])).join('')}<td>${pct(x.emp,x.atu)}</td></tr>`;
+    const LA = L.filter(o => o.acaoN===ac), porPO = agr(LA,'poN');
+    [...porPO].sort((a,b) => a[0].localeCompare(b[0])).forEach(([po, y]) => {
+      const ch = ac+'|'+po, ab = ABERTO.has(ch);
+      h += `<tr class="po ${ab?'aberto':''}" data-ab="${esc(ch)}"><td>${ab?'▾':'▸'} ${esc(po)}</td>${cols.map(c => cel(y,c[1])).join('')}<td>${pct(y.emp,y.atu)}</td></tr>`;
+      if(ab){ const porUG = agr(LA.filter(o => o.poN===po),'ugN');
+        h += `<tr class="ug"><td><b>UG</b></td><td colspan="4" style="text-align:left"><b>provisão recebida · destaque concedido</b></td><td><b>Bloqueado</b></td><td></td><td><b>Empenhado</b></td><td><b>Liquidado</b></td><td><b>Pago</b></td><td><b>Disponível</b></td><td></td></tr>`;
+        [...porUG].sort((a,b) => a[0].localeCompare(b[0])).forEach(([ug, z]) => {
+          h += `<tr class="ug"><td>${esc(ug)}</td><td colspan="4" style="text-align:left">${z.provRec?'recebeu '+R$(z.provRec):z.provConc?'concedeu '+R$(z.provConc):'—'}${z.destConc?' · destaque (TED) '+R$(z.destConc):''}${z.atu?' · dotação '+R$(z.atu):''}</td>${cel(z,'indisp')}<td></td>${cel(z,'emp')}${cel(z,'liq')}${cel(z,'pago')}${cel(z,'disp')}<td>${z.provRec?pct(z.emp,z.provRec):''}</td></tr>`; });
+      }
+    });
+  });
+  document.getElementById('tabela').innerHTML = h + `<tr class="ac"><td>Total</td>${cols.map(c => cel(T,c[1])).join('')}<td>${pct(T.emp,T.atu)}</td></tr></table>`;
+}
+document.getElementById('nota').innerHTML = `<b>Orçamento por ação</b> · Tesouro Gerencial (aba ORCAMENTO da BASE ORÇAMENTO SDR, lida pelo robô em __DATA__) · dotação, cortes e bloqueio na UG setorial (130101 · CGOF/MAPA); provisão, empenho e pagamento nas UGs da SDR · por padrão só as ações e POs acompanhados (2000 só 000H/000K, 00PN só 0003, 8606 só 0001). <b style="color:#c0392b">Teste</b>`;
+document.addEventListener('click', e => {
+  const ab = e.target.closest('[data-ab]'); if(ab){ const k = ab.dataset.ab; ABERTO.has(k) ? ABERTO.delete(k) : ABERTO.add(k); render(); return; }
+  const f = e.target.closest('[data-k][data-v]'); if(f){ alternar(f.dataset.k, f.dataset.v); render(); }
+});
+document.getElementById('limpar').onclick = () => { for(const k in SEL) delete SEL[k]; render(); };
+document.getElementById('todas').onchange = () => render();
+__FILTRO__
+render();
+</script></body></html>

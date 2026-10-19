@@ -144,6 +144,10 @@ def main(pasta):
         ted(pasta)
     except Exception as e:  # a falta dos TEDs não pode derrubar as outras páginas
         print('página de TED não gerada:', e, flush=True)
+    try:
+        orcamento_pag(pasta)
+    except Exception as e:
+        print('página de orçamento não gerada:', e, flush=True)
 
 
 def propostas(pasta, data_carga):
@@ -411,6 +415,25 @@ def ted(pasta):
     with open(os.path.join(pasta, 'pagina_ted.html'), 'w', encoding='utf-8') as fh:
         fh.write(montar('ted.html', {'linhas': linhas, 'ano': hoje.year, 'tes': tesInfo}, data))
     print(f'pagina_ted.html · {len(linhas)} planos de ação', flush=True)
+
+
+
+def orcamento_pag(pasta):
+    """Página Orçamento por ação (Tesouro Gerencial · aba ORCAMENTO, lida pelo orcamento.py em PASTA/orcamento)."""
+    L = ler(os.path.join(pasta, 'orcamento'), 'orcamento.csv')
+    if not L:
+        print('página de orçamento: sem orcamento/orcamento.csv', flush=True)
+        return
+    meta = {}
+    try:
+        meta = json.load(open(os.path.join(pasta, 'orcamento', 'orcamento.json'), encoding='utf-8'))
+    except Exception:
+        pass
+    M = ['ini', 'sup', 'canc', 'atu', 'indisp', 'provConc', 'provRec', 'destConc', 'disp', 'emp', 'liq', 'pago']
+    linhas = [[r['ug'], r['acao'], r['acao_nome'][:70], r['po'], r['po_nome'][:70], r['ptres'], r['gnd'], r['rp']] + [f(r.get(k)) for k in M] for r in L]
+    with open(os.path.join(pasta, 'pagina_orcamento.html'), 'w', encoding='utf-8') as fh:
+        fh.write(montar('orcamento.html', {'linhas': linhas}, meta.get('gerado_em', '')))
+    print(f'pagina_orcamento.html · {len(linhas)} linhas', flush=True)
 
 
 if __name__ == '__main__':
