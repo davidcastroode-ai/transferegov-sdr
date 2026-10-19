@@ -631,6 +631,19 @@ def ted(pasta):
                'erros': [x.get('erro') for x in tes_meta.get('fontes', []) if not x.get('ok')]}
     data = (meta.get('data_api') or {}).get('data_ultima_atualizacao', '').replace('T', ' ')[:16]
     data = (data[8:10] + '/' + data[5:7] + '/' + data[:4] + data[10:]) if data else meta.get('gerado_em', '')
+    # NC, PF e empenhos de cada TED (pelo nº), para as abas do controle interno no painel (Vigentes, Dispensa, Prestação de contas, Aprovados)
+    fic = {}
+    for o in linhas:
+        k = ted_tesouro.chave_ted(o.get('n'))
+        if not k or k in fic:
+            continue
+        t = o.get('tes') or {}
+        fic[k] = dict(fir=o.get('fir') or 0, nc=o.get('nc') or 0, pf=o.get('pf') or 0, ar=o.get('ar') or 0, neT=o.get('neT') or [0, 0, 0, 0],
+                      tes={c: t.get(c) for c in ('fir', 'nc', 'rep', 'aRep', 'aComp', 'comp')} if t else None,
+                      ncs=o.get('ncs') or [], pfs=o.get('pfs') or [], nes=o.get('nes') or [], nca=o.get('nca') or [], acao=o.get('acao', ''), fase=o.get('fase', ''))
+    with open(os.path.join(tp, 'ted_ficha.json'), 'w', encoding='utf-8') as fh:
+        json.dump(fic, fh, ensure_ascii=False, separators=(',', ':'))
+    print(f'ted/ted_ficha.json · {len(fic)} TEDs', flush=True)
     with open(os.path.join(pasta, 'pagina_ted.html'), 'w', encoding='utf-8') as fh:
         fh.write(montar('ted.html', {'linhas': linhas, 'ano': hoje.year, 'tes': tesInfo}, data))
     print(f'pagina_ted.html · {len(linhas)} planos de ação', flush=True)

@@ -122,7 +122,7 @@ function fichaOrc(ac){
   const pos = [...new Set(L.map(o => o.po))].sort(), gnds = [...new Set(L.map(o => o.gnd))].sort();
   document.getElementById('fundoF').innerHTML = `<div class="fo"><div class="cab"><small>Ficha do orçamento · ação orçamentária</small><h2>${esc(ac)}</h2>
     ${T.indisp>1?`<span class="pill vm">Bloqueado ${fm(T.indisp)}</span>`:''}<span class="pill">POs ${esc(pos.join(', '))}</span><span class="pill">${esc(gnds.join(' · '))}</span><span class="pill">${n(new Set(L.map(o => o.ptres)).size)} PTRES</span>
-    <div class="acoes"><button type="button" onclick="window.print()">🖨 Imprimir / PDF</button><button type="button" data-fecha>✕</button></div></div>
+    <div class="acoes"><button type="button" onclick="imprimirFicha(this.closest('.acoes').parentElement.parentElement, 'Ficha da ação')">🖨 Imprimir / PDF</button><button type="button" data-fecha>✕</button></div></div>
     <div class="corpo"><h3>Caminho do dinheiro</h3>
     ${lin('Lei (dotação inicial)', T.ini, '#1f4e79', T.ini)}${lin('Créditos e cortes', T.sup+T.canc, T.sup+T.canc<0?'#c0392b':'#2e8a57', T.ini)}${lin('Dotação atual', T.atu, '#1f4e79', T.ini)}
     ${lin('Bloqueado', T.indisp, '#c0392b', T.atu)}${lin('Provisionado às UGs', T.provRec, '#5b6eae', T.atu)}${T.destConc>1?lin('Destaque concedido (TED)', T.destConc, '#8e44ad', T.atu):''}

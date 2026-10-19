@@ -282,8 +282,7 @@ function render(){
 }
 document.getElementById('nota').innerHTML = `<b>TED GERAL SDR</b> · Termos de Execução Descentralizada das UGs 130010, 130141, 130255, 135098 e 420013 · API de TED do Transferegov, dados de __DATA__ · ${TES.carregado ? 'Tesouro Gerencial: relatório de '+esc(TES.gerado_em)+' · ' : ''}planos rejeitados ficam fora (marque “incluir planos rejeitados”) · clique nos cartões para ver a lista, nos gráficos para filtrar e na linha para abrir a ficha.`;
 document.addEventListener('click', e => {
-  const imp = e.target.closest('[data-imp]'); if(imp){ e.stopPropagation(); const f = imp.closest('.fi'); f.classList.add('imp'); document.body.classList.add('imp');
-    f.querySelectorAll('details').forEach(d => d.open = true); window.print(); f.classList.remove('imp'); document.body.classList.remove('imp'); return; }
+  const imp = e.target.closest('[data-imp]'); if(imp){ e.stopPropagation(); const f = imp.closest('.fi'); imprimirFicha(f, 'Ficha TED '+((f.querySelector('h4')||{}).textContent||'')); return; }
   if(e.target.closest('.fi')) return;
   const pg = e.target.closest('[data-pg]'); if(pg){ PAG[pg.dataset.pg] = (PAG[pg.dataset.pg]||0) + +pg.dataset.d; render(); return; }
   const ab = e.target.closest('[data-ab]'); if(ab && !e.target.closest('a,button')){ abrirFicha(ab.dataset.ab); return; }
