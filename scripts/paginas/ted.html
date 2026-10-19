@@ -235,7 +235,7 @@ function render(){
     ['Fim vigência',o=>(esc(o.fim)||'—')+`<small>${o.dias===null?'':o.dias<0?'vencida':'faltam '+o.dias+' d'}</small>`,'n']];
   document.getElementById('lista').innerHTML = tabela('l', lista, cols, 15);
 }
-document.getElementById('nota').innerHTML = `<b>TED API</b> · Termos de Execução Descentralizada das UGs 130010, 130141, 130255, 135098 e 420013 · API de TED do Transferegov, dados de __DATA__ · ${TES.carregado ? 'Tesouro Gerencial: relatório de '+esc(TES.gerado_em)+' · ' : ''}planos rejeitados ficam fora (marque “incluir planos rejeitados”) · clique nos cartões para ver a lista, nos gráficos para filtrar e na linha para abrir a ficha. <b style="color:#c0392b">Teste</b>`;
+document.getElementById('nota').innerHTML = `<b>TED SDR</b> · Termos de Execução Descentralizada das UGs 130010, 130141, 130255, 135098 e 420013 · API de TED do Transferegov, dados de __DATA__ · ${TES.carregado ? 'Tesouro Gerencial: relatório de '+esc(TES.gerado_em)+' · ' : ''}planos rejeitados ficam fora (marque “incluir planos rejeitados”) · clique nos cartões para ver a lista, nos gráficos para filtrar e na linha para abrir a ficha.`;
 document.addEventListener('click', e => {
   const imp = e.target.closest('[data-imp]'); if(imp){ e.stopPropagation(); const f = imp.closest('.fi'); f.classList.add('imp'); document.body.classList.add('imp');
     f.querySelectorAll('details').forEach(d => d.open = true); window.print(); f.classList.remove('imp'); document.body.classList.remove('imp'); return; }

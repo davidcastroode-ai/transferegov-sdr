@@ -98,7 +98,7 @@ function render(){
   });
   document.getElementById('tabela').innerHTML = h + `<tr class="ac"><td>Total</td>${cols.map(c => cel(T,c[1])).join('')}<td>${pct(T.emp,T.atu||T.provRec)}</td></tr></table>`;
 }
-document.getElementById('nota').innerHTML = `<b>Orçamento por ação</b> · Tesouro Gerencial (aba ORCAMENTO da BASE ORÇAMENTO SDR, lida pelo robô em __DATA__) · dotação, cortes e bloqueio na UG setorial (130101 · CGOF/MAPA); provisão, empenho e pagamento nas UGs da SDR · por padrão só as ações e POs acompanhados (2000 só 000H/000K, 00PN só 0003, 8606 só 0001). <b style="color:#c0392b">Teste</b>`;
+document.getElementById('nota').innerHTML = `<b>Orçamento por ação</b> · Tesouro Gerencial (aba ORCAMENTO da BASE ORÇAMENTO SDR, lida pelo robô em __DATA__) · dotação, cortes e bloqueio na UG setorial (130101 · CGOF/MAPA); provisão, empenho e pagamento nas UGs da SDR · por padrão só as ações e POs acompanhados (2000 só 000H/000K, 00PN só 0003, 8606 só 0001).`;
 
 // a página fica dentro de um iframe que cresce com o conteúdo: a janela da ficha abre na parte que a pessoa está vendo
 function posModal(f){
