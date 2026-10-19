@@ -408,12 +408,80 @@ def ted(pasta):
             o['rp'] = ' | '.join(sorted({x[8] for x in nt if x[8]}))
             if not o['obj']:
                 o['obj'] = nt[0][12]
+    # ---- controle interno (aba TED VIGENTE): a vigência prorrogada vale sobre a da API, que guarda só a data original
+    ctl = {x['ted'].upper(): x for x in ler(tp, 'ted_controle.csv')}
+    pdata = lambda v: datetime.datetime.strptime(v[:10], '%d/%m/%Y').date() if re.match(r'\d{2}/\d{2}/\d{4}', v or '') else None
+    for o in linhas:
+        c = ctl.get((o['n'] or '').upper()) if o['n'] else None
+        if not ctl:
+            o['ctlS'] = 'Controle não carregado'
+            continue
+        if not c:
+            o['ctlS'] = 'Fora do controle interno'
+            continue
+        o['ctl'] = [c['fim'], c['ug'], c['depto'], c['fiscal'], c['fiscal_sup'], c['acao'], c['rp']]
+        fc = pdata(c['fim'])
+        if fc and c['fim'] != o['fim']:
+            o['fimApi'] = o['fim']
+            o['fim'] = c['fim']
+            o['dias'] = (fc - hoje).days
+            o['ctlS'] = 'No controle · vigência prorrogada (API desatualizada)'
+        else:
+            o['ctlS'] = 'No controle · mesma vigência'
+        # vigente pelo controle: conta como em execução, mesmo que o Transferegov já tenha aberto a prestação de contas
+        if o['dias'] is not None and o['dias'] >= 0 and (o['fase'] in ('Vigência vencida', 'Só no Tesouro') or o['st'].startswith('CUMPRIMENTO_OBJETO_INICIADO')):
+            o['fase'] = 'Em execução'
+        if o['fase'] == 'Em execução' and o['dias'] is not None and o['dias'] < 0:
+            o['fase'] = 'Vigência vencida'
+    ctlInfo = {'carregado': bool(ctl), 'teds': len(ctl), 'semPainel': sorted(set(ctl) - {(o['n'] or '').upper() for o in linhas})}
+    # ---- ajustes da equipe (aba TED ATUALIZADA): valem sobre a API e o Tesouro (a API guarda só a vigência original)
+    pdata = lambda v: datetime.datetime.strptime(v[:10], '%d/%m/%Y').date() if re.match(r'\d{2}/\d{2}/\d{4}', v or '') else None
+    aj = {x['ted'].upper(): x for x in ler(tp, 'ted_ajustes.csv')}
+    for o in linhas:
+        so_t = o.get('org') == 'Só no Tesouro'
+        o['fimApi'] = '' if so_t else o['fim']
+        if so_t and o['dias'] is not None and o['dias'] >= 0:
+            o['fase'] = 'Em execução'
+        a_ = aj.get((o['n'] or o['cod'] or '').upper())
+        if not a_:
+            continue
+        o['aj'] = [a_['fim'], a_['fase'], a_['obs']]
+        fa = pdata(a_['fim'])
+        if fa:
+            o['fim'], o['dias'] = a_['fim'], (fa - hoje).days
+            # vigente pelo ajuste: volta para "em execução" mesmo que o Transferegov já tenha aberto a prestação de contas
+            if o['dias'] >= 0 and (o['fase'] in ('Vigência vencida', 'Só no Tesouro') or o['st'].startswith('CUMPRIMENTO_OBJETO_INICIADO')):
+                o['fase'] = 'Em execução'
+            elif o['dias'] < 0 and o['fase'] == 'Em execução':
+                o['fase'] = 'Vigência vencida'
+        if a_['fase']:
+            o['fase'] = a_['fase']
+    # ---- BASE TED ATUALIZADA: uma linha por TED (API + Tesouro + NC + PF) para a aba TED ATUALIZADA (o Apps Script copia)
+    tt = lambda o, k: '' if not o.get('tes') or o['tes'].get(k) is None else o['tes'][k]
+    ap = lambda fn: (lambda o: '' if o.get('org') == 'Só no Tesouro' else fn(o))
+    BASE = [('Nº TED', lambda o: o['n'] or o['cod']), ('Ano', lambda o: o['ano']), ('Plano de ação', ap(lambda o: o['cod'])), ('Origem do dado', lambda o: o.get('org', '')),
+            ('Enviado / recebido', lambda o: o['er']), ('UG descentralizadora', lambda o: o['ugd']), ('UG descentralizada', lambda o: o['ugr']),
+            ('Unidade descentralizada', lambda o: o['unr']), ('Processo', lambda o: o['sei']), ('Objeto', lambda o: (o['obj'] or '')[:500]),
+            ('Ação', lambda o: o['acao']), ('Resultado primário', lambda o: o['rp']), ('Situação do termo (API)', ap(lambda o: o['st'])),
+            ('Situação no Tesouro', lambda o: tt(o, 'sit')), ('Início da vigência', lambda o: o['ini']), ('Fim da vigência (API)', lambda o: o['fimApi']),
+            ('Fim da vigência (Tesouro)', lambda o: tt(o, 'fim')), ('Fim da vigência (painel)', lambda o: o['fim']), ('Dias para o fim', lambda o: '' if o['dias'] is None else o['dias']),
+            ('Fase (painel)', lambda o: o['fase']), ('Valor firmado (API)', ap(lambda o: o['fir'])), ('Valor firmado (Tesouro)', lambda o: tt(o, 'fir')),
+            ('Descentralizado NC (API)', ap(lambda o: o['nc'])), ('NC no Tesouro', lambda o: round(sum(x[4] for x in o['ncs'] if x[9] == 'Tesouro'), 2) if o.get('ncT') else ''),
+            ('Repassado PF (API)', ap(lambda o: o['pf'])), ('Repassado (Tesouro)', lambda o: tt(o, 'rep')), ('A repassar (Tesouro)', lambda o: tt(o, 'aRep')),
+            ('A comprovar (Tesouro)', lambda o: tt(o, 'aComp')), ('Comprovado (Tesouro)', lambda o: tt(o, 'comp')),
+            ('Notas de crédito', lambda o: ' | '.join(sorted({x[0] for x in o['ncs'] if x[0]}))), ('Programações financeiras', lambda o: ' | '.join(sorted({x[0] for x in o['pfs'] if x[0]}))),
+            ('Divergências API x Tesouro', lambda o: ' · '.join(f'{r}: API {a_:,.2f} / Tesouro {b_:,.2f}' for r, a_, b_ in o.get('dif', [])))]
+    with open(os.path.join(tp, 'ted_base_atualizada.csv'), 'w', encoding='utf-8', newline='') as fh:
+        w = csv.writer(fh)
+        w.writerow([h for h, _ in BASE])
+        for o in sorted(linhas, key=lambda o: (o['fase'] == 'Plano rejeitado', o['ugd'], o['n'] or o['cod'])):
+            w.writerow([fn(o) for _, fn in BASE])
     tesInfo = {'carregado': bool(tes), 'gerado_em': tes_meta.get('gerado_em', ''), 'teds': len(tes), 'soTesouro': len(tes) - len(usados),
                'erros': [x.get('erro') for x in tes_meta.get('fontes', []) if not x.get('ok')]}
     data = (meta.get('data_api') or {}).get('data_ultima_atualizacao', '').replace('T', ' ')[:16]
     data = (data[8:10] + '/' + data[5:7] + '/' + data[:4] + data[10:]) if data else meta.get('gerado_em', '')
     with open(os.path.join(pasta, 'pagina_ted.html'), 'w', encoding='utf-8') as fh:
-        fh.write(montar('ted.html', {'linhas': linhas, 'ano': hoje.year, 'tes': tesInfo}, data))
+        fh.write(montar('ted.html', {'linhas': linhas, 'ano': hoje.year, 'tes': tesInfo, 'ctl': ctlInfo}, data))
     print(f'pagina_ted.html · {len(linhas)} planos de ação', flush=True)
 
 

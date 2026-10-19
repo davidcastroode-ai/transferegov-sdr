@@ -397,8 +397,56 @@ def ler_pf(pasta_saida):
               open(os.path.join(pasta_saida, 'ted', 'ted_tesouro_pf.json'), 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
     return todas
 
+# ---- ajustes da equipe (aba TED ATUALIZADA da BASE TED): fim da vigência prorrogado, fase e observação corrigidos à mão
+CONFIG_AJ = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'config', 'ted_ajustes.txt')
+
+
+def _data_aj(v):
+    v = (v or '').strip()
+    m = re.match(r'(\d{1,2})/(\d{1,2})/(\d{4})', v)
+    if m:
+        return f'{int(m.group(1)):02d}/{int(m.group(2)):02d}/{m.group(3)}'
+    m = re.match(r'(\d{4})-(\d{2})-(\d{2})', v)
+    return f'{m.group(3)}/{m.group(2)}/{m.group(1)}' if m else ''
+
+
+def interpretar_aj(linhas):
+    ih = next((i for i, l in enumerate(linhas[:10]) if any(na(c) == 'N TED' for c in l)), None)
+    if ih is None:
+        raise ValueError('não achei o título "Nº TED" na aba TED ATUALIZADA')
+    H = [na(c) for c in linhas[ih]]
+    col = lambda rx: next((i for i, h in enumerate(H) if re.search(rx, h)), None)
+    cN, cF, cS, cO = col(r'^N TED$'), col(r'^AJUSTE.*FIM'), col(r'^AJUSTE.*FASE'), col(r'^AJUSTE.*OBS')
+    g = lambda l, i: (l[i] or '').strip() if i is not None and i < len(l) else ''
+    out = []
+    for l in linhas[ih + 1:]:
+        ted, fim, fase, obs = g(l, cN).upper(), _data_aj(g(l, cF)), g(l, cS), g(l, cO)
+        if ted and (fim or fase or obs):
+            out.append({'ted': ted, 'fim': fim, 'fase': fase, 'obs': obs[:400]})
+    return out
+
+
+def ler_aj(pasta_saida):
+    todas, info = [], []
+    urls = [l.strip() for l in open(CONFIG_AJ, encoding='utf-8') if l.strip() and not l.strip().startswith('#')] if os.path.exists(CONFIG_AJ) else []
+    for u in urls:
+        try:
+            todas += interpretar_aj(list(csv.reader(io.StringIO(baixar(u)))))
+            info.append({'link': u, 'linhas': len(todas), 'ok': True})
+            print(f'Ajustes TED: {len(todas)} ajustes em {u[-60:]}', flush=True)
+        except Exception as e:
+            info.append({'link': u, 'erro': str(e)[:200], 'ok': False})
+            print(f'Ajustes TED: erro em {u[-60:]}: {e}', flush=True)
+    os.makedirs(os.path.join(pasta_saida, 'ted'), exist_ok=True)
+    with open(os.path.join(pasta_saida, 'ted', 'ted_ajustes.csv'), 'w', encoding='utf-8', newline='') as fh:
+        w = csv.DictWriter(fh, fieldnames=['ted', 'fim', 'fase', 'obs'])
+        w.writeheader()
+        w.writerows(todas)
+    return todas
+
 
 if __name__ == '__main__':
     ler(sys.argv[1] if len(sys.argv) > 1 else 'saida')
     ler_nc(sys.argv[1] if len(sys.argv) > 1 else 'saida')
     ler_pf(sys.argv[1] if len(sys.argv) > 1 else 'saida')
+    ler_aj(sys.argv[1] if len(sys.argv) > 1 else 'saida')
