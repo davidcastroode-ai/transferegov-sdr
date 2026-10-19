@@ -346,8 +346,15 @@ def ted(pasta):
                              ugE=x['ug_emit'], ugF=x['ug_fav'], nome=x['nome_fav'], ano=x['ano'], proc=x['processo'],
                              contas=[[k, f(v)] for k, v in x.items() if k not in base_c and (v or '').strip() not in ('', '0', '0.0')])
     # notas de crédito do Tesouro (ted/ted_tesouro_nc.csv): completam as NCs, a ação e o resultado primário que a API não traz
+    # PTRES → ação: a base de orçamento do Tesouro (orcamento/orcamento.csv) vale mais que a API de TED, que às vezes traz o programa de trabalho de outro órgão
+    ac_orc = {}
+    for x in ler(os.path.join(pasta, 'orcamento'), 'orcamento.csv'):
+        if x.get('ptres') and x.get('acao'):
+            ac_orc.setdefault(x['ptres'].strip(), x['acao'].strip().zfill(4) if x['acao'].strip().isdigit() else x['acao'].strip())
     ncT = collections.defaultdict(list)
     for x in ler(tp, 'ted_tesouro_nc.csv'):
+        if x['ptres'] and x['ptres'].strip() in ac_orc:
+            x['acao'] = ac_orc[x['ptres'].strip()]
         if x['ted']:
             ncT[x['ted']].append([x['nc'], x['data'], x['ug_emit'], x['ug_fav'], f(x['valor']), x['ptres'], x['pi'], x['nd'], x['rp'], 'Tesouro', '', x['acao'], x['obs'][:200]])
     pfT = collections.defaultdict(list)
