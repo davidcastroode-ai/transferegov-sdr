@@ -402,11 +402,13 @@ def ted(pasta):
         if o['er'] != 'Recebido':
             nt = [x[:4] + [-abs(x[4])] + x[5:9] + ['Devolução'] + x[10:] if str(x[2]) not in UGS_SDR and str(x[3]) in UGS_SDR else x for x in nt]
         o['ncT'] = len(nt)
+        o['ncTes'] = nt
         ag = collections.defaultdict(float)
         for x in nt:
             ag[(x[11] or '', x[5] or '', x[6] or '', x[7] or '', x[8] or '')] += x[4]
         o['nca'] = [list(k) + [round(v, 2)] for k, v in sorted(ag.items(), key=lambda kv: -kv[1])][:20]
         pt_ = pfT.get(k, []) if k else []
+        o['pfTes'] = pt_
         if pt_ and not o['pfs']:
             o['pfs'] = pt_[:40]
         if nt and not o['ncs']:
@@ -558,27 +560,6 @@ def ted(pasta):
                 o['fase'] = 'Vigência vencida'
         if a_['fase']:
             o['fase'] = a_['fase']
-    # ---- BASE TED ATUALIZADA: uma linha por TED (API + Tesouro + NC + PF) para a aba TED ATUALIZADA (o Apps Script copia)
-    tt = lambda o, k: '' if not o.get('tes') or o['tes'].get(k) is None else o['tes'][k]
-    ap = lambda fn: (lambda o: '' if o.get('org') == 'Só no Tesouro' else fn(o))
-    BASE = [('Nº TED', lambda o: o['n'] or o['cod']), ('Ano', lambda o: o['ano']), ('Plano de ação', ap(lambda o: o['cod'])), ('Origem do dado', lambda o: o.get('org', '')),
-            ('Enviado / recebido', lambda o: o['er']), ('UG descentralizadora', lambda o: o['ugd']), ('UG descentralizada', lambda o: o['ugr']),
-            ('Unidade descentralizada', lambda o: o['unr']), ('Processo', lambda o: o['sei']), ('Objeto', lambda o: (o['obj'] or '')[:500]),
-            ('Ação', lambda o: o['acao']), ('Resultado primário', lambda o: o['rp']), ('Situação do termo (API)', ap(lambda o: o['st'])),
-            ('Situação no Tesouro', lambda o: tt(o, 'sit')), ('Início da vigência', lambda o: o['ini']), ('Fim da vigência (API)', lambda o: o['fimApi']),
-            ('Fim da vigência (Tesouro)', lambda o: tt(o, 'fim')), ('Fim da vigência (painel)', lambda o: o['fim']), ('Dias para o fim', lambda o: '' if o['dias'] is None else o['dias']),
-            ('Fase (painel)', lambda o: o['fase']), ('Valor firmado (API)', ap(lambda o: o['fir'])), ('Valor firmado (Tesouro)', lambda o: tt(o, 'fir')),
-            ('Descentralizado NC (API)', ap(lambda o: o['nc'])), ('NC no Tesouro', lambda o: round(sum(x[4] for x in o['ncs'] if x[9] in ('Tesouro', 'Devolução')), 2) if o.get('ncT') else ''),
-            ('Repassado PF (API)', ap(lambda o: o['pf'])), ('Repassado (Tesouro)', lambda o: tt(o, 'rep')), ('A repassar (Tesouro)', lambda o: tt(o, 'aRep')),
-            ('A comprovar (Tesouro)', lambda o: tt(o, 'aComp')), ('Comprovado (Tesouro)', lambda o: tt(o, 'comp')),
-            ('Empenhado pela unidade (NE)', lambda o: o['neT'][0] if o.get('nes') else ''), ('Pago pela unidade (NE + RP)', lambda o: round(o['neT'][2] + o['neT'][3], 2) if o.get('nes') else ''),
-            ('Notas de crédito', lambda o: ' | '.join(sorted({x[0] for x in o['ncs'] if x[0]}))), ('Programações financeiras', lambda o: ' | '.join(sorted({x[0] for x in o['pfs'] if x[0]}))),
-            ('Divergências API x Tesouro', lambda o: ' · '.join(f'{r}: API {a_:,.2f} / Tesouro {b_:,.2f}' for r, a_, b_ in o.get('dif', [])))]
-    with open(os.path.join(tp, 'ted_base_atualizada.csv'), 'w', encoding='utf-8', newline='') as fh:
-        w = csv.writer(fh)
-        w.writerow([h for h, _ in BASE])
-        for o in sorted(linhas, key=lambda o: (o['fase'] == 'Plano rejeitado', o['ugd'], o['n'] or o['cod'])):
-            w.writerow([fn(o) for _, fn in BASE])
     # ---- ações usadas em cada TED (pelos eventos das NCs da API; TED só no Tesouro: pelas NCs do Tesouro) + nomes da base de orçamento
     nomeA, nomePO, ptPO = {}, {}, {}
     for x in ler(os.path.join(pasta, 'orcamento'), 'orcamento.csv'):
@@ -637,6 +618,56 @@ def ted(pasta):
             continue
         o['eq'] = eq
         n_eq += 1
+    # ---- PRIORIDADE DOS DADOS: orçamento, financeiro e datas vêm do Tesouro (SIAFI) e da planilha da equipe;
+    # a API do Transferegov só completa o que não existe nesses dois (os valores dela ficam em o['api'], para comparar)
+    pct_ = lambda v: v if isinstance(v, (int, float)) else None
+    for o in linhas:
+        if o.get('org') in ('Só no Tesouro', 'Só no controle interno', 'Recebido sem nº de TED'):
+            o['api'] = None
+            continue
+        t, e = o.get('tes') or {}, o.get('eq') or {}
+        o['api'] = dict(fir=o['fir'], nc=o['nc'], pf=o['pf'], ar=o['ar'], ini=o['ini'], fim=o.get('fimApi') or o['fim'], ano=o['ano'])
+        nt, pt_ = o.get('ncTes') or [], o.get('pfTes') or []
+        # valor firmado: Tesouro → planilha → API
+        if pct_(t.get('fir')) and t['fir'] > 0:
+            o['fir'] = t['fir']
+        elif e.get('firm'):
+            o['fir'] = e['firm']
+        # descentralizado: NCs do Tesouro (sem repetição, devoluções negativas) → saldo do Tesouro → API
+        if nt:
+            o['nc'] = round(sum(x[4] for x in nt), 2)
+            o['ncs'] = nt[:40]
+            acT = [x[11] for x in sorted(nt, key=lambda x: -x[4]) if x[11]]
+            if acT:
+                o['acao'] = ' | '.join(dict.fromkeys(acT))
+        elif pct_(t.get('nc')) is not None:
+            o['nc'] = t['nc']
+        # repassado: a comprovar + comprovado no Tesouro (o que já saiu para a unidade) → conta de repasse do Tesouro → API
+        # (a soma do relatório de PF ainda não é confiável: valores com dígito a mais e devoluções com sinal trocado; as PFs aparecem só na lista)
+        if pct_(t.get('aComp')) is not None or pct_(t.get('comp')) is not None:
+            o['pf'] = round((t.get('aComp') or 0) + (t.get('comp') or 0), 2)
+        elif pct_(t.get('rep')) is not None:
+            o['pf'] = t['rep']
+        if pt_:
+            o['pfs'] = pt_[:40]
+        if pct_(t.get('aRep')) is not None:
+            o['ar'] = t['aRep']
+        o['op'] = max(0.0, round(o['fir'] - o['nc'], 2))
+        # datas: ajuste da equipe → planilha (controle interno) → Tesouro → API
+        if t.get('ini'):
+            o['ini'] = t['ini']
+        if re.fullmatch(r'\d{4}', str(t.get('ano') or '')):
+            o['ano'] = t['ano']
+        fimAj = (o.get('aj') or [''])[0]
+        fim = next((v for v in (fimAj, e.get('fim'), t.get('fim')) if pdata(v)), None)
+        if fim and fim != o['fim']:
+            o['fim'] = fim
+            o['dias'] = (pdata(fim) - hoje).days
+            if not (o.get('aj') or ['', ''])[1]:
+                if o['dias'] >= 0 and o['fase'] == 'Vigência vencida':
+                    o['fase'] = 'Em execução'
+                elif o['dias'] < 0 and o['fase'] == 'Em execução':
+                    o['fase'] = 'Vigência vencida'
     for o in linhas:
         e = o.get('eq') or {}
         o['dep'] = (e.get('dep') or '').upper() or '(sem departamento)'
@@ -660,6 +691,27 @@ def ted(pasta):
                'erros': [x.get('erro') for x in tes_meta.get('fontes', []) if not x.get('ok')]}
     data = (meta.get('data_api') or {}).get('data_ultima_atualizacao', '').replace('T', ' ')[:16]
     data = (data[8:10] + '/' + data[5:7] + '/' + data[:4] + data[10:]) if data else meta.get('gerado_em', '')
+    # ---- BASE TED ATUALIZADA: uma linha por TED (API + Tesouro + NC + PF) para a aba TED ATUALIZADA (o Apps Script copia)
+    tt = lambda o, k: '' if not o.get('tes') or o['tes'].get(k) is None else o['tes'][k]
+    ap = lambda fn: (lambda o: '' if o.get('org') == 'Só no Tesouro' else fn(o))
+    BASE = [('Nº TED', lambda o: o['n'] or o['cod']), ('Ano', lambda o: o['ano']), ('Plano de ação', ap(lambda o: o['cod'])), ('Origem do dado', lambda o: o.get('org', '')),
+            ('Enviado / recebido', lambda o: o['er']), ('UG descentralizadora', lambda o: o['ugd']), ('UG descentralizada', lambda o: o['ugr']),
+            ('Unidade descentralizada', lambda o: o['unr']), ('Processo', lambda o: o['sei']), ('Objeto', lambda o: (o['obj'] or '')[:500]),
+            ('Ação', lambda o: o['acao']), ('Resultado primário', lambda o: o['rp']), ('Situação do termo (API)', ap(lambda o: o['st'])),
+            ('Situação no Tesouro', lambda o: tt(o, 'sit')), ('Início da vigência', lambda o: o['ini']), ('Fim da vigência (API)', lambda o: (o.get('api') or {}).get('fim', '')),
+            ('Fim da vigência (Tesouro)', lambda o: tt(o, 'fim')), ('Fim da vigência (painel)', lambda o: o['fim']), ('Dias para o fim', lambda o: '' if o['dias'] is None else o['dias']),
+            ('Fase (painel)', lambda o: o['fase']), ('Valor firmado (API)', lambda o: (o.get('api') or {}).get('fir', '')), ('Valor firmado (Tesouro)', lambda o: tt(o, 'fir')),
+            ('Descentralizado NC (API)', lambda o: (o.get('api') or {}).get('nc', '')), ('NC no Tesouro', lambda o: round(sum(x[4] for x in o['ncs'] if x[9] in ('Tesouro', 'Devolução')), 2) if o.get('ncT') else ''),
+            ('Repassado PF (API)', lambda o: (o.get('api') or {}).get('pf', '')), ('Repassado (Tesouro)', lambda o: tt(o, 'rep')), ('A repassar (Tesouro)', lambda o: tt(o, 'aRep')),
+            ('A comprovar (Tesouro)', lambda o: tt(o, 'aComp')), ('Comprovado (Tesouro)', lambda o: tt(o, 'comp')),
+            ('Empenhado pela unidade (NE)', lambda o: o['neT'][0] if o.get('nes') else ''), ('Pago pela unidade (NE + RP)', lambda o: round(o['neT'][2] + o['neT'][3], 2) if o.get('nes') else ''),
+            ('Notas de crédito', lambda o: ' | '.join(sorted({x[0] for x in o['ncs'] if x[0]}))), ('Programações financeiras', lambda o: ' | '.join(sorted({x[0] for x in o['pfs'] if x[0]}))),
+            ('Divergências API x Tesouro', lambda o: ' · '.join(f'{r}: API {a_:,.2f} / Tesouro {b_:,.2f}' for r, a_, b_ in o.get('dif', [])))]
+    with open(os.path.join(tp, 'ted_base_atualizada.csv'), 'w', encoding='utf-8', newline='') as fh:
+        w = csv.writer(fh)
+        w.writerow([h for h, _ in BASE])
+        for o in sorted(linhas, key=lambda o: (o['fase'] == 'Plano rejeitado', o['ugd'], o['n'] or o['cod'])):
+            w.writerow([fn(o) for _, fn in BASE])
     # NC, PF e empenhos de cada TED (pelo nº), para as abas do controle interno no painel (Vigentes, Dispensa, Prestação de contas, Aprovados)
     fic = {}
     for o in linhas:
