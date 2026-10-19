@@ -103,7 +103,7 @@ function ficha(o){
    <small>Termo de Execução Descentralizada · ${o.er==='Recebido'?'recebido pela':'enviado pela'} UG ${esc(o.er==='Recebido'?o.ugr:o.ugd)}</small>
    <h4>${o.n?'TED '+esc(o.n):'Plano de ação '+esc(o.cod)}</h4><p>${esc(o.unr)} · UG ${esc(o.ugr)}</p>
    <span class="pl" style="background:${COR_F[o.fase]}">● ${esc(o.fase)}</span>${o.org?`<span class="pl az">${esc(o.org)}</span>`:''}${o.emd?`<span class="pl">Emenda ${esc(o.emd)}</span>`:''}${alerta?`<span class="pl vm">⚠ ${alerta}</span>`:''}
-   <div class="cx"><div>Ano<b>${esc(o.ano)}</b></div><div>Departamento<b>${esc(o.dep)}</b></div><div>UF<b>${esc(o.uf)||'—'}</b></div><div>Ação<b>${esc(o.acao)}</b></div><div>RP<b>${esc(o.rpN)}</b></div><div>Situação do termo<b>${esc(o.stN)}</b></div><div>Órgão<b>${esc(o.orr)}</b></div></div>
+   <div class="cx"><div>Ano<b>${esc(o.ano)}</b></div><div>Departamento<b>${esc(o.dep)}</b></div><div>UF<b>${esc(o.uf)||'—'}</b></div><div>Ação<b>${esc(o.acao)}</b></div><div>RP<b>${esc(o.rpN)}</b></div><div>Situação do termo<b>${esc(o.stN)}</b></div><div>Órgão de quem recebe<b>${esc(o.orr)}</b></div></div>
    <div class="fa"><button type="button" data-imp="${esc(o.id)}">🖨 Imprimir / PDF</button><button type="button" data-fecha title="Fechar (Esc)">✕</button></div></div>
   <div class="fcorpo">
    <div class="vl"><div style="--c:#1f4e79"><span>Valor firmado</span><b>${R$(o.fir)}</b></div><div style="--c:#2e8a57"><span>Descentralizado (NC)</span><b>${R$(o.nc)}</b></div>
