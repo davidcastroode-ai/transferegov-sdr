@@ -373,6 +373,9 @@ def ted(pasta):
             o['org'] = 'Só na API' if o['n'] else 'Plano sem nº (só API)'
         o['tes'] = t
         nt = ncT.get(k, []) if k else []
+        # NC emitida por outro órgão para a SDR: num TED recebido é crédito recebido; num TED enviado é devolução (entra negativa)
+        if o['er'] != 'Recebido':
+            nt = [x[:4] + [-abs(x[4])] + x[5:9] + ['Devolução'] + x[10:] if str(x[2]) not in UGS_SDR and str(x[3]) in UGS_SDR else x for x in nt]
         o['ncT'] = len(nt)
         ag = collections.defaultdict(float)
         for x in nt:
@@ -411,7 +414,8 @@ def ted(pasta):
                            fir=t['fir'] or 0, nc=t['nc'] or 0, op=0, pf=t['rep'] or 0, ar=t['aRep'] or 0, rp='', emd='', ult='', link='', ns='',
                            ncs=ncT.get(k, [])[:40], pfs=pfT.get(k, [])[:40], cro=[], prox=None, par=[], met=[], org='Só no Tesouro', tes=t, dif=[], ncT=len(ncT.get(k, []))))
         o = linhas[-1]
-        nt = ncT.get(k, [])
+        nt = [x[:4] + [-abs(x[4])] + x[5:9] + ['Devolução'] + x[10:] if str(x[2]) not in UGS_SDR and str(x[3]) in UGS_SDR and o['er'] != 'Recebido' else x for x in ncT.get(k, [])]
+        o['ncs'] = nt[:40]
         ag = collections.defaultdict(float)
         for x in nt:
             ag[(x[11] or '', x[5] or '', x[6] or '', x[7] or '', x[8] or '')] += x[4]
@@ -486,7 +490,7 @@ def ted(pasta):
             ('Situação no Tesouro', lambda o: tt(o, 'sit')), ('Início da vigência', lambda o: o['ini']), ('Fim da vigência (API)', lambda o: o['fimApi']),
             ('Fim da vigência (Tesouro)', lambda o: tt(o, 'fim')), ('Fim da vigência (painel)', lambda o: o['fim']), ('Dias para o fim', lambda o: '' if o['dias'] is None else o['dias']),
             ('Fase (painel)', lambda o: o['fase']), ('Valor firmado (API)', ap(lambda o: o['fir'])), ('Valor firmado (Tesouro)', lambda o: tt(o, 'fir')),
-            ('Descentralizado NC (API)', ap(lambda o: o['nc'])), ('NC no Tesouro', lambda o: round(sum(x[4] for x in o['ncs'] if x[9] == 'Tesouro'), 2) if o.get('ncT') else ''),
+            ('Descentralizado NC (API)', ap(lambda o: o['nc'])), ('NC no Tesouro', lambda o: round(sum(x[4] for x in o['ncs'] if x[9] in ('Tesouro', 'Devolução')), 2) if o.get('ncT') else ''),
             ('Repassado PF (API)', ap(lambda o: o['pf'])), ('Repassado (Tesouro)', lambda o: tt(o, 'rep')), ('A repassar (Tesouro)', lambda o: tt(o, 'aRep')),
             ('A comprovar (Tesouro)', lambda o: tt(o, 'aComp')), ('Comprovado (Tesouro)', lambda o: tt(o, 'comp')),
             ('Empenhado pela unidade (NE)', lambda o: o['neT'][0] if o.get('nes') else ''), ('Pago pela unidade (NE + RP)', lambda o: round(o['neT'][2] + o['neT'][3], 2) if o.get('nes') else ''),
