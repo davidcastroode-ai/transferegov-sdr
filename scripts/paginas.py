@@ -433,6 +433,22 @@ def ted(pasta):
             o['rp'] = ' | '.join(sorted({x[8] for x in nt if x[8]}))
             if not o['obj']:
                 o['obj'] = nt[0][12]
+    # ---- crédito recebido de outro órgão SEM nº de TED (ex.: Ministério da Pesca, ação 21GE): entra como linha própria.
+    # NC sem TED numa ação que a própria SDR também descentraliza é devolução de crédito dela, não recebimento: fica de fora.
+    gr = collections.defaultdict(list)
+    for x in semTED:
+        if x['acao'] and x['acao'] not in acoesSDR:
+            gr[(x['ug_emit'], x['ug_fav'], x['acao'])].append(x)
+    for i, ((ue, uf, ac), L) in enumerate(sorted(gr.items())):
+        v = round(sum(f(x['valor']) for x in L), 2)
+        if v < 1000:
+            continue
+        ncs_ = [[x['nc'], x['data'], x['ug_emit'], x['ug_fav'], f(x['valor']), x['ptres'], x['pi'], x['nd'], x['rp'], 'Tesouro', '', x['acao'], x['obs'][:200]] for x in L]
+        linhas.append(dict(id='R%d' % i, n='', ano=(L[0]['data'] or '')[-4:] or '(sem ano)', cod=', '.join(sorted({x['nc'] for x in L}))[:80], er='Recebido', ugd=ue, und=L[0].get('nome_emit', '') if isinstance(L[0], dict) else '',
+                           ugr=uf, unr=UGN_PY.get(uf, uf), orr='(recebido sem nº de TED)', uge=uf, prog='', acao=ac, obj=(L[0]['obs'] or '')[:400], sp='(recebido sem TED)', st='(sem termo)',
+                           fase='Recebido sem nº de TED', sei='', ass='', ini='', fim='', dias=None, fir=v, nc=v, op=0.0, pf=0.0, ar=0.0, rp=' | '.join(sorted({x['rp'] for x in L if x['rp']})),
+                           emd='', ult='', link='', ns='', ncs=ncs_, pfs=[], cro=[], prox=None, par=[], met=[], org='Recebido sem nº de TED', tes=None, dif=[], ncT=len(L),
+                           nca=[[ac, x['ptres'], x['pi'], x['nd'], x['rp'], f(x['valor'])] for x in L][:20], nes=[], neT=[0.0, 0.0, 0.0, 0.0]))
     # ---- empenhos das unidades que receberam o TED (ted/ted_tesouro_ne.csv): liga pela UG favorecida + PTRES das NCs do TED
     dig = lambda v: re.sub(r'\D', '', v or '')
     idx = collections.defaultdict(set)
@@ -463,22 +479,6 @@ def ted(pasta):
     for o in linhas:
         o['nes'] = sorted(o['nes'], key=lambda x: (x[1][6:10], x[1][3:5], x[1][:2]), reverse=True)[:60]
     print(f'empenhos ligados a TED: {n_lig}', flush=True)
-    # ---- crédito recebido de outro órgão SEM nº de TED (ex.: Ministério da Pesca, ação 21GE): entra como linha própria.
-    # NC sem TED numa ação que a própria SDR também descentraliza é devolução de crédito dela, não recebimento: fica de fora.
-    gr = collections.defaultdict(list)
-    for x in semTED:
-        if x['acao'] and x['acao'] not in acoesSDR:
-            gr[(x['ug_emit'], x['ug_fav'], x['acao'])].append(x)
-    for i, ((ue, uf, ac), L) in enumerate(sorted(gr.items())):
-        v = round(sum(f(x['valor']) for x in L), 2)
-        if v < 1000:
-            continue
-        ncs_ = [[x['nc'], x['data'], x['ug_emit'], x['ug_fav'], f(x['valor']), x['ptres'], x['pi'], x['nd'], x['rp'], 'Tesouro', '', x['acao'], x['obs'][:200]] for x in L]
-        linhas.append(dict(id='R%d' % i, n='', ano=(L[0]['data'] or '')[-4:] or '(sem ano)', cod=', '.join(sorted({x['nc'] for x in L}))[:80], er='Recebido', ugd=ue, und=L[0].get('nome_emit', '') if isinstance(L[0], dict) else '',
-                           ugr=uf, unr=UGN_PY.get(uf, uf), orr='(recebido sem nº de TED)', uge=uf, prog='', acao=ac, obj=(L[0]['obs'] or '')[:400], sp='(recebido sem TED)', st='(sem termo)',
-                           fase='Recebido sem nº de TED', sei='', ass='', ini='', fim='', dias=None, fir=v, nc=v, op=0.0, pf=0.0, ar=0.0, rp=' | '.join(sorted({x['rp'] for x in L if x['rp']})),
-                           emd='', ult='', link='', ns='', ncs=ncs_, pfs=[], cro=[], prox=None, par=[], met=[], org='Recebido sem nº de TED', tes=None, dif=[], ncT=len(L),
-                           nca=[[ac, x['ptres'], x['pi'], x['nd'], x['rp'], f(x['valor'])] for x in L][:20], nes=[], neT=[0.0, 0.0, 0.0, 0.0]))
     # ---- ajustes da equipe (aba TED ATUALIZADA): valem sobre a API e o Tesouro (a API guarda só a vigência original)
     pdata = lambda v: datetime.datetime.strptime(v[:10], '%d/%m/%Y').date() if re.match(r'\d{2}/\d{2}/\d{4}', v or '') else None
     aj = {x['ted'].upper(): x for x in ler(tp, 'ted_ajustes.csv')}

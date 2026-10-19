@@ -305,6 +305,10 @@ def interpretar_nc(linhas, ptres):
             sem += 1
             ted = ''
         v = num(g(l, cVal))
+        # o "Valor Linha" vem sempre positivo; a coluna de saldo ao lado traz o sinal: entre parênteses = estorno/anulação
+        sald = next((c for c in reversed(l[(cVal or 0) + 1:]) if c.strip()), '') if cVal is not None else ''
+        if v and (sald.startswith('(') or sald.startswith('-')):
+            v = -abs(v)
         pt = g(l, cPT)
         info = ptres.get(pt, {})
         out.append({'ted': ted, 'data': g(l, cDt), 'nc': nc[-12:] if len(nc) > 12 else nc, 'nc_completa': nc, 'ug_emit': g(l, cUe), 'ug_fav': g(l, cFav),
