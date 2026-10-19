@@ -522,9 +522,15 @@ def ler_aj(pasta_saida):
             print(f'Ajustes TED: erro em {u[-60:]}: {e}', flush=True)
     os.makedirs(os.path.join(pasta_saida, 'ted'), exist_ok=True)
     with open(os.path.join(pasta_saida, 'ted', 'ted_ajustes.csv'), 'w', encoding='utf-8', newline='') as fh:
-        w = csv.DictWriter(fh, fieldnames=['ted', 'fim', 'fase', 'obs', 'dep', 'fiscT', 'fiscS', 'uf'])
+        w = csv.DictWriter(fh, fieldnames=['ted', 'fim', 'fase', 'obs'], extrasaction='ignore')
         w.writeheader()
         w.writerows(todas)
+    campos = ['ted', 'origem'] + [k for k in (equipe[0].keys() if equipe else []) if k not in ('ted', 'origem')]
+    with open(os.path.join(pasta_saida, 'ted', 'ted_equipe.csv'), 'w', encoding='utf-8', newline='') as fh:
+        w = csv.DictWriter(fh, fieldnames=campos, extrasaction='ignore')
+        w.writeheader()
+        w.writerows(equipe)
+    print(f'Controle interno (colunas EQUIPE): {len(equipe)} linhas', flush=True)
     return todas
 
 
