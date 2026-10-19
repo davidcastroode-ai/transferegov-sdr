@@ -341,6 +341,11 @@ def ted(pasta):
                              aApr=fx(x.get('aApr')), apr=fx(x.get('apr')), sit=x.get('situacao', ''), ini=x.get('ini', ''), fim=x.get('fim', ''), obj=x.get('objeto', ''),
                              ugE=x['ug_emit'], ugF=x['ug_fav'], nome=x['nome_fav'], ano=x['ano'], proc=x['processo'],
                              contas=[[k, f(v)] for k, v in x.items() if k not in base_c and (v or '').strip() not in ('', '0', '0.0')])
+    # notas de crédito do Tesouro (ted/ted_tesouro_nc.csv): completam as NCs, a ação e o resultado primário que a API não traz
+    ncT = collections.defaultdict(list)
+    for x in ler(tp, 'ted_tesouro_nc.csv'):
+        if x['ted']:
+            ncT[x['ted']].append([x['nc'], x['data'], x['ug_emit'], x['ug_fav'], f(x['valor']), x['ptres'], x['pi'], x['nd'], x['rp'], 'Tesouro', '', x['acao'], x['obs'][:200]])
     usados = set()
     for o in linhas:
         k = ted_tesouro.chave_ted(o['n'])
@@ -353,6 +358,19 @@ def ted(pasta):
         else:
             o['org'] = 'Só na API' if o['n'] else 'Plano sem nº (só API)'
         o['tes'] = t
+        nt = ncT.get(k, []) if k else []
+        o['ncT'] = len(nt)
+        if nt and not o['ncs']:
+            o['ncs'] = nt[:40]
+            if not o['nc']:
+                o['nc'] = round(sum(x[4] for x in nt), 2)
+                o['op'] = max(0, round(o['fir'] - o['nc'], 2))
+        if nt and o['acao'] == '(sem ação)':
+            ac = sorted({x[11] for x in nt if x[11]})
+            if ac:
+                o['acao'] = ' | '.join(ac)
+        if nt and not o['rp']:
+            o['rp'] = ' | '.join(sorted({x[8] for x in nt if x[8]}))
         if t and not o['obj'] and t.get('obj'):
             o['obj'] = t['obj']
         o['dif'] = []
@@ -370,7 +388,16 @@ def ted(pasta):
                            obj=t['obj'], sp='(só no Tesouro)', st=t['sit'] or '(sem termo)', fase='Só no Tesouro', sei=t['proc'], ass='', ini=t['ini'], fim=t['fim'],
                            dias=(lambda f: (datetime.datetime.strptime(f[:10], '%d/%m/%Y').date() - hoje).days if re.match(r'\d{2}/\d{2}/\d{4}', f or '') else None)(t['fim']),
                            fir=t['fir'] or 0, nc=t['nc'] or 0, op=0, pf=t['rep'] or 0, ar=t['aRep'] or 0, rp='', emd='', ult='', link='', ns='',
-                           ncs=[], pfs=[], cro=[], prox=None, par=[], met=[], org='Só no Tesouro', tes=t, dif=[]))
+                           ncs=ncT.get(k, [])[:40], pfs=[], cro=[], prox=None, par=[], met=[], org='Só no Tesouro', tes=t, dif=[], ncT=len(ncT.get(k, []))))
+        o = linhas[-1]
+        nt = ncT.get(k, [])
+        if nt:
+            o['nc'] = round(sum(x[4] for x in nt), 2)
+            ac = sorted({x[11] for x in nt if x[11]})
+            o['acao'] = ' | '.join(ac) or o['acao']
+            o['rp'] = ' | '.join(sorted({x[8] for x in nt if x[8]}))
+            if not o['obj']:
+                o['obj'] = nt[0][12]
     tesInfo = {'carregado': bool(tes), 'gerado_em': tes_meta.get('gerado_em', ''), 'teds': len(tes), 'soTesouro': len(tes) - len(usados),
                'erros': [x.get('erro') for x in tes_meta.get('fontes', []) if not x.get('ok')]}
     data = (meta.get('data_api') or {}).get('data_ultima_atualizacao', '').replace('T', ' ')[:16]

@@ -239,5 +239,105 @@ def ler(pasta_saida):
     return tudo
 
 
+
+# ============== notas de crédito dos TEDs (relatório "Controle TED por NC e Numero Transferencia", aba TESOURO TED NC) ==============
+CONFIG_NC = os.path.join(AQUI, '..', 'config', 'ted_tesouro_nc.txt')
+
+
+def mapa_ptres(pasta):
+    """PTRES → {acao, rp}: pelos eventos das NCs da API de TED (programa de trabalho tem a ação) e pelas notas de empenho dos instrumentos"""
+    m = {}
+    try:
+        with open(os.path.join(pasta, 'ted', 'ted_eventos.csv'), encoding='utf-8') as fh:
+            for e in csv.DictReader(fh):
+                pt, pg = (e.get('cd_ptres_evento') or '').strip(), (e.get('ptres_programa_trabalho') or '').strip()
+                if pt and len(pg) >= 13 and re.fullmatch(r'\d[0-9A-Z]{3}', pg[9:13]):
+                    m.setdefault(pt, {'acao': pg[9:13], 'rp': (e.get('ptres_resultado_primario') or '').strip()})
+    except FileNotFoundError:
+        pass
+    try:
+        acao = {}
+        with open(os.path.join(pasta, 'instrumentos.csv'), encoding='utf-8') as fh:
+            for r in csv.DictReader(fh):
+                a = (r.get('acao_orcamentaria') or '').split('|')[0].strip()
+                if a:
+                    acao[r['nr_instrumento']] = a[-4:]
+        with open(os.path.join(pasta, 'empenhos.csv'), encoding='utf-8') as fh:
+            for e in csv.DictReader(fh):
+                pt, a = (e.get('PTRES') or '').strip(), acao.get(e.get('NR_CONVENIO', ''))
+                if pt and a and pt not in m:
+                    rp = (e.get('RESULTADO_PRIMARIO') or '').strip()
+                    m[pt] = {'acao': a, 'rp': ('RP ' + rp) if rp and not rp.startswith('RP') else rp}
+    except FileNotFoundError:
+        pass
+    return m
+
+
+def interpretar_nc(linhas, ptres):
+    linhas = [[c.strip() for c in l] for l in linhas]
+    ih = next((i for i, l in enumerate(linhas[:40]) if any(re.search(r'NC - TRANSFER', na(c)) for c in l)), None)
+    if ih is None:
+        raise ValueError('não achei a coluna "NC - Transferência"')
+    H = [na(h) for h in linhas[ih]]
+    def col(rx):
+        return next((i for i, h in enumerate(H) if re.search(rx, h)), None)
+    def nome(i):   # o Tesouro Gerencial põe o código numa coluna e o nome na seguinte (título vazio)
+        return i + 1 if i is not None and i + 1 < len(H) and not H[i + 1] else None
+    cT, cDt, cUe, cFav, cNC = col(r'NC - TRANSFER'), col(r'EMISSAO'), col(r'EMITENTE - UG'), col(r'FAVORECIDO'), col(r'^NC$')
+    cND, cPI, cPT, cFt = col(r'NATUREZA'), col(r'PLANO INTERNO'), col(r'PTRES'), col(r'FONTE')
+    cObs, cDesc, cVal = col(r'OBSERVACAO'), col(r'DESCRICAO'), col(r'VALOR LINHA')
+    if cVal is None:   # o título do valor às vezes vem numa linha de baixo
+        for l in linhas[ih + 1:ih + 4]:
+            for i, c in enumerate(l):
+                if re.search(r'VALOR LINHA', na(c)):
+                    cVal = i
+    g = lambda l, i: l[i].strip() if i is not None and i < len(l) else ''
+    out, sem = [], 0
+    for l in linhas[ih + 1:]:
+        nc = g(l, cNC)
+        if not nc or not re.search(r'NC\d', nc):
+            continue
+        ted = chave_ted(g(l, cT))
+        if not ted or ted in ('8', '-8'):
+            sem += 1
+            ted = ''
+        v = num(g(l, cVal))
+        pt = g(l, cPT)
+        info = ptres.get(pt, {})
+        out.append({'ted': ted, 'data': g(l, cDt), 'nc': nc[-12:] if len(nc) > 12 else nc, 'nc_completa': nc, 'ug_emit': g(l, cUe), 'ug_fav': g(l, cFav),
+                    'nome_fav': g(l, nome(cFav)), 'nd': g(l, cND), 'pi': g(l, cPI), 'pi_nome': g(l, nome(cPI)), 'ptres': pt, 'acao': info.get('acao', ''),
+                    'rp': info.get('rp', ''), 'fonte': g(l, cFt), 'obs': (g(l, cObs) or g(l, cDesc))[:400], 'valor': v if v is not None else ''})
+    return out, sem
+
+
+def ler_nc(pasta_saida):
+    if not os.path.exists(CONFIG_NC):
+        print('Tesouro TED NC: sem config/ted_tesouro_nc.txt', flush=True)
+        return []
+    urls = [l.strip() for l in open(CONFIG_NC, encoding='utf-8') if l.strip() and not l.strip().startswith('#')]
+    ptres = mapa_ptres(pasta_saida)
+    todas, info = [], []
+    for u in urls:
+        try:
+            linhas = list(csv.reader(io.StringIO(baixar(u))))
+            out, sem = interpretar_nc(linhas, ptres)
+            todas += out
+            info.append({'link': u, 'linhas': len(out), 'sem_ted': sem, 'ok': True})
+            print(f'Tesouro TED NC: {len(out)} linhas de NC ({sem} sem nº de TED) em {u[-60:]}', flush=True)
+        except Exception as e:
+            info.append({'link': u, 'erro': str(e)[:200], 'ok': False})
+            print(f'Tesouro TED NC: erro em {u[-60:]}: {e}', flush=True)
+    os.makedirs(os.path.join(pasta_saida, 'ted'), exist_ok=True)
+    campos = ['ted', 'data', 'nc', 'nc_completa', 'ug_emit', 'ug_fav', 'nome_fav', 'nd', 'pi', 'pi_nome', 'ptres', 'acao', 'rp', 'fonte', 'obs', 'valor']
+    with open(os.path.join(pasta_saida, 'ted', 'ted_tesouro_nc.csv'), 'w', encoding='utf-8', newline='') as fh:
+        w = csv.DictWriter(fh, fieldnames=campos)
+        w.writeheader()
+        w.writerows(todas)
+    json.dump({'gerado_em': time.strftime('%d/%m/%Y %H:%M'), 'fontes': info, 'linhas': len(todas), 'ptres_conhecidos': len(ptres)},
+              open(os.path.join(pasta_saida, 'ted', 'ted_tesouro_nc.json'), 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
+    return todas
+
+
 if __name__ == '__main__':
     ler(sys.argv[1] if len(sys.argv) > 1 else 'saida')
+    ler_nc(sys.argv[1] if len(sys.argv) > 1 else 'saida')
