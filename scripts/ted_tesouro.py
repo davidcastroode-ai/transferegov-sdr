@@ -108,8 +108,9 @@ def interpretar(linhas, origem=''):
     cT = next(i for i, h in enumerate(Hn) if re.search(rx_ted, h))
     def acha(rx, evita=None):
         return next((i for i, h in enumerate(Hn) if re.search(rx, h) and i != cT and not (evita and re.search(evita, h))), None)
-    cUe = acha(r'UG.*(EMIT|RESP|CONCED|DESCENTRALIZADORA|ORIGEM)|EMITENTE|CONCEDENTE|DESCENTRALIZADORA')
-    cUf = acha(r'UG.*(FAVOR|BENEF|RECEB|DESCENTRALIZADA|DESTINO|EXECUT)|FAVORECID|BENEFICIARI|DESCENTRALIZADA')
+    # no Tesouro Gerencial a "UG Executora" é a UG da SDR que registra o TED (lado que descentraliza)
+    cUe = acha(r'UG EXECUTORA COD|UG EXECUTORA$|UG.*(EMIT|RESP|CONCED|DESCENTRALIZADORA|ORIGEM)|EMITENTE|CONCEDENTE|DESCENTRALIZADORA')
+    cUf = acha(r'UG.*(FAVOR|BENEF|RECEB|DESCENTRALIZADA|DESTINO)|FAVORECID|BENEFICIARI|DESCENTRALIZADA|CONVENENTE', r'UG EXECUTORA')
     cAno = acha(r'^ANO|EXERCICIO|ANO ')
     cProc = acha(r'PROCESSO')
     # colunas de valor: as que têm número na maioria das linhas preenchidas
