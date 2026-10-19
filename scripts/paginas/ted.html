@@ -90,7 +90,8 @@ const kpi = (rot, val, sub, cls, def) => { let a = '';
 
 const ABERTO = new Set(), PAG = {};
 // empenhado pela unidade maior que o crédito do TED (firmado ou descentralizado): pede verificação (aditivo? empenho de outro instrumento?)
-const credTED = o => (o.fir||0) > 0 ? o.fir : (o.nc||0);
+// valor do TED: o registrado no Tesouro (SIAFI) vale mais que o da API, que pode estar desatualizado
+const credTED = o => (o.tes && o.tes.fir > 0) ? o.tes.fir : (o.fir||0) > 0 ? o.fir : (o.nc||0);
 const empAcima = o => o.neT && o.neT[0] > credTED(o) + 1;
 const mesN = m => ['','jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'][m]||'';
 function ficha(o){

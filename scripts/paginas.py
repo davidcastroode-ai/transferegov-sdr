@@ -460,7 +460,9 @@ def ted(pasta):
     porId = {o['id']: o for o in linhas}
     for o in linhas:
         o['nes'], o['neT'] = [], [0.0, 0.0, 0.0, 0.0]
-    n_lig = 0
+    n_lig = n_fora = 0
+    todosN = {(o['n'] or '').upper() for o in linhas if o['n']}
+    seiTED = {dig(o['sei']): o['id'] for o in linhas if len(dig(o['sei'])) > 10}
     # TED recebido: o crédito pode ser repassado por provisão a outra UG da SDR (ex.: 995343, MIDR → 130141 → 130255, máquinas do PROMAQ).
     # Liga então os empenhos de QUALQUER UG da SDR nas ações do órgão que mandou (ação que não é da SDR).
     ACOES_EXTRA = {'995343': ['1211']}   # ações do TED que a API não lista (destaque recebido do MIDR na 1211, visto na base EXE)
@@ -481,6 +483,19 @@ def ted(pasta):
             txt = (e['desc'] + ' ' + e['processo']).upper()
             m = [o for o in cand if (o['n'] and o['n'].upper() in txt) or (dig(o['sei']) and len(dig(o['sei'])) > 10 and dig(o['sei']) in dig(txt))]
             cand = m or cand
+        # a descrição do empenho cita OUTRO TED conhecido (pelo nº ou pelo processo SEI de outro TED da lista): não é deste
+        dsc = (e['desc'] or '').upper()
+        procs = {dig(p_) for p_ in re.findall(r'\d{5}\.\d{6}/\d{4}-\d{2}', dsc)}
+        tedsCit = set(re.findall(r'\b(?:9\d{5}|[1-7]AA[A-Z]{3})\b', dsc)) & todosN
+        def outro(o):
+            if tedsCit and o['n'] and o['n'].upper() not in tedsCit:
+                return True
+            outrosSei = procs & seiTED.keys()
+            return bool(outrosSei) and dig(o['sei']) not in procs
+        cand = [o for o in cand if not outro(o)]
+        if not cand:
+            n_fora += 1
+            continue
         comp = len(cand) > 1
         v = [f(e['emp']), f(e['liq']), f(e['pago']), round(f(e['rpp']) + f(e['rpnp']), 2)]
         n_lig += 1
@@ -490,7 +505,7 @@ def ted(pasta):
                 o['neT'] = [round(a_ + b_, 2) for a_, b_ in zip(o['neT'], v)]
     for o in linhas:
         o['nes'] = sorted(o['nes'], key=lambda x: (x[1][6:10], x[1][3:5], x[1][:2]), reverse=True)[:60]
-    print(f'empenhos ligados a TED: {n_lig}', flush=True)
+    print(f'empenhos ligados a TED: {n_lig} · descartados por citar outro instrumento: {n_fora}', flush=True)
     # ---- ajustes da equipe (aba TED ATUALIZADA): valem sobre a API e o Tesouro (a API guarda só a vigência original)
     pdata = lambda v: datetime.datetime.strptime(v[:10], '%d/%m/%Y').date() if re.match(r'\d{2}/\d{2}/\d{4}', v or '') else None
     aj = {x['ted'].upper(): x for x in ler(tp, 'ted_ajustes.csv')}
