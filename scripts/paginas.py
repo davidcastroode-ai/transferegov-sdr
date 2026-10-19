@@ -461,8 +461,20 @@ def ted(pasta):
     for o in linhas:
         o['nes'], o['neT'] = [], [0.0, 0.0, 0.0, 0.0]
     n_lig = 0
+    # TED recebido: o crédito pode ser repassado por provisão a outra UG da SDR (ex.: 995343, MIDR → 130141 → 130255, máquinas do PROMAQ).
+    # Liga então os empenhos de QUALQUER UG da SDR nas ações do órgão que mandou (ação que não é da SDR).
+    ACOES_EXTRA = {'995343': ['1211']}   # ações do TED que a API não lista (destaque recebido do MIDR na 1211, visto na base EXE)
+    porAcaoRec = collections.defaultdict(list)
+    for o in linhas:
+        if o['er'] == 'Recebido':
+            acs = {a.strip().upper() for a in re.split(r'[|,]', o['acao'] or '') if re.fullmatch(r'[0-9A-Za-z]{4}', a.strip())}
+            acs |= {str(x[0]).upper() for x in o.get('nca') or [] if x[0]} | set(ACOES_EXTRA.get(o['n'], []))
+            for a in acs - acoesSDR:
+                porAcaoRec[a].append(o['id'])
     for e in ler(tp, 'ted_tesouro_ne.csv'):
         cand = [porId[i] for i in idx.get((e['ug'], e['ptres']), ())]
+        if not cand and e['ug'] in UGS_SDR and e.get('acao', '').upper() in porAcaoRec:
+            cand = [porId[i] for i in porAcaoRec[e['acao'].upper()]]
         if not cand:
             continue
         if len(cand) > 1:  # o mesmo UG+PTRES em mais de um TED: tenta pelo nº do TED ou pelo processo citado no empenho
