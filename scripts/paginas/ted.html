@@ -40,9 +40,9 @@
 </div>
 <script>
 const P = __DADOS__, D = P.linhas, ANO = P.ano;
-const FASES = ['Em execução','Vigência vencida','Prestação de contas','Concluído','Dispensa de TED','Em formalização','Só no Tesouro','Plano em análise','Plano rejeitado'];
+const FASES = ['Em execução','Vigência vencida','Prestação de contas','Concluído','Dispensa de TED','Recebido sem nº de TED','Em formalização','Só no Tesouro','Plano em análise','Plano rejeitado'];
 const TES = P.tes || {};
-const COR_F = {'Em execução':'#2e8a57','Vigência vencida':'#c0392b','Prestação de contas':'#b7860b','Concluído':'#1f4e79','Em formalização':'#6c5ce7','Plano em análise':'#7b8790','Plano rejeitado':'#b2bec3','Só no Tesouro':'#16a085','Dispensa de TED':'#c8742f'};
+const COR_F = {'Em execução':'#2e8a57','Vigência vencida':'#c0392b','Prestação de contas':'#b7860b','Concluído':'#1f4e79','Em formalização':'#6c5ce7','Plano em análise':'#7b8790','Plano rejeitado':'#b2bec3','Só no Tesouro':'#16a085','Dispensa de TED':'#c8742f','Recebido sem nº de TED':'#8e44ad'};
 const SIT = {EM_EXECUCAO:'Em execução',CUMPRIMENTO_OBJETO_INICIADO:'Cumprimento do objeto iniciado',CUMPRIMENTO_OBJETO_ENVIADO_ANALISE:'Cumprimento do objeto em análise',
   CUMPRIMENTO_OBJETO_APROVADO:'Cumprimento do objeto aprovado',CUMPRIMENTO_OBJETO_APROVADO_COM_RESSALVAS:'Aprovado com ressalvas',PENDENTE_REGISTRO_NO_SIAFI:'Pendente de registro no SIAFI',
   EM_ELABORACAO:'Em elaboração',ENVIADO:'Enviado',APROVADO:'Aprovado',REJEITADO:'Rejeitado',ENVIADO_ANALISE:'Enviado para análise',ANALISE_APROVADA:'Análise aprovada',EM_ANALISE:'Em análise',EM_COMPLEMENTACAO:'Em complementação'};
@@ -79,7 +79,7 @@ function colunas(lista, campo, cor, fmt){
 }
 const agrupar = (L, k, val) => { const m = {}; L.forEach(o => { const c = o[k]; m[c] = (m[c]||0) + (val ? val(o) : 1); }); return Object.entries(m).sort((a,b) => b[1]-a[1]); };
 const sec = (tit, desc, corpo, cls) => `<section class="card ${cls||''}"><h3>${tit}</h3><p class="d">${desc}</p>${corpo}</section>`;
-const tedId = o => `<b>${o.n?'TED '+esc(o.n):o.org==='Só no controle interno'?'Processo '+esc(o.sei||o.cod):'Plano '+esc(o.cod)}</b><small>${o.n&&o.cod?'plano '+esc(o.cod)+' · ':''}${esc(o.ano)}${TES.carregado && o.org!=='Tesouro e API' && (o.n || o.org==='Só no controle interno') ? ` · <span style="color:${o.org==='Só no controle interno'?'#c8742f':o.org==='Só no Tesouro'?'#16a085':/diferentes/.test(o.org)?'#c0392b':'#b7860b'}">${esc(o.org)}</span>` : ''}</small>`;
+const tedId = o => `<b>${o.n?'TED '+esc(o.n):o.org==='Recebido sem nº de TED'?'Sem nº de TED · '+esc(o.cod):o.org==='Só no controle interno'?'Processo '+esc(o.sei||o.cod):'Plano '+esc(o.cod)}</b><small>${o.n&&o.cod?'plano '+esc(o.cod)+' · ':''}${esc(o.ano)}${TES.carregado && o.org!=='Tesouro e API' && (o.n || o.org==='Só no controle interno') ? ` · <span style="color:${o.org==='Só no controle interno'?'#c8742f':o.org==='Só no Tesouro'?'#16a085':/diferentes/.test(o.org)?'#c0392b':'#b7860b'}">${esc(o.org)}</span>` : ''}</small>`;
 const unid = o => `${esc(o.unr.length>52?o.unr.slice(0,52)+'…':o.unr)}<small>UG ${esc(o.ugr)} · ${esc(o.orr)}</small>`;
 const faseTag = o => `<b class="st" style="background:${COR_F[o.fase]}">${esc(o.fase)}</b>`;
 const kpi = (rot, val, sub, cls, def) => { let a = '';
