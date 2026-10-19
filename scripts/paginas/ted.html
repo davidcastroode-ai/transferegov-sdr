@@ -1,11 +1,13 @@
 <!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>TED API</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">__CSS__
 <style>
+#fundoF{position:fixed;inset:0;background:rgba(20,30,40,.6);z-index:9999;overflow:auto;padding:24px 12px}#fundoF[hidden]{display:none}.fjan{max-width:1040px;margin:0 auto}.fjan .fi{margin:0}
+
 .fi{background:#fff;border-radius:12px;box-shadow:0 3px 14px rgba(0,0,0,.1);overflow:hidden;margin:8px 4px 12px;text-align:left;white-space:normal}
 .fcab{background:linear-gradient(120deg,#0f6b2c,#22a03a);color:#fff;padding:14px 18px;position:relative}.fcab small{opacity:.85;font-size:11.5px;letter-spacing:.04em;text-transform:uppercase}
 .fcab h4{margin:2px 0 2px;font-size:23px;color:#fff}.fcab p{margin:0 0 8px;font-size:13.5px}.pl{display:inline-block;border-radius:20px;padding:3px 10px;font-size:11.5px;font-weight:700;margin:2px 4px 2px 0;background:rgba(255,255,255,.22);color:#fff}.pl.az{background:#5b6eae}.pl.vm{background:#c0392b}
 .cx{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin-top:10px}.cx div{background:rgba(255,255,255,.14);border-radius:8px;padding:6px 10px;font-size:11px}.cx b{display:block;font-size:13.5px}
-.fa{position:absolute;right:14px;top:12px}.fa button{border:0;border-radius:8px;padding:6px 10px;background:rgba(255,255,255,.22);color:#fff;font:600 12px Barlow,sans-serif;cursor:pointer}
+.fa{position:absolute;right:14px;top:12px}.fa{display:flex;gap:6px}.fa button{border:0;border-radius:8px;padding:6px 10px;background:rgba(255,255,255,.22);color:#fff;font:600 12px Barlow,sans-serif;cursor:pointer}
 .fcorpo{padding:14px 18px 16px}.vl{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.vl div{border-left:4px solid var(--c);background:#f7f9fb;border-radius:8px;padding:8px 12px}
 .vl span,.vg span{display:block;font-size:11.5px;color:#6b7a86}.vl b{font-size:17px}
 .br{margin:10px 0}.br div{display:flex;justify-content:space-between;font-size:12.5px}.br i{display:block;height:10px;background:#e6ebf0;border-radius:6px;overflow:hidden;margin-top:4px}.br em{display:block;height:100%;background:#2e8a57}
@@ -15,7 +17,7 @@
 .etp{display:flex;gap:6px;padding:0;margin:0;flex-wrap:wrap}.etp li{list-style:none;flex:1;min-width:120px;background:#f1f3f5;border-radius:8px;padding:6px;font-size:11.5px;text-align:center}.etp li.ok{background:#e3f4ea;color:#1e6b45;font-weight:600}
 .fi details{margin-top:10px}.fi summary{cursor:pointer;font-weight:700;color:#1f4e79;font-size:12.5px}.fi .rolar{overflow:auto}
 @media(max-width:760px){.cx,.vl{grid-template-columns:1fr 1fr}.vg{grid-template-columns:1fr}.fa{position:static;margin-top:8px}}
-@media print{body.imp *{visibility:hidden}body.imp .fi.imp, body.imp .fi.imp *{visibility:visible}body.imp .fi.imp{position:absolute;left:0;top:0;width:100%;box-shadow:none}.fa{display:none}.fi details{display:block}}
+@media print{#fundoF{position:static;background:none;padding:0;overflow:visible}body.imp *{visibility:hidden}body.imp .fi.imp, body.imp .fi.imp *{visibility:visible}body.imp .fi.imp{position:absolute;left:0;top:0;width:100%;box-shadow:none}.fa{display:none}.fi details{display:block}}
 
 .grp{font-size:12px;font-weight:700;color:#1f4e79;text-transform:uppercase;letter-spacing:.6px;margin:2px 0 6px 2px}
 .kp.k4{grid-template-columns:repeat(4,1fr)}.kp.k6{grid-template-columns:repeat(6,1fr)}@media(max-width:900px){.kp.k4,.kp.k6{grid-template-columns:1fr 1fr}}
@@ -101,7 +103,7 @@ function ficha(o){
    <h4>${o.n?'TED '+esc(o.n):'Plano de ação '+esc(o.cod)}</h4><p>${esc(o.unr)} · UG ${esc(o.ugr)}</p>
    <span class="pl" style="background:${COR_F[o.fase]}">● ${esc(o.fase)}</span>${o.org?`<span class="pl az">${esc(o.org)}</span>`:''}${o.emd?`<span class="pl">Emenda ${esc(o.emd)}</span>`:''}${alerta?`<span class="pl vm">⚠ ${alerta}</span>`:''}
    <div class="cx"><div>Ano<b>${esc(o.ano)}</b></div><div>Departamento<b>${esc(o.dep)}</b></div><div>UF<b>${esc(o.uf)||'—'}</b></div><div>Ação<b>${esc(o.acao)}</b></div><div>RP<b>${esc(o.rpN)}</b></div><div>Situação do termo<b>${esc(o.stN)}</b></div><div>Órgão<b>${esc(o.orr)}</b></div></div>
-   <div class="fa"><button type="button" data-imp="${esc(o.id)}">🖨 Imprimir / PDF</button></div></div>
+   <div class="fa"><button type="button" data-imp="${esc(o.id)}">🖨 Imprimir / PDF</button><button type="button" data-fecha title="Fechar (Esc)">✕</button></div></div>
   <div class="fcorpo">
    <div class="vl"><div style="--c:#1f4e79"><span>Valor firmado</span><b>${R$(o.fir)}</b></div><div style="--c:#2e8a57"><span>Descentralizado (NC)</span><b>${R$(o.nc)}</b></div>
     <div style="--c:#5b6eae"><span>Repassado (PF)</span><b>${R$(o.pf)}</b></div><div style="--c:#b7860b"><span>A repassar${o.op>1?' · orç. pendente '+fm(o.op):''}</span><b>${R$(o.ar)}</b></div></div>
@@ -126,6 +128,12 @@ function ficha(o){
    ${TES.carregado?`<details><summary>Tesouro Gerencial · contas e diferenças</summary>${fichaTes(o)}</details>`:''}
   </div></div>`;
 }
+function abrirFicha(id){
+  const o = D.find(x => String(x.id)===String(id)); if(!o) return;
+  const f = document.getElementById('fundoF'); f.innerHTML = `<div class="fjan">${ficha(o)}</div>`; f.hidden = false; document.body.style.overflow = 'hidden'; f.scrollTop = 0;
+}
+function fecharFicha(){ const f = document.getElementById('fundoF'); f.hidden = true; f.innerHTML = ''; document.body.style.overflow = ''; }
+document.addEventListener('keydown', e => { if(e.key==='Escape') fecharFicha(); });
 function fichaNE(o, t){
   const L = o.nes || [];
   if(!L.length) return `<div class="sb">Empenhos da unidade descentralizada</div><p class="obs" style="background:#f4f6f8;color:#6b7a86">${o.nc>0?'Nenhum empenho encontrado no Tesouro para a UG '+esc(o.ugr)+' com os PTRES das notas de crédito deste TED.':'Sem crédito descentralizado: ainda não há o que empenhar.'}</p>`;
@@ -151,7 +159,7 @@ function fichaTes(o){
 function tabela(id, L, cols, porPag){
   const p = PAG[id]||0, ini = p*porPag, pg = L.slice(ini, ini+porPag), nc = cols.length;
   if(!L.length) return '<p class="d">nenhum TED neste recorte</p>';
-  return `<table><tr>${cols.map(c => `<th class="${c[2]||''}">${c[0]}</th>`).join('')}</tr>${pg.map(o => `<tr class="lin ${ABERTO.has(id+o.id)?'aberto':''}" data-ab="${id+o.id}">${cols.map(c => `<td class="${c[2]||''}">${c[1](o)}</td>`).join('')}</tr>${ABERTO.has(id+o.id)?`<tr><td colspan="${nc}" style="padding:0">${ficha(o)}</td></tr>`:''}`).join('')}</table>
+  return `<table><tr>${cols.map(c => `<th class="${c[2]||''}">${c[0]}</th>`).join('')}</tr>${pg.map(o => `<tr class="lin" data-ab="${esc(o.id)}" title="Clique para abrir a ficha">${cols.map(c => `<td class="${c[2]||''}">${c[1](o)}</td>`).join('')}</tr>`).join('')}</table>
   ${L.length>porPag?`<div class="pag">${ini+1}–${Math.min(L.length,ini+porPag)} de ${n(L.length)} <button data-pg="${id}" data-d="-1" ${p?'':'disabled'}>‹</button><button data-pg="${id}" data-d="1" ${ini+porPag<L.length?'':'disabled'}>›</button></div>`:''}`;
 }
 
@@ -218,9 +226,10 @@ document.getElementById('nota').innerHTML = `<b>TED API</b> · Termos de Execuç
 document.addEventListener('click', e => {
   const imp = e.target.closest('[data-imp]'); if(imp){ e.stopPropagation(); const f = imp.closest('.fi'); f.classList.add('imp'); document.body.classList.add('imp');
     f.querySelectorAll('details').forEach(d => d.open = true); window.print(); f.classList.remove('imp'); document.body.classList.remove('imp'); return; }
-  if(e.target.closest('.fi') && !e.target.closest('[data-ab]')) return;
+  if(e.target.closest('.fi')) return;
   const pg = e.target.closest('[data-pg]'); if(pg){ PAG[pg.dataset.pg] = (PAG[pg.dataset.pg]||0) + +pg.dataset.d; render(); return; }
-  const ab = e.target.closest('[data-ab]'); if(ab && !e.target.closest('a,button')){ const k = ab.dataset.ab; ABERTO.has(k) ? ABERTO.delete(k) : ABERTO.add(k); render(); return; }
+  const ab = e.target.closest('[data-ab]'); if(ab && !e.target.closest('a,button')){ abrirFicha(ab.dataset.ab); return; }
+  if(e.target.closest('[data-fecha]') || e.target.id==='fundoF'){ fecharFicha(); return; }
   const f = e.target.closest('[data-k][data-v]'); if(f){ alternar(f.dataset.k, f.dataset.v); for(const p in PAG) PAG[p]=0; render(); }
 });
 document.getElementById('limpar').onclick = () => { for(const k in SEL) delete SEL[k]; render(); };
@@ -229,4 +238,5 @@ document.getElementById('busca').oninput = () => { PAG.l = 0; render(); };
 __FILTRO__
 __KPI__
 render();
-</script></body></html>
+</script><div id="fundoF" hidden></div>
+</body></html>
