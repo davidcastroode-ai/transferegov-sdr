@@ -118,11 +118,23 @@ function ficha(o){
    ${o.ncs.length?`<div class="sb">Orçamento · notas de crédito</div>${t(['Nota','Emissão','UG emitente → favorecida','PTRES · PI','Natureza','RP','Valor'], o.ncs.map(x => `<tr><td>${esc(x[0])}</td><td>${esc(x[1])}</td><td>${esc(x[2])} → ${esc(x[3])}</td><td>${esc(x[5])} · ${esc(x[6])}</td><td>${esc(x[7])}</td><td>${esc(x[8])}</td><td class="n">${f2(x[4])}</td></tr>`).join(''))}`:''}
    ${o.pfs.length?`<div class="sb">Financeiro · programações financeiras</div>${t(['PF','Data','Situação','Observação','Valor'], o.pfs.map(x => `<tr><td>${esc(x[0])}</td><td>${esc(x[1])}</td><td>${esc(sitN(x[5]))}</td><td class="just">${esc(x[6])}</td><td class="n">${f2(x[4])}</td></tr>`).join(''))}`:''}
    ${cro.length?`<div class="sb">Cronograma × repassado</div>${t(['Parcela','Previsto','Repassado','Situação'], cro.map(([c,cob,st]) => `<tr><td>${mesN(c[1])}/${esc(c[0])}</td><td class="n">${f2(c[2])}</td><td class="n">${f2(cob)}</td><td style="color:${st[1]}">${st[0]}</td></tr>`).join(''))}`:''}
-   <div class="sb">Empenhos da unidade descentralizada</div><p class="obs" style="background:#f4f6f8;color:#6b7a86">Aguardando o relatório de empenhos do Tesouro Gerencial (aba TESOURO TED NE).</p>
+   ${fichaNE(o, t)}
    ${o.met.length?`<details><summary>Metas (${o.met.length})</summary>${t(['Meta','Descrição','Qtd','Período'], o.met.map(x => `<tr><td>${esc(x[0])}</td><td>${esc(x[1])}</td><td class="n">${esc(x[2])} ${esc(x[3])}</td><td>${esc(x[5])} a ${esc(x[6])}</td></tr>`).join(''))}</details>`:''}
    ${o.par.length?`<details><summary>Análises e pareceres (${o.par.length})</summary>${t(['Tipo','Resultado','Situação','Justificativa'], o.par.map(x => `<tr><td>${esc(x[0])}</td><td>${esc(sitN(x[1]))||'—'}</td><td>${esc(sitN(x[2]))}</td><td class="just">${esc(x[3])}</td></tr>`).join(''))}</details>`:''}
    ${TES.carregado?`<details><summary>Tesouro Gerencial · contas e diferenças</summary>${fichaTes(o)}</details>`:''}
   </div></div>`;
+}
+function fichaNE(o, t){
+  const L = o.nes || [];
+  if(!L.length) return `<div class="sb">Empenhos da unidade descentralizada</div><p class="obs" style="background:#f4f6f8;color:#6b7a86">${o.nc>0?'Nenhum empenho encontrado no Tesouro para a UG '+esc(o.ugr)+' com os PTRES das notas de crédito deste TED.':'Sem crédito descentralizado: ainda não há o que empenhar.'}</p>`;
+  const T = o.neT, pg = T[2]+T[3], comp = L.some(x => x[11]);
+  return `<div class="sb">Empenhos da unidade descentralizada · UG ${esc(o.ugr)}</div>
+   <div class="vl" style="grid-template-columns:repeat(4,1fr)"><div style="--c:#2e8a57"><span>Empenhado</span><b>${R$(T[0])}</b></div><div style="--c:#5b6eae"><span>Empenhado a pagar</span><b>${R$(Math.max(0, T[0]-pg))}</b></div>
+    <div style="--c:#1e6b45"><span>Pago (ano + restos a pagar)</span><b>${R$(pg)}</b></div><div style="--c:#b7860b"><span>Descentralizado sem empenho</span><b>${R$(Math.max(0, o.nc - T[0]))}</b></div></div>
+   <div class="br"><div><span>Execução da unidade</span><b>${pct(T[0],o.nc)} empenhado · ${pct(pg,o.nc)} pago</b></div><i><em style="width:${Math.min(100, o.nc ? pg/o.nc*100 : 0).toFixed(1)}%;background:#1e6b45"></em></i></div>
+   ${t(['Empenho','Emissão','Favorecido','PTRES · natureza','Empenhado','Pago','A pagar'], L.map(x => `<tr${x[11]?' style="color:#8a6d00"':''}><td>${esc(x[0])}${x[11]?' *':''}</td><td>${esc(x[1])}</td><td>${esc(x[2])}<small style="display:block;color:#7b8790;white-space:normal">${esc(x[10])}</small></td><td>${esc(x[3])} · ${esc(x[5])}</td><td class="n">${f2(x[6])}</td><td class="n">${f2(x[8]+x[9])}</td><td class="n">${f2(Math.max(0, x[6]-x[8]-x[9]))}</td></tr>`).join(''))}
+   ${comp?'<p class="obs">* empenho com a mesma UG e PTRES de outro TED, sem citar o nº do TED nem o processo: aparece nos dois e não entra nos totais.</p>':''}
+   <p style="margin:4px 0 0;color:#7b8790;font-size:11.5px">Tesouro Gerencial · empenhos da UG ${esc(o.ugr)} com crédito do MAPA nos PTRES das NCs deste TED · pago inclui restos a pagar pagos.</p>`;
 }
 function fichaTes(o){
   if(!TES.carregado) return '';
