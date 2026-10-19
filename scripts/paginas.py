@@ -408,32 +408,6 @@ def ted(pasta):
             o['rp'] = ' | '.join(sorted({x[8] for x in nt if x[8]}))
             if not o['obj']:
                 o['obj'] = nt[0][12]
-    # ---- controle interno (aba TED VIGENTE): a vigência prorrogada vale sobre a da API, que guarda só a data original
-    ctl = {x['ted'].upper(): x for x in ler(tp, 'ted_controle.csv')}
-    pdata = lambda v: datetime.datetime.strptime(v[:10], '%d/%m/%Y').date() if re.match(r'\d{2}/\d{2}/\d{4}', v or '') else None
-    for o in linhas:
-        c = ctl.get((o['n'] or '').upper()) if o['n'] else None
-        if not ctl:
-            o['ctlS'] = 'Controle não carregado'
-            continue
-        if not c:
-            o['ctlS'] = 'Fora do controle interno'
-            continue
-        o['ctl'] = [c['fim'], c['ug'], c['depto'], c['fiscal'], c['fiscal_sup'], c['acao'], c['rp']]
-        fc = pdata(c['fim'])
-        if fc and c['fim'] != o['fim']:
-            o['fimApi'] = o['fim']
-            o['fim'] = c['fim']
-            o['dias'] = (fc - hoje).days
-            o['ctlS'] = 'No controle · vigência prorrogada (API desatualizada)'
-        else:
-            o['ctlS'] = 'No controle · mesma vigência'
-        # vigente pelo controle: conta como em execução, mesmo que o Transferegov já tenha aberto a prestação de contas
-        if o['dias'] is not None and o['dias'] >= 0 and (o['fase'] in ('Vigência vencida', 'Só no Tesouro') or o['st'].startswith('CUMPRIMENTO_OBJETO_INICIADO')):
-            o['fase'] = 'Em execução'
-        if o['fase'] == 'Em execução' and o['dias'] is not None and o['dias'] < 0:
-            o['fase'] = 'Vigência vencida'
-    ctlInfo = {'carregado': bool(ctl), 'teds': len(ctl), 'semPainel': sorted(set(ctl) - {(o['n'] or '').upper() for o in linhas})}
     # ---- ajustes da equipe (aba TED ATUALIZADA): valem sobre a API e o Tesouro (a API guarda só a vigência original)
     pdata = lambda v: datetime.datetime.strptime(v[:10], '%d/%m/%Y').date() if re.match(r'\d{2}/\d{2}/\d{4}', v or '') else None
     aj = {x['ted'].upper(): x for x in ler(tp, 'ted_ajustes.csv')}
@@ -481,7 +455,7 @@ def ted(pasta):
     data = (meta.get('data_api') or {}).get('data_ultima_atualizacao', '').replace('T', ' ')[:16]
     data = (data[8:10] + '/' + data[5:7] + '/' + data[:4] + data[10:]) if data else meta.get('gerado_em', '')
     with open(os.path.join(pasta, 'pagina_ted.html'), 'w', encoding='utf-8') as fh:
-        fh.write(montar('ted.html', {'linhas': linhas, 'ano': hoje.year, 'tes': tesInfo, 'ctl': ctlInfo}, data))
+        fh.write(montar('ted.html', {'linhas': linhas, 'ano': hoje.year, 'tes': tesInfo}, data))
     print(f'pagina_ted.html · {len(linhas)} planos de ação', flush=True)
 
 
