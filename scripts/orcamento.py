@@ -54,6 +54,10 @@ def interpretar(linhas):
         po, po_nome = (g(l, po_cols[-2]), g(l, po_cols[-1])) if len(po_cols) >= 2 else ('', '')
         o = {'ug': ug, 'ug_nome': g(l, cUG + 1), 'acao': g(l, cAc), 'acao_nome': g(l, cAc + 1), 'po': po, 'po_nome': po_nome,
              'ptres': g(l, cPT), 'gnd': g(l, cGND), 'gnd_nome': g(l, cGND + 1), 'rp': g(l, cRP), 'rp_nome': g(l, cRP + 1)}
+        # a planilha do Google tira os zeros à esquerda (PO 0003 vira 3; ação 0181 vira 181)
+        for k_ in ('acao', 'po'):
+            if re.fullmatch(r'\d{1,3}', o[k_]):
+                o[k_] = o[k_].zfill(4)
         for i, k in itens.items():
             v = num(g(l, i))
             o[k] = v if v is not None else 0.0

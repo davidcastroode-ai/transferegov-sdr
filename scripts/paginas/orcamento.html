@@ -28,7 +28,7 @@ const ESCOPO = {'20ZV':null,'20ZY':null,'2000':['000H','000K'],'215A':null,'8593
 const UGN = {'130101':'130101 · CGOF/MAPA (setorial)','130010':'130010 · CEPLAC','130141':'130141 · CGPI/SDR','130255':'130255 · CGMAP/SDR','135098':'135098 · Caixa/MA','420013':'420013 · SDR'};
 const M = ['ini','sup','canc','atu','indisp','provConc','provRec','destConc','disp','emp','liq','pago'];
 const D = R.map(r => { const o = {ug:r[0], acao:r[1], acaoN:r[1]+' · '+r[2], po:r[3], poN:r[3]+' · '+r[4], ptres:r[5], gnd:'GND '+r[6], rp:'RP '+r[7]};
-  M.forEach((k,i) => o[k] = r[8+i]||0); o.ugN = UGN[o.ug] || o.ug; o.noEscopo = o.acao in ESCOPO && (!ESCOPO[o.acao] || ESCOPO[o.acao].includes(o.po)); return o; });
+  M.forEach((k,i) => o[k] = r[8+i]||0); o.ugN = UGN[o.ug] || o.ug; if(/^\d{1,3}$/.test(o.po)) o.po = o.po.padStart(4,'0'); if(/^\d{1,3}$/.test(o.acao)) o.acao = o.acao.padStart(4,'0'); o.noEscopo = o.acao in ESCOPO && (!ESCOPO[o.acao] || ESCOPO[o.acao].includes(o.po)); return o; });
 const FIL = [['acaoN','Ação'],['poN','Plano orçamentário'],['gnd','GND'],['rp','Resultado primário'],['ugN','UG']];
 const SEL = {};
 function base(){ return document.getElementById('todas').checked ? D : D.filter(o => o.noEscopo); }
