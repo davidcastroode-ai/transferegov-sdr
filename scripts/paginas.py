@@ -333,10 +333,12 @@ def ted(pasta):
     except Exception:
         pass
     fx = lambda v: f(v) if (v or '').strip() != '' else None
-    base_c = {'ted', 'ted_txt', 'ug_emit', 'ug_fav', 'nome_fav', 'ano', 'processo', 'fir', 'nc', 'rep', 'aRep', 'aComp', 'comp', 'dev'}
+    base_c = {'ted', 'ted_txt', 'ug_emit', 'ug_fav', 'nome_fav', 'ano', 'processo', 'situacao', 'ini', 'fim', 'objeto',
+              'fir', 'nc', 'rep', 'aRep', 'aComp', 'aApr', 'comp', 'apr', 'aRec', 'dev'}
     tes = {}
     for x in tes_lin:
         tes[x['ted']] = dict(fir=fx(x['fir']), nc=fx(x['nc']), rep=fx(x['rep']), aRep=fx(x['aRep']), aComp=fx(x['aComp']), comp=fx(x['comp']), dev=fx(x['dev']),
+                             aApr=fx(x.get('aApr')), apr=fx(x.get('apr')), sit=x.get('situacao', ''), ini=x.get('ini', ''), fim=x.get('fim', ''), obj=x.get('objeto', ''),
                              ugE=x['ug_emit'], ugF=x['ug_fav'], nome=x['nome_fav'], ano=x['ano'], proc=x['processo'],
                              contas=[[k, f(v)] for k, v in x.items() if k not in base_c and (v or '').strip() not in ('', '0', '0.0')])
     usados = set()
@@ -351,6 +353,8 @@ def ted(pasta):
         else:
             o['org'] = 'Só na API' if o['n'] else 'Plano sem nº (só API)'
         o['tes'] = t
+        if t and not o['obj'] and t.get('obj'):
+            o['obj'] = t['obj']
         o['dif'] = []
         if t:
             for rot, a_, b_ in (('Descentralizado (NC)', o['nc'], t['nc']), ('Repassado (PF)', o['pf'], t['rep']), ('Valor firmado', o['fir'], t['fir'])):
@@ -363,7 +367,8 @@ def ted(pasta):
             continue
         linhas.append(dict(id='T' + k, n=k, ano=t['ano'] or '(sem ano)', cod='', er='Enviado' if t['ugE'] in UGS_SDR else ('Recebido' if t['ugF'] in UGS_SDR else ''),
                            ugd=t['ugE'], und='', ugr=t['ugF'], unr=t['nome'] or '(não informada)', orr='(só no Tesouro)', uge=t['ugF'], prog='', acao='(sem ação)',
-                           obj='', sp='(só no Tesouro)', st='(sem termo)', fase='Só no Tesouro', sei=t['proc'], ass='', ini='', fim='', dias=None,
+                           obj=t['obj'], sp='(só no Tesouro)', st=t['sit'] or '(sem termo)', fase='Só no Tesouro', sei=t['proc'], ass='', ini=t['ini'], fim=t['fim'],
+                           dias=(lambda f: (datetime.datetime.strptime(f[:10], '%d/%m/%Y').date() - hoje).days if re.match(r'\d{2}/\d{2}/\d{4}', f or '') else None)(t['fim']),
                            fir=t['fir'] or 0, nc=t['nc'] or 0, op=0, pf=t['rep'] or 0, ar=t['aRep'] or 0, rp='', emd='', ult='', link='', ns='',
                            ncs=[], pfs=[], cro=[], prox=None, par=[], met=[], org='Só no Tesouro', tes=t, dif=[]))
     tesInfo = {'carregado': bool(tes), 'gerado_em': tes_meta.get('gerado_em', ''), 'teds': len(tes), 'soTesouro': len(tes) - len(usados),

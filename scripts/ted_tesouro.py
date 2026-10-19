@@ -54,13 +54,17 @@ def chave_ted(v):
 
 
 # o que cada coluna (ou conta contábil) significa, pelas palavras do título
-METRICAS = [('aComp', r'A COMPROVAR|A APROVAR|PENDENTE DE COMPROVA'),
-            ('comp', r'COMPROVAD|APROVAD'),
-            ('aRep', r'A REPASSAR|A LIBERAR|A TRANSFERIR|A DESCENTRALIZAR|A RECEBER'),
-            ('rep', r'REPASSAD|LIBERAD|TRANSFERID|FINANCEIRO|PF\b|PROGRAMACAO FINANCEIRA'),
-            ('nc', r'DESTAQUE|DESCENTRALIZ|NOTA DE CREDITO|\bNC\b|CREDITO'),
-            ('fir', r'FIRMAD|PACTUAD|VALOR (DO|TOTAL DO) TED|VALOR GLOBAL|CELEBRAD|CONTRATAD'),
-            ('dev', r'DEVOLV|DEVOLUC|ANULAD')]
+# o que cada coluna (ou conta contábil) significa, pelas palavras do título (contas de controle de TED do Tesouro Gerencial)
+METRICAS = [(None, r'TRANSFERENCIAS FINANCEIRAS|ADIANTAMENTO|CONTROLE DE PROGRAMACAO|RP AUTORIZADO|RESTOS A PAGAR|RECEBIMENTO DE REPASSE|LIBERACAO DE REPASSE|REPASSE LIBERADO'),
+            ('fir', r'FIRMAD|PACTUAD|VALOR (DO|TOTAL DO) TED|VALOR GLOBAL|CELEBRAD|TRANSFERENCIA - VALOR'),
+            ('aComp', r'A COMPROVAR|PENDENTE DE COMPROVA'),
+            ('aApr', r'A APROVAR'),
+            ('comp', r'COMPROVAD'),
+            ('apr', r'APROVAD|CONCLUID'),
+            ('aRep', r'A REPASSAR|A LIBERAR|A TRANSFERIR|A DESCENTRALIZAR'),
+            ('aRec', r'A RECEBER'),
+            ('rep', r'REPASSAD[OA]S?$|VALOR REPASSADO|TRANSFERID'),
+            ('dev', r'DEVOLV|DEVOLUC|NAO REPASSADO|ANULAD')]
 
 
 def metrica(titulo):
@@ -111,6 +115,13 @@ def interpretar(linhas, origem=''):
     # no Tesouro Gerencial a "UG Executora" é a UG da SDR que registra o TED (lado que descentraliza)
     cUe = acha(r'UG EXECUTORA COD|UG EXECUTORA$|UG.*(EMIT|RESP|CONCED|DESCENTRALIZADORA|ORIGEM)|EMITENTE|CONCEDENTE|DESCENTRALIZADORA')
     cUf = acha(r'UG.*(FAVOR|BENEF|RECEB|DESCENTRALIZADA|DESTINO)|FAVORECID|BENEFICIARI|DESCENTRALIZADA|CONVENENTE', r'UG EXECUTORA')
+    cNomeF = acha(r'CONVENENTE NOM|FAVORECID.*NOM|BENEFICIARI.*NOM|DESCENTRALIZADA.*NOM')
+    if cNomeF == cUf:
+        cNomeF = None
+    cSit = acha(r'SITUACAO')
+    cIni = acha(r'INICIO VIG')
+    cFim = acha(r'FINAL VIG|FIM VIG')
+    cObj = acha(r'JUSTIFICATIVA|OBJETO')
     cAno = acha(r'^ANO|EXERCICIO|ANO ')
     cProc = acha(r'PROCESSO')
     # colunas de valor: as que têm número na maioria das linhas preenchidas
@@ -119,7 +130,7 @@ def interpretar(linhas, origem=''):
         return len(vs) > 0 and sum(1 for v in vs if num(v) is not None) >= 0.8 * len(vs)
     # conta contábil (formato comprido): coluna de texto cujo título fala de conta
     cConta = next((i for i, h in enumerate(Hn) if re.search(r'CONTA', h) and i not in (cT, cUe, cUf, cAno, cProc) and not numerica(i)), None)
-    papeis = {cT, cUe, cUf, cConta, cAno, cProc}
+    papeis = {cT, cUe, cUf, cConta, cAno, cProc, cNomeF, cSit, cIni, cFim, cObj} - {None}
     cVal = [i for i in range(len(H)) if i not in papeis and numerica(i)]
     cTxt = [i for i in range(len(H)) if i not in papeis and i not in cVal]
     if not cVal:
@@ -127,7 +138,7 @@ def interpretar(linhas, origem=''):
     comprido = cConta is not None
     # 3. linhas (repetindo para baixo as células mescladas das dimensões)
     out, ant = OrderedDict(), {}
-    dims = [c for c in (cT, cUe, cUf, cConta, cAno, cProc) if c is not None] + cTxt
+    dims = [c for c in (cT, cUe, cUf, cConta, cAno, cProc, cNomeF, cSit, cIni, cFim, cObj) if c is not None] + cTxt
     for l in corpo:
         if not any(l):
             continue
@@ -142,13 +153,20 @@ def interpretar(linhas, origem=''):
         if not k:
             continue
         o = out.setdefault(k, {'ted': k, 'ted_txt': l[cT], 'ug_emit': '', 'ug_fav': '', 'ano': '', 'processo': '', 'nome_fav': '',
-                               'fir': None, 'nc': None, 'rep': None, 'aRep': None, 'aComp': None, 'comp': None, 'dev': None,
+                               'fir': None, 'nc': None, 'rep': None, 'aRep': None, 'aComp': None, 'comp': None, 'dev': None, 'aApr': None, 'apr': None, 'aRec': None,
+                               'situacao': '', 'ini': '', 'fim': '', 'objeto': '',
                                'contas': OrderedDict(), 'origem': origem})
         ug = lambda c: re.match(r'\s*(\d{6})', l[c]).group(1) if c is not None and re.match(r'\s*(\d{6})', l[c]) else ''
         o['ug_emit'] = o['ug_emit'] or ug(cUe)
         o['ug_fav'] = o['ug_fav'] or ug(cUf)
-        if cUf is not None and not o['nome_fav']:
-            o['nome_fav'] = re.sub(r'^\s*\d{6}\s*-?\s*', '', l[cUf])[:120]
+        if not o['nome_fav']:
+            if cNomeF is not None:
+                o['nome_fav'] = l[cNomeF][:120]
+            elif cUf is not None:
+                o['nome_fav'] = re.sub(r'^\s*\d{6}\s*-?\s*', '', l[cUf])[:120]
+        for campo, c in (('situacao', cSit), ('ini', cIni), ('fim', cFim), ('objeto', cObj)):
+            if c is not None and not o.get(campo):
+                o[campo] = l[c][:600]
         if cAno is not None and not o['ano']:
             m = re.search(r'20\d\d', l[cAno])
             if m:
@@ -166,8 +184,14 @@ def interpretar(linhas, origem=''):
                 continue
             o['contas'][rot] = round(o['contas'].get(rot, 0) + v, 2)
             m = metrica(rot)
-            if m:
-                o[m] = round((o[m] or 0) + v, 2)
+            if m == 'fir':      # "Valor da transferência" e "Valores firmados" são o mesmo número: fica o maior
+                o['fir'] = max(o['fir'] or 0, v)
+            elif m:
+                o[m] = round((o.get(m) or 0) + v, 2)
+    for o in out.values():
+        # repassado = firmado − a repassar (o Tesouro não tem uma conta só de "repassado")
+        if o.get('rep') is None and o['fir'] is not None and o['aRep'] is not None:
+            o['rep'] = round(o['fir'] - o['aRep'], 2)
     return out
 
 
@@ -186,7 +210,7 @@ def ler(pasta_saida):
                 if k in tudo:   # o mesmo TED em duas abas: soma as contas
                     for rot, v in o['contas'].items():
                         tudo[k]['contas'][rot] = round(tudo[k]['contas'].get(rot, 0) + v, 2)
-                    for m in ('fir', 'nc', 'rep', 'aRep', 'aComp', 'comp', 'dev'):
+                    for m in ('nc', 'rep', 'aRep', 'aComp', 'aApr', 'comp', 'apr', 'aRec', 'dev'):
                         if o[m] is not None:
                             tudo[k][m] = round((tudo[k][m] or 0) + o[m], 2)
                 else:
@@ -198,7 +222,8 @@ def ler(pasta_saida):
             print(f'Tesouro TED: erro em {u[-60:]}: {e}', flush=True)
     os.makedirs(os.path.join(pasta_saida, 'ted'), exist_ok=True)
     contas = list(OrderedDict.fromkeys(r for o in tudo.values() for r in o['contas']))
-    campos = ['ted', 'ted_txt', 'ug_emit', 'ug_fav', 'nome_fav', 'ano', 'processo', 'fir', 'nc', 'rep', 'aRep', 'aComp', 'comp', 'dev']
+    campos = ['ted', 'ted_txt', 'ug_emit', 'ug_fav', 'nome_fav', 'ano', 'processo', 'situacao', 'ini', 'fim', 'objeto',
+              'fir', 'nc', 'rep', 'aRep', 'aComp', 'aApr', 'comp', 'apr', 'aRec', 'dev']
     with open(os.path.join(pasta_saida, 'ted', 'ted_tesouro.csv'), 'w', encoding='utf-8', newline='') as fh:
         w = csv.writer(fh)
         w.writerow(campos + contas)
