@@ -411,12 +411,12 @@ def _data_aj(v):
 
 
 def interpretar_aj(linhas):
-    ih = next((i for i, l in enumerate(linhas[:10]) if any(na(c) == 'N TED' for c in l)), None)
+    ih = next((i for i, l in enumerate(linhas[:10]) if any(re.fullmatch(r'N.? TED', na(c)) for c in l)), None)
     if ih is None:
         raise ValueError('não achei o título "Nº TED" na aba TED ATUALIZADA')
     H = [na(c) for c in linhas[ih]]
     col = lambda rx: next((i for i, h in enumerate(H) if re.search(rx, h)), None)
-    cN, cF, cS, cO = col(r'^N TED$'), col(r'^AJUSTE.*FIM'), col(r'^AJUSTE.*FASE'), col(r'^AJUSTE.*OBS')
+    cN, cF, cS, cO = col(r'^N.? TED$'), col(r'^AJUSTE.*FIM'), col(r'^AJUSTE.*FASE'), col(r'^AJUSTE.*OBS')
     g = lambda l, i: (l[i] or '').strip() if i is not None and i < len(l) else ''
     out = []
     for l in linhas[ih + 1:]:
