@@ -194,9 +194,14 @@ def interpretar(linhas, origem=''):
             elif m:
                 o[m] = round((o.get(m) or 0) + v, 2)
     for o in out.values():
-        # repassado = firmado − a repassar (o Tesouro não tem uma conta só de "repassado")
-        if o.get('rep') is None and o['fir'] is not None and o['aRep'] is not None:
-            o['rep'] = round(o['fir'] - o['aRep'], 2)
+        # repassado: o Tesouro não tem uma conta só de "repassado". O que já saiu para a unidade é a comprovar + comprovado.
+        # (firmado − a repassar só como último recurso: "a repassar" zerado não quer dizer que tudo foi repassado — ex.: TED 991352,
+        #  firmado 10,2 Mi, a repassar 0, mas só 3 Mi repassados)
+        if o.get('rep') is None:
+            if o.get('aComp') is not None or o.get('comp') is not None:
+                o['rep'] = round((o.get('aComp') or 0) + (o.get('comp') or 0), 2)
+            elif o['fir'] is not None and o['aRep'] is not None:
+                o['rep'] = round(o['fir'] - o['aRep'], 2)
     return out
 
 
