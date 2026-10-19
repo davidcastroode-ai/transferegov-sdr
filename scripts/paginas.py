@@ -521,6 +521,38 @@ def ted(pasta):
                 L_[(x[11] or ac, po, x[5], x[8], x[7])] += x[4]
         o['acs'] = [[ac, nomeA.get(ac, ''), po, nomePO.get((ac, po), ''), pt, rp, nd, round(v, 2)]
                     for (ac, po, pt, rp, nd), v in sorted(L_.items(), key=lambda kv: -kv[1]) if abs(v) > 0.005][:20]
+    # ---- controle interno da equipe (colunas EQUIPE da aba TED ATUALIZADA): completa os TEDs e traz os que só existem no controle
+    nm = lambda v: ted_tesouro.num(v) or 0.0
+    porN = {(o['n'] or o['cod'] or '').upper(): o for o in linhas}
+    n_eq = n_so = 0
+    for e in ler(tp, 'ted_equipe.csv'):
+        G = lambda k: (e.get(k) or '').strip()
+        eq = {'aba': G('Aba do controle'), 'ug': G('UG responsável'), 'dep': G('Departamento'), 'ft': G('Fiscal titular'), 'fs': G('Fiscal suplente'), 'uf': G('UF'),
+              'rp': G('RP'), 'acao': G('Ação'), 'situ': G('Situação / tratamento'), 'et': G('Etapas da PC (1=feita)'), 'fim': G('Fim (controle)'),
+              'firm': nm(G('Firmado / total')), 'aComp': nm(G('A comprovar')), 'comp': nm(G('Comprovado'))}
+        o = porN.get(e['ted'].upper())
+        if o is None and e.get('origem') == 'Só no controle interno':
+            fc = pdata(eq['fim'])
+            dias = (fc - hoje).days if fc else None
+            fase = {'Dispensa de TED': 'Dispensa de TED', 'Prestação de contas': 'Prestação de contas', 'Aprovado / concluído': 'Concluído'}.get(eq['aba']) or \
+                   ('Em execução' if dias is not None and dias >= 0 else 'Vigência vencida')
+            n_ = e['ted'] if not e['ted'].startswith('PROC ') else ''
+            o = dict(id='C' + str(n_so), n=n_, ano=(eq['fim'][-4:] if eq['fim'] else '(sem ano)'), cod='' if n_ else e['ted'][5:], er='Enviado', ugd=eq['ug'] or '420013', und='',
+                     ugr='', unr=G('Unidade') or '(não informada)', orr='(só no controle interno)', uge='', prog='', acao=eq['acao'] or '(sem ação)', obj=G('Objeto'),
+                     sp='(só no controle)', st=eq['situ'] or '(sem termo)', fase=fase, sei=G('Processo'), ass='', ini='', fim=eq['fim'], fimApi='', dias=dias,
+                     fir=eq['firm'], nc=0.0, op=0.0, pf=0.0, ar=0.0, rp=eq['rp'], emd='', ult='', link='', ns='', ncs=[], pfs=[], cro=[], prox=None, par=[], met=[],
+                     org='Só no controle interno', tes=None, dif=[], ncT=0, nca=[], nes=[], neT=[0.0, 0.0, 0.0, 0.0])
+            linhas.append(o)
+            n_so += 1
+        if o is None:
+            continue
+        o['eq'] = eq
+        n_eq += 1
+    for o in linhas:
+        e = o.get('eq') or {}
+        o['dep'] = (e.get('dep') or '').upper() or '(sem departamento)'
+        o['uf'] = (e.get('uf') or '').upper()
+    print(f'controle interno: {n_eq} TEDs completados, {n_so} só no controle', flush=True)
     tesInfo = {'carregado': bool(tes), 'gerado_em': tes_meta.get('gerado_em', ''), 'teds': len(tes), 'soTesouro': len(tes) - len(usados),
                'erros': [x.get('erro') for x in tes_meta.get('fontes', []) if not x.get('ok')]}
     data = (meta.get('data_api') or {}).get('data_ultima_atualizacao', '').replace('T', ' ')[:16]

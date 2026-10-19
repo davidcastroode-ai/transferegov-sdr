@@ -483,30 +483,39 @@ def _data_aj(v):
 
 
 def interpretar_aj(linhas):
+    """devolve (ajustes, equipe): ajustes = fim/fase/obs da equipe; equipe = colunas "EQUIPE ·" (controle interno) + linhas só do controle"""
     ih = next((i for i, l in enumerate(linhas[:10]) if any(re.fullmatch(r'N.? TED', na(c)) for c in l)), None)
     if ih is None:
         raise ValueError('não achei o título "Nº TED" na aba TED ATUALIZADA')
-    H = [na(c) for c in linhas[ih]]
+    H0 = [c.strip() for c in linhas[ih]]
+    H = [na(c) for c in H0]
     col = lambda rx: next((i for i, h in enumerate(H) if re.search(rx, h)), None)
     cN, cF, cS, cO = col(r'^N.? TED$'), col(r'^AJUSTE.*FIM'), col(r'^AJUSTE.*FASE'), col(r'^AJUSTE.*OBS')
-    cD, cT, cU, cUF = col(r'^DEPARTAMENTO$'), col(r'^FISCAL TITULAR$'), col(r'^FISCAL SUPLENTE$'), col(r'^UF$')
+    cOr = col(r'^ORIGEM DO DADO')
+    cEq = [(i, re.sub(r'^EQUIPE\s*.\s*', '', H0[i])) for i, h in enumerate(H) if h.startswith('EQUIPE')]
     g = lambda l, i: (l[i] or '').strip() if i is not None and i < len(l) else ''
-    out = []
+    aj, eq = [], []
     for l in linhas[ih + 1:]:
         ted, fim, fase, obs = g(l, cN).upper(), _data_aj(g(l, cF)), g(l, cS), g(l, cO)
-        ex = {'dep': g(l, cD).upper(), 'fiscT': g(l, cT), 'fiscS': g(l, cU), 'uf': g(l, cUF).upper()[:2]}
-        if ted and (fim or fase or obs or any(ex.values())):
-            out.append({'ted': ted, 'fim': fim, 'fase': fase, 'obs': obs[:400], **ex})
-    return out
+        if not ted:
+            continue
+        if fim or fase or obs:
+            aj.append({'ted': ted, 'fim': fim, 'fase': fase, 'obs': obs[:400]})
+        d = {nome: g(l, i) for i, nome in cEq}
+        if any(d.values()):
+            eq.append({'ted': ted, 'origem': g(l, cOr), **d})
+    return aj, eq
 
 
 def ler_aj(pasta_saida):
-    todas, info = [], []
+    todas, info, equipe = [], [], []
     urls = [l.strip() for l in open(CONFIG_AJ, encoding='utf-8') if l.strip() and not l.strip().startswith('#')] if os.path.exists(CONFIG_AJ) else []
     for u in urls:
         try:
-            todas += interpretar_aj(list(csv.reader(io.StringIO(baixar(u)))))
-            info.append({'link': u, 'linhas': len(todas), 'ok': True})
+            a_, e_ = interpretar_aj(list(csv.reader(io.StringIO(baixar(u)))))
+            todas += a_
+            equipe += e_
+            info.append({'link': u, 'linhas': len(todas), 'equipe': len(e_), 'ok': True})
             print(f'Ajustes TED: {len(todas)} ajustes em {u[-60:]}', flush=True)
         except Exception as e:
             info.append({'link': u, 'erro': str(e)[:200], 'ok': False})

@@ -4,7 +4,7 @@
 .fi{background:#fff;border-radius:12px;box-shadow:0 3px 14px rgba(0,0,0,.1);overflow:hidden;margin:8px 4px 12px;text-align:left;white-space:normal}
 .fcab{background:linear-gradient(120deg,#0f6b2c,#22a03a);color:#fff;padding:14px 18px;position:relative}.fcab small{opacity:.85;font-size:11.5px;letter-spacing:.04em;text-transform:uppercase}
 .fcab h4{margin:2px 0 2px;font-size:23px;color:#fff}.fcab p{margin:0 0 8px;font-size:13.5px}.pl{display:inline-block;border-radius:20px;padding:3px 10px;font-size:11.5px;font-weight:700;margin:2px 4px 2px 0;background:rgba(255,255,255,.22);color:#fff}.pl.az{background:#5b6eae}.pl.vm{background:#c0392b}
-.cx{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:10px}.cx div{background:rgba(255,255,255,.14);border-radius:8px;padding:6px 10px;font-size:11px}.cx b{display:block;font-size:13.5px}
+.cx{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin-top:10px}.cx div{background:rgba(255,255,255,.14);border-radius:8px;padding:6px 10px;font-size:11px}.cx b{display:block;font-size:13.5px}
 .fa{position:absolute;right:14px;top:12px}.fa button{border:0;border-radius:8px;padding:6px 10px;background:rgba(255,255,255,.22);color:#fff;font:600 12px Barlow,sans-serif;cursor:pointer}
 .fcorpo{padding:14px 18px 16px}.vl{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.vl div{border-left:4px solid var(--c);background:#f7f9fb;border-radius:8px;padding:8px 12px}
 .vl span,.vg span{display:block;font-size:11.5px;color:#6b7a86}.vl b{font-size:17px}
@@ -12,6 +12,7 @@
 .vg{display:grid;grid-template-columns:1.2fr 1fr 1.3fr;gap:10px}.vg div{background:#f7f9fb;border-radius:8px;padding:8px 12px}.vg b{font-size:16px}.vg .vd b{color:#2e8a57}.vg .am b{color:#b7860b}.vg .vm b{color:#c0392b}
 .fi .sb{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:#1f4e79;font-weight:700;border-bottom:2px solid #e3e8ee;padding-bottom:4px;margin:16px 0 8px}
 .fi .obs{background:#fff8e1;border-radius:8px;padding:6px 10px;font-size:12.5px;margin:8px 0 0}.fi .obj{font-size:12.5px;margin:8px 0 0}
+.etp{display:flex;gap:6px;padding:0;margin:0;flex-wrap:wrap}.etp li{list-style:none;flex:1;min-width:120px;background:#f1f3f5;border-radius:8px;padding:6px;font-size:11.5px;text-align:center}.etp li.ok{background:#e3f4ea;color:#1e6b45;font-weight:600}
 .fi details{margin-top:10px}.fi summary{cursor:pointer;font-weight:700;color:#1f4e79;font-size:12.5px}.fi .rolar{overflow:auto}
 @media(max-width:760px){.cx,.vl{grid-template-columns:1fr 1fr}.vg{grid-template-columns:1fr}.fa{position:static;margin-top:8px}}
 @media print{body.imp *{visibility:hidden}body.imp .fi.imp, body.imp .fi.imp *{visibility:visible}body.imp .fi.imp{position:absolute;left:0;top:0;width:100%;box-shadow:none}.fa{display:none}.fi details{display:block}}
@@ -37,9 +38,9 @@
 </div>
 <script>
 const P = __DADOS__, D = P.linhas, ANO = P.ano;
-const FASES = ['Em execução','Vigência vencida','Prestação de contas','Concluído','Em formalização','Só no Tesouro','Plano em análise','Plano rejeitado'];
+const FASES = ['Em execução','Vigência vencida','Prestação de contas','Concluído','Dispensa de TED','Em formalização','Só no Tesouro','Plano em análise','Plano rejeitado'];
 const TES = P.tes || {};
-const COR_F = {'Em execução':'#2e8a57','Vigência vencida':'#c0392b','Prestação de contas':'#b7860b','Concluído':'#1f4e79','Em formalização':'#6c5ce7','Plano em análise':'#7b8790','Plano rejeitado':'#b2bec3','Só no Tesouro':'#16a085'};
+const COR_F = {'Em execução':'#2e8a57','Vigência vencida':'#c0392b','Prestação de contas':'#b7860b','Concluído':'#1f4e79','Em formalização':'#6c5ce7','Plano em análise':'#7b8790','Plano rejeitado':'#b2bec3','Só no Tesouro':'#16a085','Dispensa de TED':'#c8742f'};
 const SIT = {EM_EXECUCAO:'Em execução',CUMPRIMENTO_OBJETO_INICIADO:'Cumprimento do objeto iniciado',CUMPRIMENTO_OBJETO_ENVIADO_ANALISE:'Cumprimento do objeto em análise',
   CUMPRIMENTO_OBJETO_APROVADO:'Cumprimento do objeto aprovado',CUMPRIMENTO_OBJETO_APROVADO_COM_RESSALVAS:'Aprovado com ressalvas',PENDENTE_REGISTRO_NO_SIAFI:'Pendente de registro no SIAFI',
   EM_ELABORACAO:'Em elaboração',ENVIADO:'Enviado',APROVADO:'Aprovado',REJEITADO:'Rejeitado',ENVIADO_ANALISE:'Enviado para análise',ANALISE_APROVADA:'Análise aprovada',EM_ANALISE:'Em análise',EM_COMPLEMENTACAO:'Em complementação'};
@@ -52,7 +53,7 @@ D.forEach(o => {
   o.chave = o.n || 'PA '+o.cod;
 });
 const FX_V = ['Vencida','Até 30 dias','31 a 60 dias','61 a 90 dias','91 a 180 dias','181 a 365 dias','Mais de 1 ano'];
-const FIL = [['ano','Ano do TED'],['fase','Fase'],['ugdN','UG descentralizadora'],['er','Enviado / recebido'],['orr','Órgão descentralizado'],
+const FIL = [['ano','Ano do TED'],['fase','Fase'],['dep','Departamento'],['ugdN','UG descentralizadora'],['er','Enviado / recebido'],['orr','Órgão descentralizado'],
   ['unr','Unidade descentralizada'],['acao','Ação orçamentária'],['rpN','Resultado primário'],['stN','Situação do termo'],['fx','Vencimento da vigência'],['org','Origem (Tesouro × API)']];
 const SEL = {};
 function base(){ return document.getElementById('rej').checked ? D : D.filter(o => o.fase!=='Plano rejeitado'); }
@@ -75,7 +76,7 @@ function colunas(lista, campo, cor, fmt){
 }
 const agrupar = (L, k, val) => { const m = {}; L.forEach(o => { const c = o[k]; m[c] = (m[c]||0) + (val ? val(o) : 1); }); return Object.entries(m).sort((a,b) => b[1]-a[1]); };
 const sec = (tit, desc, corpo, cls) => `<section class="card ${cls||''}"><h3>${tit}</h3><p class="d">${desc}</p>${corpo}</section>`;
-const tedId = o => `<b>${o.n?'TED '+esc(o.n):'Plano '+esc(o.cod)}</b><small>${o.n&&o.cod?'plano '+esc(o.cod)+' · ':''}${esc(o.ano)}${TES.carregado && o.org!=='Tesouro e API' && o.n ? ` · <span style="color:${o.org==='Só no Tesouro'?'#16a085':/diferentes/.test(o.org)?'#c0392b':'#b7860b'}">${esc(o.org)}</span>` : ''}</small>`;
+const tedId = o => `<b>${o.n?'TED '+esc(o.n):o.org==='Só no controle interno'?'Processo '+esc(o.sei||o.cod):'Plano '+esc(o.cod)}</b><small>${o.n&&o.cod?'plano '+esc(o.cod)+' · ':''}${esc(o.ano)}${TES.carregado && o.org!=='Tesouro e API' && (o.n || o.org==='Só no controle interno') ? ` · <span style="color:${o.org==='Só no controle interno'?'#c8742f':o.org==='Só no Tesouro'?'#16a085':/diferentes/.test(o.org)?'#c0392b':'#b7860b'}">${esc(o.org)}</span>` : ''}</small>`;
 const unid = o => `${esc(o.unr.length>52?o.unr.slice(0,52)+'…':o.unr)}<small>UG ${esc(o.ugr)} · ${esc(o.orr)}</small>`;
 const faseTag = o => `<b class="st" style="background:${COR_F[o.fase]}">${esc(o.fase)}</b>`;
 const kpi = (rot, val, sub, cls, def) => { let a = '';
@@ -99,7 +100,7 @@ function ficha(o){
    <small>Termo de Execução Descentralizada · ${o.er==='Recebido'?'recebido pela':'enviado pela'} UG ${esc(o.er==='Recebido'?o.ugr:o.ugd)}</small>
    <h4>${o.n?'TED '+esc(o.n):'Plano de ação '+esc(o.cod)}</h4><p>${esc(o.unr)} · UG ${esc(o.ugr)}</p>
    <span class="pl" style="background:${COR_F[o.fase]}">● ${esc(o.fase)}</span>${o.org?`<span class="pl az">${esc(o.org)}</span>`:''}${o.emd?`<span class="pl">Emenda ${esc(o.emd)}</span>`:''}${alerta?`<span class="pl vm">⚠ ${alerta}</span>`:''}
-   <div class="cx"><div>Ano<b>${esc(o.ano)}</b></div><div>Ação<b>${esc(o.acao)}</b></div><div>RP<b>${esc(o.rpN)}</b></div><div>Situação do termo<b>${esc(o.stN)}</b></div><div>Órgão<b>${esc(o.orr)}</b></div></div>
+   <div class="cx"><div>Ano<b>${esc(o.ano)}</b></div><div>Departamento<b>${esc(o.dep)}</b></div><div>UF<b>${esc(o.uf)||'—'}</b></div><div>Ação<b>${esc(o.acao)}</b></div><div>RP<b>${esc(o.rpN)}</b></div><div>Situação do termo<b>${esc(o.stN)}</b></div><div>Órgão<b>${esc(o.orr)}</b></div></div>
    <div class="fa"><button type="button" data-imp="${esc(o.id)}">🖨 Imprimir / PDF</button></div></div>
   <div class="fcorpo">
    <div class="vl"><div style="--c:#1f4e79"><span>Valor firmado</span><b>${R$(o.fir)}</b></div><div style="--c:#2e8a57"><span>Descentralizado (NC)</span><b>${R$(o.nc)}</b></div>
@@ -112,8 +113,9 @@ function ficha(o){
    <div class="sb">Identificação</div><div class="fg">
     <div><span>Processo SEI</span>${esc(o.sei)||'—'}</div><div><span>Plano de ação</span>${esc(o.cod)||'—'}</div><div><span>NS do termo</span>${esc(o.ns)||'—'}</div>
     <div><span>Descentralizadora</span>UG ${esc(o.ugd)} · ${esc(o.und)||''}</div><div><span>UG executora</span>${esc(o.uge)||'—'}</div><div><span>Assinatura</span>${esc(o.ass)||'—'}</div>
-    <div><span>Programa</span>${esc(o.prog)||'—'}</div><div><span>Último parecer / análise</span>${esc(o.ult)||'—'}</div><div><span>Termo</span>${o.link?`<a href="${esc(o.link)}" target="_blank" rel="noopener">abrir no Transferegov</a>`:'—'}</div>
+    ${o.eq?`<div><span>Fiscal titular</span>${esc(o.eq.ft)||'—'}</div><div><span>Fiscal suplente</span>${esc(o.eq.fs)||'—'}</div><div><span>Controle interno</span>${esc(o.eq.aba)}${o.eq.situ?' · '+esc(o.eq.situ):''}</div>`:''}<div><span>Programa</span>${esc(o.prog)||'—'}</div><div><span>Último parecer / análise</span>${esc(o.ult)||'—'}</div><div><span>Termo</span>${o.link?`<a href="${esc(o.link)}" target="_blank" rel="noopener">abrir no Transferegov</a>`:'—'}</div>
    </div>${o.obj?`<p class="obj"><b>Objeto:</b> ${esc(o.obj)}</p>`:''}
+   ${o.eq&&o.eq.et?`<div class="sb">Etapas da prestação de contas (controle interno)</div><ul class="etp">${['Relatório de cumprimento','Parecer do fiscal','Parecer do departamento','Parecer e nota técnica','Aprovação final'].map((t_,i) => `<li class="${o.eq.et[i]==='1'?'ok':''}">${o.eq.et[i]==='1'?'✓':i+1} · ${t_}</li>`).join('')}</ul>${o.eq.aComp?`<p class="obs">A comprovar (controle): ${R$(o.eq.aComp)}${o.eq.comp?' · comprovado '+R$(o.eq.comp):''}</p>`:''}`:''}
    ${nca.length?`<div class="sb">Ações usadas neste TED</div>${t(['Ação','PTRES','PI','Natureza','RP','Descentralizado'], nca.map(x => `<tr><td>${esc(x[0])||'—'}</td><td>${esc(x[1])}</td><td>${esc(x[2])}</td><td>${esc(x[3])}</td><td>${esc(x[4])}</td><td class="n">${f2(x[5])}</td></tr>`).join(''))}`:''}
    ${o.ncs.length?`<div class="sb">Orçamento · notas de crédito</div>${t(['Nota','Emissão','UG emitente → favorecida','PTRES · PI','Natureza','RP','Valor'], o.ncs.map(x => `<tr><td>${esc(x[0])}</td><td>${esc(x[1])}</td><td>${esc(x[2])} → ${esc(x[3])}</td><td>${esc(x[5])} · ${esc(x[6])}</td><td>${esc(x[7])}</td><td>${esc(x[8])}</td><td class="n">${f2(x[4])}</td></tr>`).join(''))}`:''}
    ${o.pfs.length?`<div class="sb">Financeiro · programações financeiras</div>${t(['PF','Data','Situação','Observação','Valor'], o.pfs.map(x => `<tr><td>${esc(x[0])}</td><td>${esc(x[1])}</td><td>${esc(sitN(x[5]))}</td><td class="just">${esc(x[6])}</td><td class="n">${f2(x[4])}</td></tr>`).join(''))}`:''}
