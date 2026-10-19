@@ -106,8 +106,11 @@ function fichaOrc(ac){
   const base_ = Math.max(T.ini, T.atu, T.provRec, 1);
   const lin = (rot, v, cor, ref) => `<div class="fl"><span>${rot}</span><i style="width:${Math.min(100,Math.abs(v)/base_*100).toFixed(1)}%;background:${cor}"></i><b>${fm(v)}</b><small>${ref?pct(v,ref):''}</small></div>`;
   const cols = [['Dotação atual','atu'],['Bloqueado','indisp'],['Provisionado','provRec'],['Empenhado','emp'],['Liquidado','liq'],['Pago','pago'],['Livre','disp']];
-  const tab = (tit, chave, extra) => { const g = agr(L, chave);
-    return `<h3>${tit}</h3><div class="rolar"><table class="ot"><tr><th>${extra}</th>${cols.map(c => `<th>${c[0]}</th>`).join('')}<th>% emp.</th></tr>${[...g].filter(([k,x]) => M.some(c => Math.abs(x[c]||0) > 0.005)).sort((a,b) => String(a[0]).localeCompare(String(b[0]))).map(([k,x]) => `<tr><td>${esc(k)}</td>${cols.map(c => `<td class="${c[1]==='indisp'&&x[c[1]]>1?'bloq':''}">${f2(x[c[1]])}</td>`).join('')}<td>${pct(x.emp, x.atu||x.provRec)}</td></tr>`).join('')}</table></div>`; };
+  const tab = (tit, chave, extra, fixos) => { const g = agr(L, chave);
+    // grupos que aparecem sempre (zerados quando não houve movimento)
+    (fixos||[]).forEach(k => { if(!g.has(k)){ const z = {}; M.forEach(c => z[c] = 0); g.set(k, z); } });
+    const zf = v => fixos ? Number(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}) : f2(v);
+    return `<h3>${tit}</h3><div class="rolar"><table class="ot"><tr><th>${extra}</th>${cols.map(c => `<th>${c[0]}</th>`).join('')}<th>% emp.</th></tr>${[...g].filter(([k,x]) => fixos && fixos.includes(k) || M.some(c => Math.abs(x[c]||0) > 0.005)).sort((a,b) => String(a[0]).localeCompare(String(b[0]))).map(([k,x]) => `<tr><td>${esc(k)}</td>${cols.map(c => `<td class="${c[1]==='indisp'&&x[c[1]]>1?'bloq':''}">${zf(x[c[1]])}</td>`).join('')}<td>${fixos && !(x.atu||x.provRec) ? '0%' : pct(x.emp, x.atu||x.provRec)}</td></tr>`).join('')}</table></div>`; };
   // PTRES × PO × GND × RP numa tabela só
   L.forEach(o => o.chPT = o.ptres+' · PO '+o.po+' · '+o.gnd+' · '+o.rp);
   const pos = [...new Set(L.map(o => o.po))].sort(), gnds = [...new Set(L.map(o => o.gnd))].sort();
@@ -119,7 +122,7 @@ function fichaOrc(ac){
     ${lin('Bloqueado', T.indisp, '#c0392b', T.atu)}${lin('Provisionado às UGs', T.provRec, '#5b6eae', T.atu)}${T.destConc>1?lin('Destaque concedido (TED)', T.destConc, '#8e44ad', T.atu):''}
     ${lin('Empenhado', T.emp, '#2e8a57', T.atu||T.provRec)}${lin('Liquidado', T.liq, '#7fb98f', T.atu||T.provRec)}${lin('Pago', T.pago, '#1e6b45', T.atu||T.provRec)}${lin('Saldo livre', T.disp, '#d4a017', T.atu||T.provRec)}
     ${tab('Por PTRES · PO · grupo de despesa · RP', 'chPT', 'PTRES · PO · GND · RP')}
-    ${tab('Por grupo de despesa (GND)', 'gnd', 'GND')}
+    ${tab('Por grupo de despesa (GND)', 'gnd', 'GND', ['GND 3 · Outras despesas correntes','GND 4 · Investimentos'])}
     ${tab('Por plano orçamentário', 'poN', 'PO')}
     ${tab('Por UG', 'ugN', 'UG')}
     <p style="margin-top:10px;font-size:12px;color:#7b8790">Recorte atual dos filtros (menos o filtro de ação) · dotação e bloqueio ficam na setorial 130101; provisão, empenho e pagamento nas UGs.</p></div></div>`;
