@@ -43,6 +43,10 @@ def num(v):
     return -x if neg else x
 
 
+# textos que o Tesouro Gerencial usa no lugar de "vazio"
+VAZIO_TG = re.compile(r'^(SEM INFORMACAO|CODIGO INVALIDO|NAO SE APLICA|NAO INFORMADO|-9|-8|-7|-|)$')
+
+
 def chave_ted(v):
     """nº do TED como na API: '0984760' → '984760'; '7aaaqn' → '7AAAQN'; '984760 - IFMT…' → '984760'"""
     t = na(v)
@@ -160,12 +164,12 @@ def interpretar(linhas, origem=''):
         o['ug_emit'] = o['ug_emit'] or ug(cUe)
         o['ug_fav'] = o['ug_fav'] or ug(cUf)
         if not o['nome_fav']:
-            if cNomeF is not None:
+            if cNomeF is not None and not VAZIO_TG.match(na(l[cNomeF])):
                 o['nome_fav'] = l[cNomeF][:120]
             elif cUf is not None:
                 o['nome_fav'] = re.sub(r'^\s*\d{6}\s*-?\s*', '', l[cUf])[:120]
         for campo, c in (('situacao', cSit), ('ini', cIni), ('fim', cFim), ('objeto', cObj)):
-            if c is not None and not o.get(campo):
+            if c is not None and not o.get(campo) and not VAZIO_TG.match(na(l[c])):
                 o[campo] = l[c][:600]
         if cAno is not None and not o['ano']:
             m = re.search(r'20\d\d', l[cAno])
@@ -177,7 +181,8 @@ def interpretar(linhas, origem=''):
             m = re.match(r'(20\d\d)', o['ted'])
             if m:
                 o['ano'] = m.group(1)
-        itens = [(l[cConta] + (' · ' + H[c] if len(cVal) > 1 else ''), c) for c in cVal] if comprido else [(H[c], c) for c in cVal]
+        rot_ = lambda h: re.sub(r'^\s*Conta Cont[aá]bil N[uú]mero\s*', '', h).strip()
+        itens = [(l[cConta] + (' · ' + rot_(H[c]) if len(cVal) > 1 else ''), c) for c in cVal] if comprido else [(rot_(H[c]), c) for c in cVal]
         for rot, c in itens:
             v = num(l[c])
             if v is None:
