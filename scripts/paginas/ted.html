@@ -51,11 +51,12 @@ const UGN = {'420013':'420013 · SDR','130141':'130141','130010':'130010','13025
 D.forEach(o => {
   o.rpN = o.rp ? [...new Set(o.rp.split(' | '))].join(' + ') : 'Não informado';
   o.fx = o.dias===null ? '(sem vigência)' : o.dias<0 ? 'Vencida' : o.dias<=30 ? 'Até 30 dias' : o.dias<=60 ? '31 a 60 dias' : o.dias<=90 ? '61 a 90 dias' : o.dias<=180 ? '91 a 180 dias' : o.dias<=365 ? '181 a 365 dias' : 'Mais de 1 ano';
-  o.ugdN = UGN[o.ugd] || o.ugd; o.spN = sitN(o.sp); o.stN = o.st==='(sem termo)' ? '(sem termo)' : sitN(o.st);
+  o.ugdN = o.er==='Recebido' ? (UGN[o.ugr] || o.ugr)+' · recebido' : (UGN[o.ugd] || o.ugd);   // a UG da SDR: quem enviou ou, no recebido, quem recebeu
+  o.spN = sitN(o.sp); o.stN = o.st==='(sem termo)' ? '(sem termo)' : sitN(o.st);
   o.chave = o.n || 'PA '+o.cod;
 });
 const FX_V = ['Vencida','Até 30 dias','31 a 60 dias','61 a 90 dias','91 a 180 dias','181 a 365 dias','Mais de 1 ano'];
-const FIL = [['ano','Ano do TED'],['fase','Fase'],['dep','Departamento'],['ugdN','UG descentralizadora'],['er','Enviado / recebido'],['orr','Órgão descentralizado'],
+const FIL = [['ano','Ano do TED'],['fase','Fase'],['dep','Departamento'],['ugdN','UG da SDR'],['er','Enviado / recebido'],['orr','Órgão descentralizado'],
   ['unr','Unidade descentralizada'],['acao','Ação orçamentária'],['rpN','Resultado primário'],['stN','Situação do termo'],['fx','Vencimento da vigência'],['org','Origem (Tesouro × API)']];
 const SEL = {};
 function base(){ return document.getElementById('rej').checked ? D : D.filter(o => o.fase!=='Plano rejeitado'); }

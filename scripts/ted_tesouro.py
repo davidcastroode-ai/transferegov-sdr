@@ -251,7 +251,9 @@ def mapa_ptres(pasta):
         with open(os.path.join(pasta, 'ted', 'ted_eventos.csv'), encoding='utf-8') as fh:
             for e in csv.DictReader(fh):
                 pt, pg = (e.get('cd_ptres_evento') or '').strip(), (e.get('ptres_programa_trabalho') or '').strip()
-                if pt and len(pg) >= 13 and re.fullmatch(r'\d[0-9A-Z]{3}', pg[9:13]):
+                uo = (e.get('ptres_unidade_orcamentaria') or '').strip()
+                # a API às vezes liga o PTRES ao programa de trabalho de outro órgão (outro ano): só vale se a UO for do MAPA (22xxx)
+                if pt and len(pg) >= 13 and uo.startswith('22') and re.fullmatch(r'\d[0-9A-Z]{3}', pg[9:13]):
                     m.setdefault(pt, {'acao': pg[9:13], 'rp': (e.get('ptres_resultado_primario') or '').strip()})
     except FileNotFoundError:
         pass
@@ -286,6 +288,7 @@ def interpretar_nc(linhas, ptres):
     cT, cDt, cUe, cFav, cNC = col(r'NC - TRANSFER'), col(r'EMISSAO'), col(r'EMITENTE - UG'), col(r'FAVORECIDO'), col(r'^NC$')
     cND, cPI, cPT, cFt = col(r'NATUREZA'), col(r'PLANO INTERNO'), col(r'PTRES'), col(r'FONTE')
     cObs, cDesc, cVal = col(r'OBSERVACAO'), col(r'DESCRICAO'), col(r'VALOR LINHA')
+    cAc = col(r'ACAO GOVERNO')   # se o relatório trouxer a ação, ela vale mais que o mapa de PTRES
     if cVal is None:   # o título do valor às vezes vem numa linha de baixo
         for l in linhas[ih + 1:ih + 4]:
             for i, c in enumerate(l):
@@ -305,7 +308,7 @@ def interpretar_nc(linhas, ptres):
         pt = g(l, cPT)
         info = ptres.get(pt, {})
         out.append({'ted': ted, 'data': g(l, cDt), 'nc': nc[-12:] if len(nc) > 12 else nc, 'nc_completa': nc, 'ug_emit': g(l, cUe), 'ug_fav': g(l, cFav),
-                    'nome_fav': g(l, nome(cFav)), 'nd': g(l, cND), 'pi': g(l, cPI), 'pi_nome': g(l, nome(cPI)), 'ptres': pt, 'acao': info.get('acao', ''),
+                    'nome_fav': g(l, nome(cFav)), 'nd': g(l, cND), 'pi': g(l, cPI), 'pi_nome': g(l, nome(cPI)), 'ptres': pt, 'acao': (g(l, cAc) if cAc is not None and re.fullmatch(r'[0-9A-Z]{4}', g(l, cAc)) else '') or info.get('acao', ''),
                     'rp': info.get('rp', ''), 'fonte': g(l, cFt), 'obs': (g(l, cObs) or g(l, cDesc))[:400], 'valor': v if v is not None else ''})
     return out, sem
 

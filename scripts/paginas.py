@@ -353,7 +353,7 @@ def ted(pasta):
             ac_orc.setdefault(x['ptres'].strip(), x['acao'].strip().zfill(4) if x['acao'].strip().isdigit() else x['acao'].strip())
     ncT = collections.defaultdict(list)
     for x in ler(tp, 'ted_tesouro_nc.csv'):
-        if x['ptres'] and x['ptres'].strip() in ac_orc:
+        if not x['acao'] and x['ptres'].strip() in ac_orc:   # sem ação no relatório nem no mapa da API: usa a base de orçamento
             x['acao'] = ac_orc[x['ptres'].strip()]
         if x['ted']:
             ncT[x['ted']].append([x['nc'], x['data'], x['ug_emit'], x['ug_fav'], f(x['valor']), x['ptres'], x['pi'], x['nd'], x['rp'], 'Tesouro', '', x['acao'], x['obs'][:200]])
