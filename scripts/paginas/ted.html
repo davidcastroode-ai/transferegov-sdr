@@ -311,4 +311,20 @@ __FILTRO__
 __KPI__
 render();
 </script><div id="fundoF" hidden></div>
+<script>
+// modo "só a ficha": as abas do controle interno (Vigentes, Dispensa, Prestação de contas, Aprovados) abrem esta página
+// só para mostrar a ficha do TED, no mesmo modelo do TED GERAL SDR. Sem o TED aqui, avisa o painel (ele abre a ficha antiga).
+if(window.__SO_FICHA){
+  const k = s => String(s||'').toUpperCase().replace(/[^0-9A-Z]/g,'').replace(/^0+(?=\d)/,'');
+  const o = D.find(x => x.n && k(x.n)===k(window.__SO_FICHA)), fe = window.frameElement;
+  if(!o){ try{ fe && fe.__naoAchou && fe.__naoAchou(); }catch(e){} }
+  else {
+    const css = document.createElement('style');
+    css.textContent = 'html,body{background:transparent!important;margin:0!important}.wrap{display:none!important}#fundoF{position:static!important;background:none!important;padding:0!important;min-height:0!important;height:auto!important;overflow:visible!important}#fundoF .fjan{margin:0 auto!important}';
+    document.head.appendChild(css);
+    abrirFicha(o.id);
+    fecharFicha = function(){ try{ if(fe && fe.__fechar) return fe.__fechar(); }catch(e){} const f = document.getElementById('fundoF'); f.hidden = true; };
+  }
+}
+</script>
 </body></html>
