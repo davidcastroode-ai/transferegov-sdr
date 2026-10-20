@@ -390,7 +390,7 @@ def main(saida):
             ('https://discricionarias.transferegov.sistema.gov.br/voluntarias/ConsultarPrograma/ResultadoDaConsultaDeProgramaDeConvenioDetalhar.do?id=' + ids[0] + '&Usr=guest&Pwd=guest') if ids else '-',
             r['nr_proposta'] or '-', r['nr_instrumento'], r['parlamentar'] or '-', r['nr_emenda'] or '-', r['ano_proposta'] or '-', r['link_proposta'],
             r['modalidade'] or '-', r['proponente'] or '-', r['cnpj_proponente'] or '-', r['uf'] or '-', r['objeto'] or '-', r['nr_processo'] or '-',
-            r['situacao'] or '-', r['acao_orcamentaria'] or '-', r['programa'] or '-', rp_de(r['nr_instrumento']), r['ug_emitente'],
+            r['situacao'] or r['situacao_proposta'] or '-', r['acao_orcamentaria'] or '-', r['programa'] or '-', rp_de(r['nr_instrumento']), r['ug_emitente'],
             r['data_assinatura'] or '-', r['inicio_vigencia'] or '-', r['fim_vigencia'] or '-', r['limite_prestacao_contas'] or '-',
             r['valor_global'], r['valor_repasse'], r['valor_contrapartida'], r['valor_desembolsado'], r['valor_a_desembolsar'],
             r['ingresso_contrapartida'], r['rendimento_aplicacao'], r['saldo_em_conta'], '',
