@@ -83,7 +83,7 @@ function kpiMetrica(d, cols){
   .kpi-on{outline:3px solid #2fae5c;outline-offset:-3px}.kpi-box{border:2px solid #2fae5c}.kpi-cab{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap}
   .kpi-bt{border:1px solid #b9c7d3;background:#fff;color:#1f4e79;font:600 12.5px inherit;font-family:inherit;padding:6px 12px;border-radius:8px;cursor:pointer;margin-left:6px}
   .kpi-fil{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:flex-end;margin:6px 0 10px}.kpi-fil label{display:flex;flex-direction:column;font-size:11px;font-weight:600;color:#33475b;gap:3px}
-  .kpi-fil input,.kpi-fil select{font:inherit;font-size:12px;font-weight:400;padding:5px 8px;border:1px solid #cfd8e3;border-radius:6px;background:#f7f9fb;min-width:120px}.kpi-fil input{min-width:170px}
+  .kpi-fil input,.kpi-fil select{font:inherit;font-size:12px;font-weight:400;padding:5px 8px;border:1px solid #cfd8e3;border-radius:6px;background:#f7f9fb;width:150px;min-width:0;max-width:150px;box-sizing:border-box;text-overflow:ellipsis}
   .kpi-mc{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 10px}.kpi-mc>div{flex:1;min-width:150px;border:1px solid #dfe6ee;border-left:4px solid var(--c);background:#fafcfd;padding:5px 10px}.kpi-mc>div.fil{background:#fff8ec}.kpi-mc>div.tot{background:#eef3f8}.kpi-mc small{display:block;font-size:10px;font-weight:700;color:#5b6b7b;text-transform:uppercase}.kpi-mc b{font-size:15px;color:#14324f}.kpi-mc span{font-size:10px;color:#7a8794;margin-left:4px}`;
   document.head.appendChild(css);
   const _render = render;
