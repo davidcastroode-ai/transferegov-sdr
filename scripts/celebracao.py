@@ -2,7 +2,7 @@
 Robô Transferegov · SDR/MAPA — arquivo da aba "Base Celebração" (Planilha Execução Parcerias SDR), só UG 420013.
 
 Lê PASTA/instrumentos.csv e PASTA/pagamentos.csv (gravados pelo processar.py) e grava
-PASTA/planilha_celebracao_420013.csv com as colunas A a AH da aba, na mesma ordem e com os mesmos títulos.
+PASTA/planilha_celebracao_420013.csv com as colunas A a AJ da aba, na mesma ordem e com os mesmos títulos.
 As colunas que a planilha calcula ou que a equipe preenche (N, O, S, T, Y, AD, AH) vão vazias: o Apps Script não mexe nelas.
 
 Uso:  python scripts/celebracao.py PASTA_DE_SAIDA
@@ -17,7 +17,7 @@ TITULOS = ['Ano Proposta', 'Nº Instrumento', 'Nome Parlamentar', 'UF', 'Nº Eme
            'Data Ultima atualização', 'Resultado Primário', 'Valor Global', 'Valor de Repasse', 'Valor Desembolsado Acumulado',
            'Valor a Desembolsar', 'Valor de Contrapartida', 'Ingresso de Contrapartida', 'Rendimento Aplicação', 'Saldo em conta',
            'Executor', 'Valor Total Execução PAD', 'Último Pagamento Convenente', 'Sem Desembolso Concedente',
-           'Percentual Não Desembolsado a Executar']
+           'Percentual Não Desembolsado a Executar', 'Link Programa', 'Link Direto']
 
 
 def fl(v):
@@ -84,6 +84,9 @@ def main(pasta):
                 'Rendimento Aplicação': r['rendimento_aplicacao'], 'Saldo em conta': r['saldo_em_conta'],
                 'Valor Total Execução PAD': pad, 'Último Pagamento Convenente': ug_pg,
                 'Sem Desembolso Concedente': faixa(dsd) if dsd is not None else '-',
+                # AI e AJ: página do programa e do instrumento no Transferegov (os mesmos links da planilha Parcerias)
+                'Link Programa': (lambda ids: 'https://discricionarias.transferegov.sistema.gov.br/voluntarias/ConsultarPrograma/ResultadoDaConsultaDeProgramaDeConvenioDetalhar.do?id=' + ids[0] + '&Usr=guest&Pwd=guest' if ids else '')([x for x in (r.get('id_programa') or '').split(' | ') if x]),
+                'Link Direto': r.get('link_proposta') or '',
             }
             linhas.append([linha.get(t, '') for t in TITULOS])
     with open(os.path.join(pasta, 'planilha_celebracao_420013.csv'), 'w', encoding='utf-8', newline='') as fh:
