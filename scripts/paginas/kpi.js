@@ -62,6 +62,7 @@ function kpiCols(d){
   if(d.lista.some(o => o.mod) && !c.some(x => /modalidade/i.test(x[0]))) c.splice(1, 0, ['Modalidade', o => { const t = kTipo(o); return t[1] ? kTag(t[0], t[1]) : '—'; }]);
   if(d.lista.some(o => kFin(o) !== '—') && !c.some(x => /^financeiro$/i.test(x[0]))) c.splice(c.findIndex(x => /modalidade/i.test(x[0])) + 1 || 1, 0, ['Financeiro', o => { const an = kAnos(o), a = new Date().getFullYear(); if(!an.length) return '<small>—</small>';
     const rap = an.filter(x => x < a); return (rap.length ? kTag('RAP '+rap.join(' · '), '#8e44ad')+' ' : '') + (an.includes(a) ? kTag('EXE '+a, '#1f4e79') : ''); }]);
+  if(d.lista.some(o => o.ug) && !c.some(x => /^ug\b/i.test(x[0]))){ const i = c.findIndex(x => /^financeiro$/i.test(x[0])); c.splice(i >= 0 ? i+1 : (c.findIndex(x => /modalidade/i.test(x[0])) + 1 || 1), 0, ['UG', o => o.ug ? `<b>${esc(o.ug)}</b>` : '—']); }
   return c;
 }
 // valor do resumo: coluna de valor com o mesmo nome do cartão (senão a última coluna de valor); lê o número já formatado (Bi/Mi/Mil)
