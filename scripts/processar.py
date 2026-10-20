@@ -380,10 +380,8 @@ def main(saida):
                  'Rendimento Aplicação', 'Saldo em conta', 'Execução Financeira', 'Último Pagamento', 'Sem Desembolso']
     plan = []
     for r in inst:
-        # a planilha Parcerias tem os instrumentos assinados e também os cancelados/anulados antes da assinatura
-        # (ex.: 983597, cancelado sem assinar: alguém pergunta pelo número e ele precisa aparecer); os demais não assinados ficam nas propostas
-        if r['assinado'] != 'SIM' and r['situacao'] not in ('Cancelado', 'Convênio Anulado', 'Anulado'):
-            continue
+        # a planilha Parcerias tem TODOS os instrumentos, em todas as situações (assinados ou não, cancelados, anulados, aguardando assinatura…):
+        # alguém pergunta por um número e ele precisa aparecer, com a situação em que está (ex.: 983597, cancelado antes da assinatura)
         ids = [x for x in r['id_programa'].split(' | ') if x]
         emexec = r['situacao'] == 'Em execução'
         d = int(r['dias_sem_desembolso']) if r['dias_sem_desembolso'] else None
