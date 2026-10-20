@@ -1,6 +1,7 @@
 <!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Orçamento por ação</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">__CSS__
 <style>
+.cred-k{cursor:pointer;transition:box-shadow .12s}.cred-k:hover{box-shadow:0 6px 18px rgba(183,134,11,.35)}
 .grp{font-size:12px;font-weight:700;color:#1f4e79;text-transform:uppercase;letter-spacing:.6px;margin:2px 0 6px 2px}
 .kp.k4{grid-template-columns:repeat(4,1fr)}@media(max-width:900px){.kp.k4{grid-template-columns:1fr 1fr}}
 .k.amar b{color:#b7860b}.k.verde b{color:#2e8a57}.k.red b{color:#c0392b}
@@ -49,7 +50,7 @@ const fm = v => { const a = Math.abs(v||0), s = v<0?'−':''; return s+(a>=1e9 ?
 const f2 = v => Math.abs(v||0) < 0.005 ? '—' : Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
 const R$ = v => 'R$ '+Number(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
 // valor resumido (Mi/Mil) com o valor completo ao passar o mouse
-const ft = v => `<span title="${R$(v)}" style="cursor:help">${fm(v)}</span>`;
+const ft = v => `<abbr title="${R$(v)}" style="cursor:help;text-decoration:none;font:inherit;color:inherit">${fm(v)}</abbr>`;
 const pct = (a,b) => b ? Math.round(a/b*100)+'%' : '—';
 const n = x => Number(x||0).toLocaleString('pt-BR');
 const soma = (L,k) => L.reduce((a,o) => a+(o[k]||0), 0);
@@ -59,6 +60,18 @@ function hbar(lista, campo, cor, fmt, tot){
   const mx = Math.max(1,...lista.map(x => Math.abs(x[1])));
   return lista.map(([k,v]) => `<div class="hb ${ehSel(campo,k)?'sel':''}" data-k="${campo}" data-v="${esc(k)}" title="${esc(k)}: ${R$(v)}"><span class="hbr">${esc(k)}</span><div><i style="width:${Math.abs(v)/mx*100}%;background:${cor}"></i></div><b>${fmt(v)}</b><em>${tot!==undefined?tot(k):''}</em></div>`).join('') || '<p class="d">nada neste recorte</p>';
 }
+// detalhe do crédito disponível: onde está o saldo (UG · ação · PO · PTRES · GND · RP)
+function credDetalhe(L){
+  const m = new Map();
+  L.forEach(o => { if(Math.abs(o.disp||0) < 0.01) return; const k = [o.ugN, o.acaoN, o.poN || o.po, o.ptres, o.gnd, o.rp].join('|'); m.set(k, (m.get(k)||0) + o.disp); });
+  const lin = [...m].map(([k,v]) => k.split('|').concat([v])).filter(x => Math.abs(x[6]) > 1).sort((a,b) => b[6]-a[6]);
+  const tot = lin.reduce((a,x) => a + x[6], 0);
+  return `<section class="card" style="border:2px solid #b7860b"><h3>Onde está o crédito disponível</h3><p class="d">${n(lin.length)} linha(s) · setorial (130101) = ainda não provisionado; demais UGs = provisionado e ainda sem empenho · clique de novo no cartão para fechar</p>
+    <div style="overflow:auto;max-height:420px"><table class="mini" style="font-size:12.5px"><thead><tr><th>UG</th><th>Ação</th><th>Plano orçamentário</th><th>PTRES</th><th>GND</th><th>RP</th><th style="text-align:right">Crédito disponível</th></tr></thead><tbody>
+    ${lin.map(x => `<tr><td>${esc(x[0])}</td><td>${esc(x[1])}</td><td>${esc(x[2])}</td><td>${esc(x[3])}</td><td>${esc(x[4])}</td><td>${esc(x[5])}</td><td style="text-align:right;white-space:nowrap">${R$(x[6])}</td></tr>`).join('') || '<tr><td colspan="7">Sem crédito disponível no recorte.</td></tr>'}
+    </tbody><tfoot><tr><td colspan="6"><b>Total</b></td><td style="text-align:right;white-space:nowrap"><b>${R$(tot)}</b></td></tr></tfoot></table></div></section>`;
+}
+document.addEventListener('click', e => { if(e.target.closest('.cred-k')){ e.stopImmediatePropagation(); window.__cred = !window.__cred; render(); } }, true);
 const agr = (L, k) => { const m = new Map(); L.forEach(o => { const x = m.get(o[k]) || m.set(o[k], {}).get(o[k]); M.forEach(c => x[c] = (x[c]||0) + o[c]); }); return m; };
 const kpi = (rot, val, sub, cls) => `<div class="k ${cls||''}"><span>${rot}</span><b>${val}</b><small>${sub||''}</small></div>`;
 const ABERTO = new Set();
@@ -76,9 +89,12 @@ function render(){
     ${kpi('Provisionado às UGs', ft(T.provRec), T.atu ? pct(T.provRec,T.atu)+' da dotação atual' : 'recebido por provisão · a dotação fica na setorial (130101)')}
     ${kpi('Empenhado', ft(T.emp), T.atu ? pct(T.emp,T.atu)+' da dotação atual' : pct(T.emp,T.provRec)+' do provisionado', 'verde')}
     ${kpi('Pago', ft(T.pago), 'liquidado '+ft(T.liq)+' · '+pct(T.pago,T.emp)+' do empenhado')}
-    ${kpi('Saldo livre para empenhar', ft(T.disp), 'crédito disponível (setorial + UGs)', T.disp>1?'amar':'')}
-  </div><div class="g2">
+    ${(() => { const dS = soma(L.filter(o => o.ug==='130101'),'disp'), dU = T.disp - dS;
+      return kpi('Crédito disponível', ft(T.disp), 'na setorial (ainda não provisionado) '+ft(dS)+' · nas UGs (provisionado, sem empenho) '+ft(dU)+'<br><b style="display:inline;font-size:12px;color:#1f4e79">'+(window.__cred?'▲ fechar o detalhe':'▼ clique para ver onde está')+'</b>', (T.disp>1?'amar ':'')+'cred-k'); })()}
+  </div>${window.__cred ? credDetalhe(L) : ''}<div class="g2">
     <section class="card"><h3>Empenhado × dotação atual, por ação</h3><p class="d">percentual empenhado · clique para filtrar</p>${hbar([...porAc].map(([k,x]) => [k, x.emp]).sort((a,b) => b[1]-a[1]), 'acaoN', '#2e8a57', fm, k => pct(porAc.get(k).emp, porAc.get(k).atu))}</section>
+    <section class="card"><h3>Crédito disponível por ação</h3><p class="d">saldo para empenhar (setorial + UGs) · clique para filtrar</p>${hbar([...porAc].map(([k,x]) => [k, x.disp]).filter(x => Math.abs(x[1])>1).sort((a,b) => b[1]-a[1]), 'acaoN', '#b7860b', fm, k => pct(porAc.get(k).disp, porAc.get(k).atu))}</section>
+    <section class="card"><h3>Crédito disponível por UG</h3><p class="d">onde está o saldo: na setorial (130101) ainda não foi provisionado; nas UGs já foi provisionado e falta empenhar · clique para filtrar</p>${(() => { const pu = agr(L,'ugN'); return hbar([...pu].map(([k,x]) => [k, x.disp]).filter(x => Math.abs(x[1])>1).sort((a,b) => b[1]-a[1]), 'ugN', '#b7860b', fm, k => pct(pu.get(k).disp, T.disp)); })()}</section>
     <section class="card"><h3>Bloqueado por ação</h3><p class="d">crédito indisponível · clique para filtrar</p>${hbar([...porAc].map(([k,x]) => [k, x.indisp]).filter(x => x[1]>1).sort((a,b) => b[1]-a[1]), 'acaoN', '#c0392b', fm, k => pct(porAc.get(k).indisp, porAc.get(k).atu))}</section>
   </div>`;
   // tabela ação → PO (→ UG ao clicar)
