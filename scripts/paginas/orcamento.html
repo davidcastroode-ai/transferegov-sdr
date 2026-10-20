@@ -48,6 +48,8 @@ const esc = s => String(s??'').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;',
 const fm = v => { const a = Math.abs(v||0), s = v<0?'−':''; return s+(a>=1e9 ? (a/1e9).toFixed(2).replace('.',',')+' Bi' : a>=1e6 ? (a/1e6).toFixed(2).replace('.',',')+' Mi' : (a/1e3).toFixed(1).replace('.',',')+' Mil'); };
 const f2 = v => Math.abs(v||0) < 0.005 ? '—' : Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
 const R$ = v => 'R$ '+Number(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+// valor resumido (Mi/Mil) com o valor completo ao passar o mouse
+const ft = v => `<span title="${R$(v)}" style="cursor:help">${fm(v)}</span>`;
 const pct = (a,b) => b ? Math.round(a/b*100)+'%' : '—';
 const n = x => Number(x||0).toLocaleString('pt-BR');
 const soma = (L,k) => L.reduce((a,o) => a+(o[k]||0), 0);
@@ -55,7 +57,7 @@ function filtrar(exceto){ return base().filter(o => FIL.every(([k]) => k===excet
 function desenharFiltros(){}
 function hbar(lista, campo, cor, fmt, tot){
   const mx = Math.max(1,...lista.map(x => Math.abs(x[1])));
-  return lista.map(([k,v]) => `<div class="hb ${ehSel(campo,k)?'sel':''}" data-k="${campo}" data-v="${esc(k)}" title="${esc(k)}"><span class="hbr">${esc(k)}</span><div><i style="width:${Math.abs(v)/mx*100}%;background:${cor}"></i></div><b>${fmt(v)}</b><em>${tot!==undefined?tot(k):''}</em></div>`).join('') || '<p class="d">nada neste recorte</p>';
+  return lista.map(([k,v]) => `<div class="hb ${ehSel(campo,k)?'sel':''}" data-k="${campo}" data-v="${esc(k)}" title="${esc(k)}: ${R$(v)}"><span class="hbr">${esc(k)}</span><div><i style="width:${Math.abs(v)/mx*100}%;background:${cor}"></i></div><b>${fmt(v)}</b><em>${tot!==undefined?tot(k):''}</em></div>`).join('') || '<p class="d">nada neste recorte</p>';
 }
 const agr = (L, k) => { const m = new Map(); L.forEach(o => { const x = m.get(o[k]) || m.set(o[k], {}).get(o[k]); M.forEach(c => x[c] = (x[c]||0) + o[c]); }); return m; };
 const kpi = (rot, val, sub, cls) => `<div class="k ${cls||''}"><span>${rot}</span><b>${val}</b><small>${sub||''}</small></div>`;
@@ -66,15 +68,15 @@ function render(){
   document.getElementById('contagem').textContent = n(L.length)+' linhas no recorte' + (SEL.ugN && !/^130101/.test(SEL.ugN) ? ' · dotação, cortes e bloqueio: setorial 130101 nos PTRES só desta UG (PTRES compartilhados com outras UGs ficam fora)' : '');
   const remanej = T.sup + T.canc, porAc = agr(L,'acaoN');
   document.getElementById('corpo').innerHTML = `<div class="grp">Dotação</div><div class="kp k4">
-    ${kpi('Lei (dotação inicial)', fm(T.ini), R$(T.ini), 'dest')}
-    ${kpi('Créditos e cortes no ano', fm(remanej), 'suplementação '+fm(T.sup)+' · cancelado/remanejado '+fm(T.canc), remanej<0?'red':'verde')}
-    ${kpi('Dotação atual', fm(T.atu), pct(T.atu,T.ini)+' da Lei')}
-    ${kpi('Bloqueado (crédito indisponível)', fm(T.indisp), pct(T.indisp,T.atu)+' da dotação atual', T.indisp>1?'red':'')}
+    ${kpi('Lei (dotação inicial)', ft(T.ini), R$(T.ini), 'dest')}
+    ${kpi('Créditos e cortes no ano', ft(remanej), 'suplementação '+ft(T.sup)+' · cancelado/remanejado '+ft(T.canc), remanej<0?'red':'verde')}
+    ${kpi('Dotação atual', ft(T.atu), pct(T.atu,T.ini)+' da Lei')}
+    ${kpi('Bloqueado (crédito indisponível)', ft(T.indisp), pct(T.indisp,T.atu)+' da dotação atual', T.indisp>1?'red':'')}
   </div><div class="grp">Execução</div><div class="kp k4">
-    ${kpi('Provisionado às UGs', fm(T.provRec), T.atu ? pct(T.provRec,T.atu)+' da dotação atual' : 'recebido por provisão · a dotação fica na setorial (130101)')}
-    ${kpi('Empenhado', fm(T.emp), T.atu ? pct(T.emp,T.atu)+' da dotação atual' : pct(T.emp,T.provRec)+' do provisionado', 'verde')}
-    ${kpi('Pago', fm(T.pago), 'liquidado '+fm(T.liq)+' · '+pct(T.pago,T.emp)+' do empenhado')}
-    ${kpi('Saldo livre para empenhar', fm(T.disp), 'crédito disponível (setorial + UGs)', T.disp>1?'amar':'')}
+    ${kpi('Provisionado às UGs', ft(T.provRec), T.atu ? pct(T.provRec,T.atu)+' da dotação atual' : 'recebido por provisão · a dotação fica na setorial (130101)')}
+    ${kpi('Empenhado', ft(T.emp), T.atu ? pct(T.emp,T.atu)+' da dotação atual' : pct(T.emp,T.provRec)+' do provisionado', 'verde')}
+    ${kpi('Pago', ft(T.pago), 'liquidado '+ft(T.liq)+' · '+pct(T.pago,T.emp)+' do empenhado')}
+    ${kpi('Saldo livre para empenhar', ft(T.disp), 'crédito disponível (setorial + UGs)', T.disp>1?'amar':'')}
   </div><div class="g2">
     <section class="card"><h3>Empenhado × dotação atual, por ação</h3><p class="d">percentual empenhado · clique para filtrar</p>${hbar([...porAc].map(([k,x]) => [k, x.emp]).sort((a,b) => b[1]-a[1]), 'acaoN', '#2e8a57', fm, k => pct(porAc.get(k).emp, porAc.get(k).atu))}</section>
     <section class="card"><h3>Bloqueado por ação</h3><p class="d">crédito indisponível · clique para filtrar</p>${hbar([...porAc].map(([k,x]) => [k, x.indisp]).filter(x => x[1]>1).sort((a,b) => b[1]-a[1]), 'acaoN', '#c0392b', fm, k => pct(porAc.get(k).indisp, porAc.get(k).atu))}</section>
