@@ -17,19 +17,21 @@ function kpiDepois(){
   const LF = kpiFiltrar(d.lista), cols = kpiCols(d), fil = LF.length !== d.lista.length;
   const uniq = a => [...new Set(a)].filter(x => x && x !== '—');
   const mods = uniq(d.lista.map(o => kTipo(o)[0])).sort(), anos = uniq(d.lista.map(o => String(o.ano||''))).sort().reverse();
-  const fins = uniq(d.lista.map(kFin));
+  const fins = uniq(d.lista.map(kFin)), anosE = uniq(d.lista.flatMap(kAnos).map(String)).sort().reverse();
   const sel = (k, vals, rot) => `<label>${rot}<select data-kf="${k}"><option value="">Todos</option>${vals.map(v => `<option${KF[k]===v?' selected':''}>${esc(v)}</option>`).join('')}</select></label>`;
   const finOps = fins.length ? ['EXE','RAP','EXE e RAP'].concat(fins.filter(v => !/EXE|RAP/.test(v))) : [];
   const met = kpiMetrica(d, cols);
-  let pill = '';
-  if(met){ const vF = LF.reduce((a,o) => a + met(o), 0), vT = d.lista.reduce((a,o) => a + met(o), 0);
-    pill = `<span class="kpi-res${fil?' fil':''}" title="${esc(kBRL(vF))}${fil ? ' de '+esc(kBRL(vT)) : ''}">${fil ? 'Filtrado' : 'Total'}: <b>R$ ${fm(vF)}</b>${fil ? ' de '+fm(vT) : ''}</span>`; }
-  else pill = `<span class="kpi-res${fil?' fil':''}">${fil ? 'Filtrado' : 'Total'}: <b>${LF.length.toLocaleString('pt-BR')}</b>${fil ? ' de '+d.lista.length.toLocaleString('pt-BR') : ''}</span>`;
+  const nI = x => x.toLocaleString('pt-BR');
+  const mc = (rot, cor, v, sub, cls) => `<div class="${cls||''}" style="--c:${cor}"${met ? ` title="${esc(rot)}: ${esc(kBRL(v))}"` : ''}><small>${rot}</small><b>${met ? (Math.abs(v) < 0.005 ? 'R$ 0,00' : 'R$ '+fm(v)) : nI(v)}</b><span>${sub}</span></div>`;
+  const vL = l => met ? l.reduce((a,o) => a + met(o), 0) : l.length;
+  let mini = mc(fil ? 'Filtrado' : 'Total', fil ? '#e67e22' : '#1f4e79', vL(LF), (fil ? 'de '+(met ? fm(vL(d.lista)) : nI(d.lista.length))+' · ' : '')+(met ? nI(LF.length) : ''), fil ? 'fil' : 'tot');
+  if(fins.length) [['EXE','#1f4e79'],['RAP','#8e44ad'],['EXE e RAP','#16756b']].forEach(([k,c]) => { const l = LF.filter(o => kFin(o) === k); mini += mc(k, c, vL(l), met ? nI(l.length) : ''); });
+  mini = `<div class="kpi-mc">${mini}</div>`;
   const limpa = Object.keys(KF).some(k => k !== '__on' && KF[k]) ? '<button type="button" class="kpi-bt" data-kflimpa="1">Limpar</button>' : '';
   box.innerHTML = `<section class="card kpi-box"><div class="kpi-cab"><div><h3>📋 ${esc(d.tit)}</h3><p class="d">${fil ? LF.length.toLocaleString('pt-BR')+' de ' : ''}${d.lista.length.toLocaleString('pt-BR')} registro(s) · clique na linha para abrir a ficha</p></div>
     <div><button type="button" class="kpi-bt" data-kpicsv="1">⬇ Baixar lista (CSV)</button><button type="button" class="kpi-bt" data-kpifecha="1">✕ Fechar</button></div></div>
     <div class="kpi-fil"><label>Instrumento<input type="search" data-kf="q" value="${esc(KF.q||'')}" placeholder="nº, proponente…"></label>
-    ${mods.length ? sel('mod', mods, 'Modalidade') : ''}${finOps.length ? sel('fin', finOps, 'Financeiro') : ''}${anos.length ? sel('ano', anos, 'Ano') : ''}${limpa}${pill}</div>
+    ${mods.length ? sel('mod', mods, 'Modalidade') : ''}${finOps.length ? sel('fin', finOps, 'Financeiro') : ''}${anos.length ? sel('ano', anos, mods.length ? 'Ano da proposta' : 'Ano') : ''}${anosE.length ? sel('anoNE', anosE, 'Ano do empenho') : ''}${limpa}</div>${mini}
     ${tabela('k', LF, cols, 10)}</section>`;
   if(foco){ const x = box.querySelector(`[data-kf="${foco}"]`); if(x){ x.focus(); if(x.type === 'search'){ const n = x.value.length; try{ x.setSelectionRange(n, n); }catch(e){} } } }
 }
@@ -38,9 +40,9 @@ var KF = {};
 const kBRL = v => 'R$ '+Number(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
 function kTipo(o){ const m = String(o && o.mod || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
   return /FOMENTO/.test(m) ? ['Termo de Fomento','#2e7d32'] : /REPASSE/.test(m) ? ['Contrato de Repasse','#b8650a'] : /COLABORA/.test(m) ? ['Termo de Colaboração','#6a3d9a'] : /CONVENIO/.test(m) ? ['Convênio','#1f4e79'] : m ? [o.mod,'#666'] : ['—','']; }
+function kAnos(o){ return [...new Set((o && o.nes || []).map(x => { const t = Array.isArray(x) ? x.find(v => /^\d{4}NE/.test(String(v))) : x; return +((String(t||'').match(/^(\d{4})NE/)||[])[1]||0); }).filter(Boolean))].sort(); }
 function kFin(o){
-  if(o && o.sE !== null && o.sE !== undefined){ const e = (o.sE||0) > 0.005, r = (o.sR||0) > 0.005; return e && r ? 'EXE e RAP' : e ? 'EXE' : r ? 'RAP' : 'Sem saldo'; }
-  const anos = (o && o.nes || []).map(x => { const t = Array.isArray(x) ? x.find(v => /^\d{4}NE/.test(String(v))) : x; return +((String(t||'').match(/^(\d{4})NE/)||[])[1]||0); }).filter(Boolean);
+  const anos = kAnos(o);
   if(!anos.length) return '—';
   const a = new Date().getFullYear(), e = anos.includes(a), r = anos.some(x => x < a);
   return e && r ? 'EXE e RAP' : e ? 'EXE' : 'RAP';
@@ -51,13 +53,15 @@ function kpiFiltrar(L){
   return L.filter(o => (!q || norm([o.n, o.num, o.prop, o.parl, o.munN, o.objr, o.ent].join(' ')).includes(q))
     && (!KF.mod || kTipo(o)[0] === KF.mod)
     && (!KF.fin || (KF.fin === 'EXE' ? /EXE/.test(kFin(o)) : KF.fin === 'RAP' ? /RAP/.test(kFin(o)) : kFin(o) === KF.fin))
-    && (!KF.ano || String(o.ano||'') === KF.ano));
+    && (!KF.ano || String(o.ano||'') === KF.ano)
+    && (!KF.anoNE || kAnos(o).includes(+KF.anoNE)));
 }
 const kTag = (t, c) => `<span style="display:inline-block;background:${c};color:#fff;font-size:10.5px;font-weight:700;padding:1px 8px;border-radius:10px;white-space:nowrap">${esc(t)}</span>`;
 function kpiCols(d){
   let c = d.cols.slice();
   if(d.lista.some(o => o.mod) && !c.some(x => /modalidade/i.test(x[0]))) c.splice(1, 0, ['Modalidade', o => { const t = kTipo(o); return t[1] ? kTag(t[0], t[1]) : '—'; }]);
-  if(d.lista.some(o => kFin(o) !== '—') && !c.some(x => /^financeiro$/i.test(x[0]))) c.splice(c.findIndex(x => /modalidade/i.test(x[0])) + 1 || 1, 0, ['Financeiro', o => { const f = kFin(o), cor = {EXE:'#1f4e79', RAP:'#8e44ad', 'EXE e RAP':'#16756b'}[f]; return cor ? kTag(f, cor) : `<small>${esc(f)}</small>`; }]);
+  if(d.lista.some(o => kFin(o) !== '—') && !c.some(x => /^financeiro$/i.test(x[0]))) c.splice(c.findIndex(x => /modalidade/i.test(x[0])) + 1 || 1, 0, ['Financeiro', o => { const an = kAnos(o), a = new Date().getFullYear(); if(!an.length) return '<small>—</small>';
+    const rap = an.filter(x => x < a); return (rap.length ? kTag('RAP '+rap.join(' · '), '#8e44ad')+' ' : '') + (an.includes(a) ? kTag('EXE '+a, '#1f4e79') : ''); }]);
   return c;
 }
 // valor do resumo: coluna de valor com o mesmo nome do cartão (senão a última coluna de valor); lê o número já formatado (Bi/Mi/Mil)
@@ -77,7 +81,7 @@ function kpiMetrica(d, cols){
   .kpi-bt{border:1px solid #b9c7d3;background:#fff;color:#1f4e79;font:600 12.5px inherit;font-family:inherit;padding:6px 12px;border-radius:8px;cursor:pointer;margin-left:6px}
   .kpi-fil{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:flex-end;margin:6px 0 10px}.kpi-fil label{display:flex;flex-direction:column;font-size:11px;font-weight:600;color:#33475b;gap:3px}
   .kpi-fil input,.kpi-fil select{font:inherit;font-size:12px;font-weight:400;padding:5px 8px;border:1px solid #cfd8e3;border-radius:6px;background:#f7f9fb;min-width:120px}.kpi-fil input{min-width:170px}
-  .kpi-res{margin-left:auto;align-self:center;font-size:12px;background:#eef3f8;border:1px solid #9fb3c8;border-radius:14px;padding:4px 12px;color:#14324f;white-space:nowrap}.kpi-res.fil{background:#fff6e5;border-color:#f0c36d;color:#7a4b00}`;
+  .kpi-mc{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 10px}.kpi-mc>div{flex:1;min-width:150px;border:1px solid #dfe6ee;border-left:4px solid var(--c);background:#fafcfd;padding:5px 10px}.kpi-mc>div.fil{background:#fff8ec}.kpi-mc>div.tot{background:#eef3f8}.kpi-mc small{display:block;font-size:10px;font-weight:700;color:#5b6b7b;text-transform:uppercase}.kpi-mc b{font-size:15px;color:#14324f}.kpi-mc span{font-size:10px;color:#7a8794;margin-left:4px}`;
   document.head.appendChild(css);
   const _render = render;
   render = function(){ _render.apply(this, arguments); try{ kpiDepois(); }catch(e){ console.error(e); } };
