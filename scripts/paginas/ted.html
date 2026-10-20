@@ -181,10 +181,18 @@ function ficha(o){
 }
 // a página fica dentro de um iframe que cresce com o conteúdo: a janela da ficha abre na parte que a pessoa está vendo
 function posModal(f){
-  try{ const fe = window.frameElement; if(!fe) return; const r = fe.getBoundingClientRect(), vh = window.parent.innerHeight;
-    const top = Math.max(0, -r.top); f.style.position = 'absolute'; f.style.top = top+'px'; f.style.bottom = 'auto'; f.style.left = '0'; f.style.right = '0';
-    f.style.height = Math.max(300, Math.min(vh, document.documentElement.scrollHeight - top))+'px'; }catch(e){}
+  // abre a ficha na altura do clique: é a parte que a pessoa está vendo, mesmo quando quem rola é a página do Google Sites
+  // (o painel não consegue ler o rolamento do Sites). O fundo escuro cobre a página inteira; a ficha não tem rolagem própria.
+  try{
+    const docH = () => Math.max(document.documentElement.scrollHeight, document.body.scrollHeight);
+    const y = window.__cliqueY != null ? window.__cliqueY : (window.scrollY || 0);
+    const j = f.firstElementChild;
+    f.style.position = 'absolute'; f.style.left = '0'; f.style.right = '0'; f.style.top = '0'; f.style.bottom = 'auto'; f.style.overflow = 'visible';
+    if(j) j.style.marginTop = Math.max(0, y - 120) + 'px';
+    f.style.height = 'auto'; f.style.minHeight = docH() + 'px';
+  }catch(e){}
 }
+addEventListener('pointerdown', e => { if(!e.target.closest || !e.target.closest('#fundoF')) window.__cliqueY = e.pageY; }, true);
 function abrirFicha(id){
   const o = D.find(x => String(x.id)===String(id)); if(!o) return;
   const f = document.getElementById('fundoF'); f.innerHTML = `<div class="fjan">${ficha(o)}</div>`; f.hidden = false; posModal(f); f.scrollTop = 0;
