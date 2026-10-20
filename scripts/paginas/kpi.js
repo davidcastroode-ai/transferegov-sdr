@@ -17,7 +17,7 @@ function kpiDepois(){
   const LF = kpiFiltrar(d.lista), cols = kpiCols(d), fil = LF.length !== d.lista.length;
   const uniq = a => [...new Set(a)].filter(x => x && x !== '—');
   const mods = uniq(d.lista.map(o => kTipo(o)[0])).sort(), anos = uniq(d.lista.map(o => String(o.ano||''))).sort().reverse();
-  const fins = uniq(d.lista.map(kFin)), anosE = uniq(d.lista.flatMap(kAnos).map(String)).sort().reverse();
+  const sits = uniq(d.lista.map(o => String(o.sit||o.fase||''))).sort(), fins = uniq(d.lista.map(kFin)), anosE = uniq(d.lista.flatMap(kAnos).map(String)).sort().reverse();
   const sel = (k, vals, rot) => `<label>${rot}<select data-kf="${k}"><option value="">Todos</option>${vals.map(v => `<option${KF[k]===v?' selected':''}>${esc(v)}</option>`).join('')}</select></label>`;
   const finOps = fins.length ? ['EXE','RAP','EXE e RAP'].concat(fins.filter(v => !/EXE|RAP/.test(v))) : [];
   const met = kpiMetrica(d, cols);
@@ -31,7 +31,7 @@ function kpiDepois(){
   box.innerHTML = `<section class="card kpi-box"><div class="kpi-cab"><div><h3>📋 ${esc(d.tit)}</h3><p class="d">${fil ? LF.length.toLocaleString('pt-BR')+' de ' : ''}${d.lista.length.toLocaleString('pt-BR')} registro(s) · clique na linha para abrir a ficha</p></div>
     <div><button type="button" class="kpi-bt" data-kpicsv="1">⬇ Baixar lista (CSV)</button><button type="button" class="kpi-bt" data-kpifecha="1">✕ Fechar</button></div></div>
     <div class="kpi-fil"><label>Instrumento<input type="search" data-kf="q" value="${esc(KF.q||'')}" placeholder="nº, proponente…"></label>
-    ${mods.length ? sel('mod', mods, 'Modalidade') : ''}${finOps.length ? sel('fin', finOps, 'Financeiro') : ''}${anos.length ? sel('ano', anos, mods.length ? 'Ano da proposta' : 'Ano') : ''}${anosE.length ? sel('anoNE', anosE, 'Ano do empenho') : ''}${limpa}</div>${mini}
+    ${sits.length > 1 ? sel('sit', sits, 'Situação') : ''}${mods.length ? sel('mod', mods, 'Modalidade') : ''}${finOps.length ? sel('fin', finOps, 'Financeiro') : ''}${anos.length ? sel('ano', anos, mods.length ? 'Ano da proposta' : 'Ano') : ''}${anosE.length ? sel('anoNE', anosE, 'Ano do empenho') : ''}${limpa}</div>${mini}
     ${tabela('k', LF, cols, 10)}</section>`;
   if(foco){ const x = box.querySelector(`[data-kf="${foco}"]`); if(x){ x.focus(); if(x.type === 'search'){ const n = x.value.length; try{ x.setSelectionRange(n, n); }catch(e){} } } }
 }
@@ -54,7 +54,8 @@ function kpiFiltrar(L){
     && (!KF.mod || kTipo(o)[0] === KF.mod)
     && (!KF.fin || (KF.fin === 'EXE' ? /EXE/.test(kFin(o)) : KF.fin === 'RAP' ? /RAP/.test(kFin(o)) : kFin(o) === KF.fin))
     && (!KF.ano || String(o.ano||'') === KF.ano)
-    && (!KF.anoNE || kAnos(o).includes(+KF.anoNE)));
+    && (!KF.anoNE || kAnos(o).includes(+KF.anoNE))
+    && (!KF.sit || String(o.sit||o.fase||'') === KF.sit));
 }
 const kTag = (t, c) => `<span style="display:inline-block;background:${c};color:#fff;font-size:10.5px;font-weight:700;padding:1px 8px;border-radius:10px;white-space:nowrap">${esc(t)}</span>`;
 function kpiCols(d){
