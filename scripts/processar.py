@@ -380,7 +380,9 @@ def main(saida):
                  'Rendimento Aplicação', 'Saldo em conta', 'Execução Financeira', 'Último Pagamento', 'Sem Desembolso']
     plan = []
     for r in inst:
-        if r['assinado'] != 'SIM':   # a planilha Parcerias só tem instrumentos assinados; os não assinados ficam nas propostas
+        # a planilha Parcerias tem os instrumentos assinados e também os cancelados/anulados antes da assinatura
+        # (ex.: 983597, cancelado sem assinar: alguém pergunta pelo número e ele precisa aparecer); os demais não assinados ficam nas propostas
+        if r['assinado'] != 'SIM' and r['situacao'] not in ('Cancelado', 'Convênio Anulado', 'Anulado'):
             continue
         ids = [x for x in r['id_programa'].split(' | ') if x]
         emexec = r['situacao'] == 'Em execução'
