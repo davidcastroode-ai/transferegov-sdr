@@ -25,7 +25,7 @@
 </style></head><body>
 <div class="wrap">
 <div class="nota" id="nota"></div>
-<section class="card"><div class="filtros" id="filtros"></div><button class="btn" id="limpar">Limpar filtros</button>
+<section class="card"><div class="filtros" id="filtros"></div><button class="btn" id="limpar">Limpar filtros</button> <button class="btn" id="impPag" type="button" title="Abre a página numa aba própria para imprimir ou salvar em PDF">🖨 Imprimir / PDF</button>
  <label class="esc"><input type="checkbox" id="todas"> mostrar todas as ações do MAPA</label>
  <span id="contagem" style="font-size:13px;color:#66727c;margin-left:12px"></span></section>
 <div id="corpo"></div>
@@ -148,6 +148,14 @@ document.addEventListener('click', e => {
   const ab = e.target.closest('[data-ab]'); if(ab){ const k = ab.dataset.ab; ABERTO.has(k) ? ABERTO.delete(k) : ABERTO.add(k); render(); return; }
   const f = e.target.closest('[data-k][data-v]'); if(f){ alternar(f.dataset.k, f.dataset.v); render(); }
 });
+// imprime a página como está na tela (com os filtros escolhidos), numa aba própria: dentro do Google Sites a impressão direta é bloqueada
+document.getElementById('impPag').onclick = () => {
+  const c = document.querySelector('.wrap').cloneNode(true); c.id = 'impressao';
+  const filtros = FIL.filter(([k]) => _selArr(k)).map(([k, nome]) => '<b>'+esc(nome)+':</b> '+esc(SEL[k].map(v => _rotF(k, v)).join(', '))).join(' · ');
+  const card = c.querySelector('#filtros'); if(card) card.closest('section').outerHTML = `<section class="card" style="font-size:13px"><b>Orçamento por ações · filtros:</b> ${filtros || 'nenhum (todas as ações da SDR)'} · impresso em ${new Date().toLocaleString('pt-BR')}</section>`;
+  c.querySelectorAll('button,input,.fpop').forEach(x => x.remove());
+  imprimirFicha(c, 'Orçamento por ações', true);
+};
 document.getElementById('limpar').onclick = () => { for(const k in SEL) delete SEL[k]; render(); };
 document.getElementById('todas').onchange = () => render();
 __FILTRO__

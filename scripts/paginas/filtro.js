@@ -64,16 +64,16 @@ function desenharFiltros(){
 // ===================== impressão da ficha =====================
 // Dentro do Google Sites o painel roda em quadros que bloqueiam a janela de impressão:
 // a ficha abre numa aba própria (que imprime / salva em PDF); se a aba for bloqueada, baixa a ficha como HTML.
-function imprimirFicha(el, titulo){
+function imprimirFicha(el, titulo, paisagem){
   const c = el.cloneNode(true);
   c.querySelectorAll('details').forEach(d => d.open = true);
   c.querySelectorAll('.fa,.acoes,[data-fecha],[data-imp]').forEach(x => x.remove());
   const css = [...document.querySelectorAll('style')].map(x => x.textContent).join('\n');
   const html = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>${String(titulo||'Ficha').replace(/</g,'')}</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet"><style>${css}
-@page{size:A4 portrait;margin:10mm}html,body{background:#fff!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}body{padding:12px;font-family:Barlow,Arial,sans-serif}
+@page{size:A4 ${paisagem ? 'landscape' : 'portrait'};margin:10mm}html,body{background:#fff!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}body{padding:12px;font-family:Barlow,Arial,sans-serif}
 .fi,.ficha,.fo{box-shadow:none!important;max-width:980px;margin:0 auto!important;position:static!important}.rolar,.tw{overflow:visible!important;max-height:none!important}
-.aviso-imp{max-width:980px;margin:0 auto 10px;font:13px Arial,sans-serif;color:#444}@media print{.aviso-imp{display:none}body{padding:0}}</style></head>
+.wrap{max-width:none}body>#impressao{display:block!important}.aviso-imp{max-width:980px;margin:0 auto 10px;font:13px Arial,sans-serif;color:#444}@media print{.aviso-imp{display:none}body{padding:0}}</style></head>
 <body><p class="aviso-imp">Na janela de impressão, escolha <b>Salvar como PDF</b> em "Destino".</p>${c.outerHTML}
 <script>window.addEventListener('load',function(){setTimeout(function(){window.focus();window.print();},600);});<\/script></body></html>`;
   let w = null; try{ w = window.open('', '_blank'); }catch(e){}
