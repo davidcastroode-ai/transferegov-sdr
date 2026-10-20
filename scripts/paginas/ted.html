@@ -297,10 +297,11 @@ function render(){
 document.getElementById('nota').innerHTML = `<b>TED GERAL SDR</b> · Termos de Execução Descentralizada das UGs 130010, 130141, 130255, 135098 e 420013 · API de TED do Transferegov, dados de __DATA__ · ${TES.carregado ? 'Tesouro Gerencial: relatório de '+esc(TES.gerado_em)+' · ' : ''}planos rejeitados ficam fora (marque “incluir planos rejeitados”) · clique nos cartões para ver a lista, nos gráficos para filtrar e na linha para abrir a ficha.`;
 document.addEventListener('click', e => {
   const imp = e.target.closest('[data-imp]'); if(imp){ e.stopPropagation(); const f = imp.closest('.fi'); imprimirFicha(f, 'Ficha TED '+((f.querySelector('h4')||{}).textContent||'')); return; }
+  // ✕ e clique fora da ficha (fundo escuro) fecham; o resto do clique dentro da ficha não faz nada
+  if(e.target.closest('[data-fecha]') || e.target.id==='fundoF' || (e.target.classList && e.target.classList.contains('fjan'))){ fecharFicha(); return; }
   if(e.target.closest('.fi')) return;
   const pg = e.target.closest('[data-pg]'); if(pg){ PAG[pg.dataset.pg] = (PAG[pg.dataset.pg]||0) + +pg.dataset.d; render(); return; }
   const ab = e.target.closest('[data-ab]'); if(ab && !e.target.closest('a,button')){ abrirFicha(ab.dataset.ab); return; }
-  if(e.target.closest('[data-fecha]') || e.target.id==='fundoF'){ fecharFicha(); return; }
   const f = e.target.closest('[data-k][data-v]'); if(f){ alternar(f.dataset.k, f.dataset.v); for(const p in PAG) PAG[p]=0; render(); }
 });
 document.getElementById('limpar').onclick = () => { for(const k in SEL) delete SEL[k]; render(); };
