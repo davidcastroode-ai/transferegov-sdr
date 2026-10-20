@@ -322,7 +322,7 @@ def ted(pasta):
         linhas.append(dict(
             id=i, n=g('Nº TED (SIAFI)'), ano=g('Ano do TED') or '(sem ano)', cod=g('Código do plano de ação'), er=g('Enviado / recebido'),
             ugd=g('UG descentralizadora'), und=g('Unidade descentralizadora'), ugr=g('UG descentralizada'), unr=g('Unidade descentralizada') or '(não informada)',
-            orr=g('Órgão descentralizado') or '(não informado)', uge=g('UG executora'), prog=g('Programa'), acao=g('Ação orçamentária') or '(sem ação)',
+            orr=g('Órgão descentralizado') or '(não informado)', ord=g('Órgão descentralizador'), uge=g('UG executora'), prog=g('Programa'), acao=g('Ação orçamentária') or '(sem ação)',
             obj=g('Objeto')[:600], sp=sp or '(sem situação)', st=st or '(sem termo)', fase=fase, sei=g('Processo SEI'), ass=g('Data de assinatura'),
             ini=g('Início da vigência'), fim=g('Fim da vigência'), dias=dias, fir=f(g('Valor firmado')), nc=f(g('Descentralizado (notas de crédito)')),
             op=f(g('Orçamento pendente')), pf=f(g('Repassado (programação financeira)')), ar=f(g('A repassar')),
@@ -673,6 +673,9 @@ def ted(pasta):
                 elif o['dias'] < 0 and o['fase'] == 'Em execução':
                     o['fase'] = 'Vigência vencida'
     for o in linhas:
+        # órgão de quem enviou: o da API; sem ele, MAPA quando quem enviou é UG da SDR
+        if not o.get('ord'):
+            o['ord'] = 'Ministério da Agricultura e Pecuária' if str(o.get('ugd')) in UGS_SDR else '(não informado)'
         e = o.get('eq') or {}
         o['dep'] = (e.get('dep') or '').upper() or '(sem departamento)'
         o['uf'] = (e.get('uf') or '').upper()
