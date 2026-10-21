@@ -145,6 +145,10 @@ def main(pasta):
     except Exception as e:  # a falta dos TEDs não pode derrubar as outras páginas
         print('página de TED não gerada:', e, flush=True)
     try:
+        repasse(pasta, data_carga)
+    except Exception as e:
+        print('página de contrato de repasse não gerada:', e, flush=True)
+    try:
         orcamento_pag(pasta)
     except Exception as e:
         print('página de orçamento não gerada:', e, flush=True)
@@ -264,6 +268,60 @@ def execucao(pasta, data_carga):
             fh.write(h)
     print(f'páginas de execução · {len(linhas)} instrumentos', flush=True)
 
+
+
+def repasse(pasta, data_carga):
+    """Página Contrato de Repasse: todos os contratos de repasse (Caixa), com obra, prestação de contas, inadimplência e emendas."""
+    hoje = datetime.date.today()
+    inst = [r for r in ler(pasta, 'instrumentos.csv') if 'REPASSE' in (r.get('modalidade') or '').upper()]
+    obra = {o['nr_instrumento']: o for o in ler(pasta, 'painel_obras.csv')}
+    emp = collections.defaultdict(list)
+    for e in ler(pasta, 'empenhos.csv'):
+        emp[e['NR_CONVENIO']].append((e.get('NR_EMPENHO', ''), e.get('UG_EMITENTE', '')))
+
+    def grupo(s):
+        u = (s or '').upper()
+        if u == 'EM EXECUÇÃO': return 'Em execução'
+        if 'INADIMPLENTE' in u: return 'Inadimplente'
+        if 'PRESTAÇÃO DE CONTAS APROVADA' in u or 'PRESTAÇÃO DE CONTAS CONCLUÍDA' in u: return 'Concluído'
+        if 'PRESTAÇÃO DE CONTAS' in u: return 'Em prestação de contas'
+        if 'ANULADO' in u or 'RESCINDIDO' in u or 'CANCELADO' in u or 'EXTINTO' in u: return 'Anulado / rescindido'
+        if 'PROPOSTA' in u or 'PLANO DE TRABALHO' in u or 'ASSINATURA' in u: return 'Aguardando início'
+        return 'Outros'
+    out = []
+    for r in inst:
+        n = r['nr_instrumento']
+        sg = grupo(r['situacao'] or r.get('situacao_proposta', ''))
+        ativo = sg in ('Em execução', 'Aguardando início', 'Em prestação de contas', 'Inadimplente')
+        fv, lim = d(r['fim_vigencia']), d(r['limite_prestacao_contas'])
+        o = obra.get(n, {})
+        m = re.search(r'idProposta=(\d+)', r.get('link_proposta') or '')
+        x = dict(n=n, ug=r['ug_emitente'], si=r['situacao'] or r.get('situacao_proposta', '') or '-', sg=sg, ano=r['ano_proposta'], uf=r['uf'],
+                 mun=na(r['municipio']).strip(), munN=r['municipio'], prop=r['proponente'], nj=r['natureza_juridica'],
+                 parl=r['parlamentar'] or '(sem parlamentar)', tp=r['tipo_parlamentar'] or '(sem emenda)', emd=r['nr_emenda'],
+                 rep=f(r['valor_repasse']), des=f(r['valor_desembolsado']), aDes=f(r['valor_a_desembolsar']), sc=f(r['saldo_em_conta']),
+                 fv=r['fim_vigencia'], dv=(fv - hoje).days if fv else None, lim=r['limite_prestacao_contas'], dlim=(hoje - lim).days if lim else None,
+                 dsd=int(r['dias_sem_desembolso']) if (r['dias_sem_desembolso'] or '').isdigit() else None, ultd=r['ultimo_desembolso'],
+                 lj='Liminar judicial' if 'LIMINAR' in (r.get('situacao_contratacao') or '').upper() else ('Cláusula suspensiva' if 'SUSPENSIVA' in (r.get('situacao_contratacao') or '').upper() else 'Normal'),
+                 tce=1 if r.get('em_processo_tce') == 'SIM' else 0, inad=r.get('inadimplente_desde', ''),
+                 adt=int(r.get('qtd_aditivos') or 0), prr=int(r.get('qtd_prorrogacoes') or 0),
+                 acao=' | '.join(sorted({y.strip()[-4:] for y in (r.get('acao_orcamentaria') or '').split('|') if y.strip()})) or '(sem ação)',
+                 obj=(r['objeto'] or '')[:160 if ativo else 80], id=m.group(1) if m else '',
+                 so=o.get('situacao_obra', '') or '(sem obra no Obrasgov)', pf=f(o.get('pct_fisico')), vo=f(o.get('valor_obra')), dsm=o.get('dias_sem_medicao', ''))
+        if ativo:
+            x['nes'] = [[a, b] for a, b in emp.get(n, []) if a][:15]
+        out.append(x)
+    # campos repetitivos viram índice de dicionário (a página fica ~3x menor); a página decodifica
+    cat = ['ug', 'si', 'sg', 'ano', 'uf', 'mun', 'munN', 'prop', 'nj', 'parl', 'tp', 'lj', 'acao', 'so', 'ultd', 'fv', 'lim', 'inad']
+    dic = {k: {} for k in cat}
+    for x in out:
+        for k in cat:
+            x[k] = dic[k].setdefault(x[k], len(dic[k]))
+    cols = list(dict.fromkeys(k for x in out for k in x))
+    dados = dict(dic={k: list(v) for k, v in dic.items()}, c=cols, r=[[x.get(k) for k in cols] for x in out])
+    with open(os.path.join(pasta, 'pagina_repasse.html'), 'w', encoding='utf-8') as fh:
+        fh.write(montar('repasse.html', dados, data_carga))
+    print(f'pagina_repasse.html · {len(out)} contratos de repasse', flush=True)
 
 
 UGS_SDR = {'130010', '130141', '130255', '135098', '420013'}
