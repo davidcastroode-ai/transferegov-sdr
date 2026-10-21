@@ -1,0 +1,31 @@
+name: Sondar API Obrasgov (teste)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sondar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Sondar a API (só leitura)
+        run: python scripts/obrasgov_sondar.py saida
+      - name: Publicar na branch "obrasgov-teste"
+        run: |
+          cd saida
+          git init -q
+          git checkout -q -b obrasgov-teste
+          git config user.name  "robo-transferegov"
+          git config user.email "robo-transferegov@users.noreply.github.com"
+          git add -A
+          git commit -q -m "Sondagem Obrasgov · $(date -u -d '-3 hours' '+%d/%m/%Y %H:%M')"
+          git push -q --force "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git" obrasgov-teste
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
