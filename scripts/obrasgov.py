@@ -6,7 +6,7 @@ Uso: python scripts/obrasgov.py PASTA_SAIDA"""
 import csv, json, os, sys, time, urllib.request, urllib.parse, urllib.error
 from concurrent.futures import ThreadPoolExecutor
 
-BASE = 'https://api-publica.obrasgov.gestao.gov.br/obrasgov/api'
+BASE = 'https://api-publica.obrasgov.gestao.gov.br/obras'
 UGS = ['130010', '130141', '130255', '135098', '420013']
 OUT = sys.argv[1] if len(sys.argv) > 1 else 'saida'
 os.makedirs(OUT, exist_ok=True)
@@ -43,22 +43,8 @@ def todas(caminho, **q):
         p += 1
 
 
-def descobrir_base():
-    global BASE
-    for b in ['https://api-publica.obrasgov.gestao.gov.br/obrasgov/api', 'https://api-publica.obrasgov.gestao.gov.br']:
-        try:
-            BASE = b
-            j = get('/empenho', pagina=1, tamanho_da_pagina=1)
-            if 'data' in j:
-                return
-        except Exception:
-            pass
-    raise RuntimeError('não achei o caminho da API')
-
-
 def main():
     t0 = time.time()
-    descobrir_base()
     print('API:', BASE, flush=True)
     emp = []
     for ug in UGS:

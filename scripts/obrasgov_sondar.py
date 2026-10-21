@@ -1,6 +1,6 @@
 """Sondagem 2: testa filtros da API do Obrasgov e grava total_items de cada consulta (só leitura)."""
 import json, os, sys, urllib.request, urllib.parse, urllib.error
-BASE = 'https://api-publica.obrasgov.gestao.gov.br/obrasgov/api'
+BASE = 'https://api-publica.obrasgov.gestao.gov.br/obras'
 OUT = sys.argv[1] if len(sys.argv) > 1 else 'saida'; os.makedirs(OUT, exist_ok=True)
 res = []
 def get(c, **q):
