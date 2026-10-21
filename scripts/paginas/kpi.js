@@ -30,9 +30,10 @@ function kpiDepois(){
   const limpa = Object.keys(KF).some(k => k !== '__on' && KF[k]) ? '<button type="button" class="kpi-bt" data-kflimpa="1">Limpar</button>' : '';
   box.innerHTML = `<section class="card kpi-box"><div class="kpi-cab"><div><h3>📋 ${esc(d.tit)}</h3><p class="d">${fil ? LF.length.toLocaleString('pt-BR')+' de ' : ''}${d.lista.length.toLocaleString('pt-BR')} registro(s) · clique na linha para abrir a ficha</p></div>
     <div><button type="button" class="kpi-bt" data-kpicsv="1">⬇ Baixar lista (CSV)</button><button type="button" class="kpi-bt" data-kpifecha="1">✕ Fechar</button></div></div>
-    <div class="kpi-fil"><label>Instrumento<input type="search" data-kf="q" value="${esc(KF.q||'')}" placeholder="nº, proponente…"></label>
+    <div class="kpi-fil"><label>Instrumento<input type="search" data-kf="q" data-bm-in="kpi" value="${esc(KF.q||'')}" placeholder="nº, proponente… (vários: ;)" title="Vários termos: separe por ; ou , ou cole uma coluna do Excel · use + para exigir os dois"></label>
     ${sits.length > 1 ? sel('sit', sits, 'Situação') : ''}${mods.length ? sel('mod', mods, 'Modalidade') : ''}${ufs.length > 1 ? sel('uf', ufs, 'UF') : ''}${finOps.length ? sel('fin', finOps, 'Financeiro') : ''}${anos.length ? sel('ano', anos, mods.length ? 'Ano da proposta' : 'Ano') : ''}${anosE.length ? sel('anoNE', anosE, 'Ano do empenho') : ''}${limpa}</div>${mini}
-    ${tabela('k', LF, cols, 10)}</section>`;
+    <div data-bm="kpi"></div>${tabela('k', LF, cols, 10)}</section>`;
+  BM.pintar('kpi'); BM.realcar(box.querySelector('table'), 'kpi');
   if(foco){ const x = box.querySelector(`[data-kf="${foco}"]`); if(x){ x.focus(); if(x.type === 'search'){ const n = x.value.length; try{ x.setSelectionRange(n, n); }catch(e){} } } }
 }
 // ---- filtros, modalidade, financeiro (EXE/RAP) e resumo em valor: mesmo padrão do painel de Parcerias
@@ -48,15 +49,13 @@ function kFin(o){
   return e && r ? 'EXE e RAP' : e ? 'EXE' : 'RAP';
 }
 function kpiFiltrar(L){
-  const q = String(KF.q||'').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
-  const norm = v => String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
-  return L.filter(o => (!q || norm([o.n, o.num, o.prop, o.parl, o.munN, o.objr, o.ent].join(' ')).includes(q))
+  return BM.filtrar('kpi', KF.q, L.filter(o => true
     && (!KF.mod || kTipo(o)[0] === KF.mod)
     && (!KF.fin || (KF.fin === 'EXE' ? /EXE/.test(kFin(o)) : KF.fin === 'RAP' ? /RAP/.test(kFin(o)) : kFin(o) === KF.fin))
     && (!KF.ano || String(o.ano||'') === KF.ano)
     && (!KF.anoNE || kAnos(o).includes(+KF.anoNE))
     && (!KF.sit || String(o.sit||o.fase||'') === KF.sit)
-    && (!KF.uf || String(o.uf||'') === KF.uf));
+    && (!KF.uf || String(o.uf||'') === KF.uf)), o => [o.n, o.num, o.prop, o.parl, o.munN, o.objr, o.obj, o.ent, o.uf, o.ug].join(' '));
 }
 const kTag = (t, c) => `<span style="display:inline-block;background:${c};color:#fff;font-size:10.5px;font-weight:700;padding:1px 8px;border-radius:10px;white-space:nowrap">${esc(t)}</span>`;
 function kpiCols(d){

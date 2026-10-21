@@ -53,7 +53,7 @@ a.lk{color:#1f4e79;font-weight:600}.pend{font-size:12px;color:#a04000}
   <section class="card"><h3>Situação no Transferegov</h3><p class="d">clique para filtrar</p><div id="sits"></div></section>
   <section class="card"><h3>Vencimento da vigência</h3><p class="d">contratos em execução · clique para filtrar</p><div id="venc"></div><h3 style="margin-top:14px">Situação contratual</h3><p class="d">liminar judicial e cláusula suspensiva</p><div id="lj"></div></section>
  </div>
- <section class="card"><h3>Todos os contratos do recorte</h3><p class="d">clique na linha para abrir a ficha</p><input class="busca" id="busca" placeholder="Buscar nº, município, proponente, parlamentar, objeto…"><div id="todos"></div></section>
+ <section class="card"><h3>Todos os contratos do recorte</h3><p class="d">clique na linha para abrir a ficha</p><input class="busca" id="busca" data-bm-in="b" placeholder="Buscar nº, município, proponente, parlamentar, objeto… (vários: separe por ; ou cole do Excel)" title="Vários termos: separe por ; ou , ou cole uma coluna do Excel · use + para exigir os dois (ex.: BA + 2026)"><div data-bm="b"></div><div id="todos"></div></section>
 </div>
 
 <div class="aba" id="a-obras">
@@ -89,6 +89,7 @@ a.lk{color:#1f4e79;font-weight:600}.pend{font-size:12px;color:#a04000}
 </div>
 </div>
 <script>__MAPA__
+window.BM_TABS = {'todos':'b', k:'kpi'};
 const D0 = __DADOS__;
 const D = D0.r.map(a => { const o = {}; D0.c.forEach((k,i) => o[k] = D0.dic[k] ? D0.dic[k][a[i]] : a[i]); return o; });
 const HOJE = new Date(); HOJE.setHours(0,0,0,0);
@@ -147,7 +148,7 @@ function ficha(o){
 function tabela(id, L, cols, porPag){
   if(!L.length) return '<p class="d">nenhum contrato neste recorte</p>';
   const p = PAG[id]||0, ini = p*porPag, pg = L.slice(ini, ini+porPag), nc = cols.length;
-  return `<table><tr>${cols.map(c => `<th class="${c[2]||''}">${c[0]}</th>`).join('')}</tr>${pg.map(o => `<tr class="lin ${ABERTO.has(id+o.n)?'aberto':''}" data-ab="${id+o.n}">${cols.map(c => `<td class="${c[2]||''}">${c[1](o)}</td>`).join('')}</tr>${ABERTO.has(id+o.n)?`<tr><td colspan="${nc}" style="padding:0">${ficha(o)}</td></tr>`:''}`).join('')}</table>
+  return `<table><tr>${cols.map(c => `<th class="${c[2]||''}">${c[0]}</th>`).join('')}</tr>${pg.map(o => `<tr class="lin ${ABERTO.has(id+o.n)?'aberto':''}" data-ab="${id+o.n}">${cols.map((c,ci) => `<td class="${c[2]||''}">${c[1](o)}${ci===0 && (window.BM_TABS||{})[id] ? BM.tag(BM_TABS[id], o) : ''}</td>`).join('')}</tr>${ABERTO.has(id+o.n)?`<tr><td colspan="${nc}" style="padding:0">${ficha(o)}</td></tr>`:''}`).join('')}</table>
   ${L.length>porPag?`<div class="pag">${ini+1}–${Math.min(L.length,ini+porPag)} de ${n(L.length)} <button data-pg="${id}" data-d="-1" ${p?'':'disabled'}>‹</button><button data-pg="${id}" data-d="1" ${ini+porPag<L.length?'':'disabled'}>›</button></div>`:''}`;
 }
 let MUN = null;
@@ -226,9 +227,9 @@ function render(){
     const FX = ['Vencida','Até 90 dias','91 a 180 dias','181 a 365 dias','Mais de 1 ano','(sem data)'], fc = Object.fromEntries(conta(ex,'fx'));
     document.getElementById('venc').innerHTML = hbar(FX.filter(k => fc[k]).map(k => [k,fc[k]]), 'fx', k => k==='Vencida'?'#c0392b':k==='Até 90 dias'?'#e67e22':'#1f4e79', ex.length);
     document.getElementById('lj').innerHTML = hbar(conta(L,'lj'), 'lj', k => k==='Normal'?'#2e8a57':'#e67e22', tot);
-    const q = document.getElementById('busca').value.trim().toUpperCase();
-    const todos = (q ? L.filter(o => (o.n+' '+o.munN+' '+o.prop+' '+o.obj+' '+o.parl).toUpperCase().includes(q)) : L).slice().sort((a,b) => b.rep-a.rep);
+      const todos = BM.filtrar('b', document.getElementById('busca').value, L, o => o.n+' '+o.munN+' '+o.prop+' '+o.obj+' '+o.parl+' '+o.uf+' '+o.emd).slice().sort((a,b) => b.rep-a.rep);
     document.getElementById('todos').innerHTML = tabela('todos', todos, [['Contrato',o=>`<b>${esc(o.n)}</b><small>${esc(o.ano)}</small>`],['Objeto / local',objLoc],['Situação',o=>tagG(o.sg)+`<small>${esc(o.si)}</small>`],['Parlamentar',o=>esc(o.parl)],['Físico × financeiro',barra],['Repasse',o=>fm(o.rep),'n'],['Fim vigência',o=>br(o.fv),'n']], 15);
+  BM.pintar('b'); BM.realcar(document.getElementById('todos'), 'b');
   }
   // ---------- Obras
   if(ABA==='obras'){

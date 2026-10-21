@@ -37,7 +37,7 @@
  <label class="rej"><input type="checkbox" id="rej"> incluir planos rejeitados</label>
  <span id="contagem" style="font-size:13px;color:#66727c;margin-left:12px"></span></section>
 <div id="corpo"></div>
-<section class="card"><h3>Detalhamento dos TEDs</h3><p class="d">clique na linha para abrir a ficha</p><input class="busca" id="busca" placeholder="Buscar nº TED, plano, unidade, objeto, SEI…"><div id="lista"></div></section>
+<section class="card"><h3>Detalhamento dos TEDs</h3><p class="d">clique na linha para abrir a ficha</p><input class="busca" id="busca" data-bm-in="b" placeholder="Buscar nº TED, plano, unidade, objeto, SEI… (vários: separe por ; ou cole do Excel)" title="Vários termos: separe por ; ou , ou cole uma coluna do Excel · use + para exigir os dois (ex.: BA + 2026)"><div data-bm="b"></div><div id="lista"></div></section>
 </div>
 <script>__MAPA__</script><script>
 function normAccent(s){ return (s||'').toString().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().replace(/\s+/g,' ').trim(); }
@@ -69,6 +69,7 @@ function ufDoNome(nome){
   return '';
 }
 
+window.BM_TABS = {'l':'b', k:'kpi'};
 const P = __DADOS__, D = P.linhas, ANO = P.ano;
 const FASES = ['Em execução','Vigência vencida','Prestação de contas','Concluído','Dispensa de TED','Recebido sem nº de TED','Em formalização','Só no Tesouro','Plano em análise','Plano rejeitado'];
 const TES = P.tes || {};
@@ -224,7 +225,7 @@ function fichaTes(o){
 function tabela(id, L, cols, porPag){
   const p = PAG[id]||0, ini = p*porPag, pg = L.slice(ini, ini+porPag), nc = cols.length;
   if(!L.length) return '<p class="d">nenhum TED neste recorte</p>';
-  return `<table><tr>${cols.map(c => `<th class="${c[2]||''}">${c[0]}</th>`).join('')}</tr>${pg.map(o => `<tr class="lin" data-ab="${esc(o.id)}" title="Clique para abrir a ficha">${cols.map(c => `<td class="${c[2]||''}">${c[1](o)}</td>`).join('')}</tr>`).join('')}</table>
+  return `<table><tr>${cols.map(c => `<th class="${c[2]||''}">${c[0]}</th>`).join('')}</tr>${pg.map(o => `<tr class="lin" data-ab="${esc(o.id)}" title="Clique para abrir a ficha">${cols.map((c,ci) => `<td class="${c[2]||''}">${c[1](o)}${ci===0 && (window.BM_TABS||{})[id] ? BM.tag(BM_TABS[id], o) : ''}</td>`).join('')}</tr>`).join('')}</table>
   ${L.length>porPag?`<div class="pag">${ini+1}–${Math.min(L.length,ini+porPag)} de ${n(L.length)} <button data-pg="${id}" data-d="-1" ${p?'':'disabled'}>‹</button><button data-pg="${id}" data-d="1" ${ini+porPag<L.length?'':'disabled'}>›</button></div>`:''}`;
 }
 
@@ -286,13 +287,13 @@ function render(){
   const L = filtrar();
   document.getElementById('contagem').textContent = `${n(L.length)} planos de ação no recorte`;
   document.getElementById('corpo').innerHTML = telaTED(L);
-  const q = document.getElementById('busca').value.trim().toUpperCase();
-  const lista = (q ? L.filter(o => [o.n,o.cod,o.unr,o.orr,o.obj,o.sei,o.ugr,o.prog].join(' ').toUpperCase().includes(q)) : L).slice()
+  const lista = BM.filtrar('b', document.getElementById('busca').value, L, o => [o.n,o.cod,o.unr,o.orr,o.obj,o.sei,o.ugr,o.prog].join(' ')).slice()
     .sort((a,b) => FASES.indexOf(a.fase)-FASES.indexOf(b.fase) || (a.dias??1e9)-(b.dias??1e9));
   const cols = [['TED',tedId],['Unidade descentralizada',unid],['Fase',o=>faseTag(o)+`<small>${esc(o.stN)}</small>`],['Firmado',o=>fm(o.fir),'n'],
     ['Descentralizado',o=>fm(o.nc)+(o.op>1?`<small style="color:#b7860b">pendente ${fm(o.op)}</small>`:''),'n'],['Repassado',o=>fm(o.pf)+(o.ar>1?`<small style="color:#b7860b">a repassar ${fm(o.ar)}</small>`:''),'n'],
     ['Fim vigência',o=>(esc(o.fim)||'—')+`<small>${o.dias===null?'':o.dias<0?'vencida':'faltam '+o.dias+' d'}</small>`,'n']];
   document.getElementById('lista').innerHTML = tabela('l', lista, cols, 15);
+  BM.pintar('b'); BM.realcar(document.getElementById('lista'), 'b');
 }
 document.getElementById('nota').innerHTML = `<b>TED GERAL SDR</b> · Termos de Execução Descentralizada das UGs 130010, 130141, 130255, 135098 e 420013 · API de TED do Transferegov, dados de __DATA__ · ${TES.carregado ? 'Tesouro Gerencial: relatório de '+esc(TES.gerado_em)+' · ' : ''}planos rejeitados ficam fora (marque “incluir planos rejeitados”) · clique nos cartões para ver a lista, nos gráficos para filtrar e na linha para abrir a ficha.`;
 document.addEventListener('click', e => {

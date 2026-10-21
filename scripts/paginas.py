@@ -62,6 +62,7 @@ def objeto_resumido(o):
 def montar(tpl, dados, data_carga):
     h = open(os.path.join(AQUI, tpl), encoding='utf-8').read()
     h = h.replace('__CSS__', open(os.path.join(AQUI, 'estilo.css'), encoding='utf-8').read())
+    h = h.replace('<script>__MAPA__', '<script>' + open(os.path.join(AQUI, 'busca.js'), encoding='utf-8').read() + '\n__MAPA__', 1)
     h = h.replace('__MAPA__', open(os.path.join(AQUI, 'mapa.js'), encoding='utf-8').read())
     h = h.replace('__DATA__', data_carga)
     h = h.replace('__FILTRO__', open(os.path.join(AQUI, 'filtro.js'), encoding='utf-8').read())

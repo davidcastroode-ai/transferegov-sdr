@@ -26,9 +26,10 @@
 <section class="card"><h3>Mapa</h3><p class="d">cor do estado: nº de propostas · clique para filtrar</p><div class="mapa" id="mapa"></div></section>
 </div>
 <section class="card"><h3>Lista de propostas</h3><p class="d">clique na linha para abrir a ficha da proposta · coluna "Acompanhamento": técnico da equipe 420013 (planilha de Propostas) · "(atualizar)" = ação da 420013 que ainda não está na planilha · demais: UG/ação de quem acompanha</p>
-<input class="busca" id="busca" placeholder="Buscar nº, proponente, município, parlamentar, objeto…"><div id="lista"></div></section>
+<input class="busca" id="busca" data-bm-in="b" placeholder="Buscar nº, proponente, município, parlamentar, objeto… (vários: separe por ; ou cole do Excel)" title="Vários termos: separe por ; ou , ou cole uma coluna do Excel · use + para exigir os dois (ex.: BA + 2026)"><div data-bm="b"></div><div id="lista"></div></section>
 </div>
 <script>__MAPA__
+window.BM_TABS = {'l':'b', k:'kpi'};
 const P = __DADOS__;
 // colunas de cada linha
 const C = {ano:0, s:1, m:2, u:3, g:4, p:5, t:6, j:7, cel:8, vr:9, vg:10, np:11, ni:12, r:13, c:14, id:15, em:16, ob:17, ug:18, vi:19, vf:20, cn:21, ac:22};
@@ -122,7 +123,7 @@ function ficha(o){
 function tabela(id, L, cols, porPag){
   const p = PAG[id]||0, ini = p*porPag, pg = L.slice(ini, ini+porPag), nc = cols.length;
   if(!L.length) return '<p class="d">nenhuma proposta neste recorte</p>';
-  return `<table><tr>${cols.map(c => `<th class="${c[2]||''}">${c[0]}</th>`).join('')}</tr>${pg.map(o => `<tr class="lin ${ABERTO.has(id+o.id)?'aberto':''}" data-ab="${id+o.id}">${cols.map(c => `<td class="${c[2]||''}">${c[1](o)}</td>`).join('')}</tr>${ABERTO.has(id+o.id)?`<tr><td colspan="${nc}" style="padding:0">${ficha(o)}</td></tr>`:''}`).join('')}</table>
+  return `<table><tr>${cols.map(c => `<th class="${c[2]||''}">${c[0]}</th>`).join('')}</tr>${pg.map(o => `<tr class="lin ${ABERTO.has(id+o.id)?'aberto':''}" data-ab="${id+o.id}">${cols.map((c,ci) => `<td class="${c[2]||''}">${c[1](o)}${ci===0 && (window.BM_TABS||{})[id] ? BM.tag(BM_TABS[id], o) : ''}</td>`).join('')}</tr>${ABERTO.has(id+o.id)?`<tr><td colspan="${nc}" style="padding:0">${ficha(o)}</td></tr>`:''}`).join('')}</table>
   ${L.length>porPag?`<div class="pag">${ini+1}–${Math.min(L.length,ini+porPag)} de ${L.length.toLocaleString('pt-BR')} <button data-pg="${id}" data-d="-1" ${p?'':'disabled'}>‹</button><button data-pg="${id}" data-d="1" ${ini+porPag<L.length?'':'disabled'}>›</button></div>`:''}`;
 }
 function mapa(L){
@@ -159,13 +160,13 @@ function render(){
   document.getElementById('prog').innerHTML = ranking('prog', L, 'prog', '#1f4e79', tot);
   document.getElementById('parl').innerHTML = ranking('parl', L, 'parl', '#3a6f9f', tot, '(sem parlamentar)');
   document.getElementById('mapa').innerHTML = mapa(L);
-  const q = document.getElementById('busca').value.trim().toUpperCase();
-  const lista = (q ? L.filter(o => (o.np+' '+o.ni+' '+o.prop+' '+o.mun+' '+o.parl+' '+o.ob).toUpperCase().includes(q)) : L).slice().sort((a,b) => (b.ano.localeCompare(a.ano)) || (b.vr-a.vr));
+  const lista = BM.filtrar('b', document.getElementById('busca').value, L, o => o.np+' '+o.ni+' '+o.prop+' '+o.mun+' '+o.parl+' '+o.ob+' '+o.uf).slice().sort((a,b) => (b.ano.localeCompare(a.ano)) || (b.vr-a.vr));
   document.getElementById('lista').innerHTML = tabela('l', lista, [['Ano',o=>`<b>${esc(o.ano)}</b>`],['Proposta',o=>`<b>${esc(o.np)}</b><small>${o.ni?'instrumento '+esc(o.ni):'—'}</small>`],
     ['Proponente / local',o=>`${esc(o.prop.length>50?o.prop.slice(0,50)+'…':o.prop)}<small>${esc(o.mun)}/${esc(o.uf)} · ${tag(o)}</small>`],
     ['Programa / parlamentar',o=>`${esc(o.prog.length>45?o.prog.slice(0,45)+'…':o.prog)}<small>${esc(o.parl)}</small>`],
     ['Acompanhamento',o=>o.equipe.startsWith('Equipe')?`<span class="eq">${esc((EQ.get(o.k)||{}).exec||'Equipe 420013')}</span>`:o.ac420?`<span class="eq at">${EQ?'(atualizar)':'…'}</span>`:`<small style="color:#4a5a66">${o.ug?'UG '+esc(o.ug):'ação '+esc(o.acao)}</small>`],
     ['Repasse proposto',o=>fm(o.vr),'n']], 15);
+  BM.pintar('b'); BM.realcar(document.getElementById('lista'), 'b');
 }
 // dados da equipe: o painel (página pai) lê a planilha de Propostas da 420013
 (async () => {

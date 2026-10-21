@@ -19,9 +19,10 @@
 <div class="g2" style="grid-template-columns:3fr 2fr"><div class="mapa" id="mapa"></div><div><h3 style="font-size:14px">Por UF</h3><div id="ufs"></div></div></div></section>
 <section class="card"><h3>Pontos de atenção</h3><p class="d">clique na linha para abrir a ficha</p>
 <div class="tabs" id="tabs"></div><div id="lista"></div></section>
-<section class="card"><h3>Todos os instrumentos em prestação de contas</h3><p class="d">clique na linha para abrir a ficha</p><input class="busca" id="busca" placeholder="Buscar nº, município, proponente, objeto…"><div id="todas"></div></section>
+<section class="card"><h3>Todos os instrumentos em prestação de contas</h3><p class="d">clique na linha para abrir a ficha</p><input class="busca" id="busca" data-bm-in="b" placeholder="Buscar nº, município, proponente, objeto… (vários: separe por ; ou cole do Excel)" title="Vários termos: separe por ; ou , ou cole uma coluna do Excel · use + para exigir os dois (ex.: BA + 2026)"><div data-bm="b"></div><div id="todas"></div></section>
 </div>
 <script>__MAPA__
+window.BM_TABS = {'todas':'b', k:'kpi'};
 const D = __DADOS__;
 const FCOR = {'Em processo de TCE':'#111','Encerrada (já foi rejeitada/inadimplente)':'#8e7cc3','Aguardando PC · no prazo':'#9aa6af','Aguardando PC · prazo vencido':'#c0392b','Enviada para análise':'#3a6f9f','Em análise':'#1f4e79','Em complementação':'#e67e22','Iniciada por antecipação':'#2e8a57','Rejeitada':'#7b241c','Inadimplente':'#4a235a'};
 const FORD = Object.keys(FCOR), TCE = new Set(['Em processo de TCE','Aguardando PC · prazo vencido','Rejeitada','Inadimplente','Encerrada (já foi rejeitada/inadimplente)']), HIST = 'Encerrada (já foi rejeitada/inadimplente)';
@@ -69,7 +70,7 @@ function ficha(o){
 function tabela(id, L, cols, porPag){
   const p = PAG[id]||0, ini = p*porPag, pg = L.slice(ini, ini+porPag), nc = cols.length;
   if(!L.length) return '<p class="d">nenhum instrumento neste recorte</p>';
-  return `<table><tr>${cols.map(c => `<th class="${c[2]||''}">${c[0]}</th>`).join('')}</tr>${pg.map(o => `<tr class="lin ${ABERTO.has(id+o.n)?'aberto':''}" data-ab="${id+o.n}">${cols.map(c => `<td class="${c[2]||''}">${c[1](o)}</td>`).join('')}</tr>${ABERTO.has(id+o.n)?`<tr><td colspan="${nc}" style="padding:0">${ficha(o)}</td></tr>`:''}`).join('')}</table>
+  return `<table><tr>${cols.map(c => `<th class="${c[2]||''}">${c[0]}</th>`).join('')}</tr>${pg.map(o => `<tr class="lin ${ABERTO.has(id+o.n)?'aberto':''}" data-ab="${id+o.n}">${cols.map((c,ci) => `<td class="${c[2]||''}">${c[1](o)}${ci===0 && (window.BM_TABS||{})[id] ? BM.tag(BM_TABS[id], o) : ''}</td>`).join('')}</tr>${ABERTO.has(id+o.n)?`<tr><td colspan="${nc}" style="padding:0">${ficha(o)}</td></tr>`:''}`).join('')}</table>
   ${L.length>porPag?`<div class="pag">${ini+1}–${Math.min(L.length,ini+porPag)} de ${L.length} <button data-pg="${id}" data-d="-1" ${p?'':'disabled'}>‹</button><button data-pg="${id}" data-d="1" ${ini+porPag<L.length?'':'disabled'}>›</button></div>`:''}`;
 }
 let MUN = null;
@@ -131,9 +132,9 @@ function render(){
    if(!LIS[LISTA]) LISTA='omissao'; } else if(!LIS[LISTA]) LISTA='omissao';
   document.getElementById('tabs').innerHTML = Object.entries(LIS).map(([k,v]) => `<a data-lista="${k}" class="${LISTA===k?'on':''}">${v[0]} (${v[1].length})</a>`).join('');
   const [_, LL, cols] = LIS[LISTA]; document.getElementById('lista').innerHTML = tabela('l'+LISTA, LL, cols, 8);
-  const q = document.getElementById('busca').value.trim().toUpperCase();
-  const todas = (q ? L.filter(o => (o.n+' '+o.munN+' '+o.prop+' '+o.obj+' '+o.parl).toUpperCase().includes(q)) : L).slice().sort((a,b)=>b.des-a.des);
+  const todas = BM.filtrar('b', document.getElementById('busca').value, L, o => o.n+' '+o.np+' '+o.munN+' '+o.prop+' '+o.obj+' '+o.parl+' '+o.uf).slice().sort((a,b)=>b.des-a.des);
   document.getElementById('todas').innerHTML = tabela('todas', todas, [['Instrumento',o=>o.n+`<small>proposta ${esc(o.np)}</small>`],['Objeto / local',objLoc],['Parlamentar',o=>esc(o.parl)],['Fim da vigência',o=>esc(o.fv)+`<small>${tempoTxt(o)}</small>`,'n'],['Desembolsado',o=>fm(o.des),'n']], 15);
+  BM.pintar('b'); BM.realcar(document.getElementById('todas'), 'b');
 }
 document.addEventListener('change', e => { const k = e.target.dataset.k; if(!k) return; if(e.target.value) SEL[k] = e.target.value; else delete SEL[k]; for(const p in PAG) PAG[p]=0; render(); });
 document.addEventListener('click', e => {
