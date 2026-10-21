@@ -9,14 +9,14 @@ permissions:
 jobs:
   sondar:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
-      - name: Sondar a API (só leitura)
-        run: python scripts/obrasgov_sondar.py saida
+      - name: Base Obrasgov das UGs da SDR (só leitura)
+        run: python scripts/obrasgov.py saida
       - name: Publicar na branch "obrasgov-teste"
         run: |
           cd saida
