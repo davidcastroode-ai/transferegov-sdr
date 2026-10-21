@@ -25,8 +25,8 @@ table{width:100%;border-collapse:collapse;font-size:12.5px}th{background:#1f4e79
 tr.lin{cursor:pointer}tr.lin:hover td{background:#f2f6f9}tr.lin td:first-child::before{content:'▸ ';color:#1f4e79}tr.lin.aberto td:first-child::before{content:'▾ '}tr.lin.aberto td{background:#e3edf7}
 .dbar div{display:grid;grid-template-columns:42px 1fr 34px;gap:5px;align-items:center;font-size:11px;color:#66727c}.dbar i{display:block;height:8px;border-radius:4px}.dbar b{color:#1d2b33;text-align:right}
 .tag{display:inline-block;padding:1px 8px;border-radius:10px;font-size:11px;font-weight:600;color:#fff;white-space:nowrap}
-.ficha{background:#f7fafc;border-left:4px solid #1f4e79;padding:12px 16px}.ficha h4{margin:0 0 8px;font-size:15px}.fg{display:grid;grid-template-columns:repeat(4,1fr);gap:8px 16px;font-size:12.5px}@media(max-width:900px){.fg{grid-template-columns:1fr 1fr}}.fg span{display:block;font-size:10.5px;color:#7b8790;text-transform:uppercase;letter-spacing:.5px}
-.busca{font:inherit;padding:6px 10px;border:1px solid #c9d3db;border-radius:8px;width:300px;margin-bottom:8px}
+.ficha{background:#f7fafc;border-left:4px solid #1f4e79;padding:12px 16px}.ficha h4{margin:0 0 8px;font-size:15px}.fg{display:grid;grid-template-columns:repeat(4,1fr);gap:8px 16px;font-size:12.5px}@media(max-width:900px){.fg{grid-template-columns:1fr 1fr}}.fg > div > span:first-child{display:block;font-size:10.5px;color:#7b8790;text-transform:uppercase;letter-spacing:.5px}
+.ficha .dbar{max-width:360px;margin-top:8px}.busca{font:inherit;padding:6px 10px;border:1px solid #c9d3db;border-radius:8px;width:300px;margin-bottom:8px}
 .pag{display:flex;gap:8px;justify-content:flex-end;align-items:center;font-size:12.5px;margin-top:8px}.pag button{border:1px solid #c9d3db;background:#fff;border-radius:6px;padding:3px 10px;cursor:pointer}
 a.lk{color:#1f4e79;font-weight:600}.pend{font-size:12px;color:#a04000}
 .aba{display:none}.aba.on{display:block}</style></head><body>
@@ -53,7 +53,6 @@ a.lk{color:#1f4e79;font-weight:600}.pend{font-size:12px;color:#a04000}
   <section class="card"><h3>Situação no Transferegov</h3><p class="d">clique para filtrar</p><div id="sits"></div></section>
   <section class="card"><h3>Vencimento da vigência</h3><p class="d">contratos em execução · clique para filtrar</p><div id="venc"></div><h3 style="margin-top:14px">Situação contratual</h3><p class="d">liminar judicial e cláusula suspensiva</p><div id="lj"></div></section>
  </div>
- <section class="card"><h3>Todos os contratos do recorte</h3><p class="d">clique na linha para abrir a ficha</p><input class="busca" id="busca" data-bm-in="b" placeholder="Buscar nº, município, proponente, parlamentar, objeto… (vários: separe por ; ou cole do Excel)" title="Vários termos: separe por ; ou , ou cole uma coluna do Excel · use + para exigir os dois (ex.: BA + 2026)"><div data-bm="b"></div><div id="todos"></div></section>
 </div>
 
 <div class="aba" id="a-obras">
@@ -87,6 +86,7 @@ a.lk{color:#1f4e79;font-weight:600}.pend{font-size:12px;color:#a04000}
   <section class="card"><h3>Parlamentares com mais contratos</h3><p class="d">clique para filtrar</p><div id="parl"></div></section>
  </div>
 </div>
+ <section class="card"><h3>Lista dos contratos do recorte</h3><p class="d">acompanha os filtros e os cliques nos gráficos · clique na linha para abrir a ficha do instrumento</p><input class="busca" id="busca" data-bm-in="b" placeholder="Buscar nº, município, proponente, parlamentar, objeto… (vários: separe por ; ou cole do Excel)" title="Vários termos: separe por ; ou , ou cole uma coluna do Excel · use + para exigir os dois (ex.: BA + 2026)"><div data-bm="b"></div><div id="todos"></div></section>
 </div>
 <script>__MAPA__
 window.BM_TABS = {'todos':'b', k:'kpi'};
@@ -218,6 +218,10 @@ function render(){
   const gC = Object.fromEntries(conta(filtrar('sg'),'sg')), gcor = k => GCOR[k]; gcor.dot = 1;
   document.getElementById('grupos').innerHTML = hbar(GORD.filter(k => gC[k]).map(k => [k,gC[k]]), 'sg', gcor, filtrar('sg').length);
   if(ABA==='geral'){ document.getElementById('mapa').innerHTML = mapa(L); document.getElementById('ufs').innerHTML = hbar(conta(L,'uf').slice(0,14), 'uf', () => '#1f4e79', tot); }
+  // ---------- Lista dos contratos (todas as abas)
+  const todos = BM.filtrar('b', document.getElementById('busca').value, L, o => o.n+' '+o.munN+' '+o.prop+' '+o.obj+' '+o.parl+' '+o.uf+' '+o.emd).slice().sort((a,b) => b.rep-a.rep);
+    document.getElementById('todos').innerHTML = tabela('todos', todos, [['Contrato',o=>`<b>${esc(o.n)}</b><small>${esc(o.ano)}</small>`],['Objeto / local',objLoc],['Situação',o=>tagG(o.sg)+`<small>${esc(o.si)}</small>`],['Parlamentar',o=>esc(o.parl)],['Físico × financeiro',barra],['Repasse',o=>fm(o.rep),'n'],['Fim vigência',o=>br(o.fv),'n']], 15);
+  BM.pintar('b'); BM.realcar(document.getElementById('todos'), 'b');
   // ---------- Carteira
   if(ABA==='cart'){
     const anos = {}; L.forEach(o => { const a = anos[o.ano] || (anos[o.ano] = {n:0,r:0,d:0}); a.n++; a.r+=o.rep; a.d+=o.des; });
@@ -227,9 +231,6 @@ function render(){
     const FX = ['Vencida','Até 90 dias','91 a 180 dias','181 a 365 dias','Mais de 1 ano','(sem data)'], fc = Object.fromEntries(conta(ex,'fx'));
     document.getElementById('venc').innerHTML = hbar(FX.filter(k => fc[k]).map(k => [k,fc[k]]), 'fx', k => k==='Vencida'?'#c0392b':k==='Até 90 dias'?'#e67e22':'#1f4e79', ex.length);
     document.getElementById('lj').innerHTML = hbar(conta(L,'lj'), 'lj', k => k==='Normal'?'#2e8a57':'#e67e22', tot);
-      const todos = BM.filtrar('b', document.getElementById('busca').value, L, o => o.n+' '+o.munN+' '+o.prop+' '+o.obj+' '+o.parl+' '+o.uf+' '+o.emd).slice().sort((a,b) => b.rep-a.rep);
-    document.getElementById('todos').innerHTML = tabela('todos', todos, [['Contrato',o=>`<b>${esc(o.n)}</b><small>${esc(o.ano)}</small>`],['Objeto / local',objLoc],['Situação',o=>tagG(o.sg)+`<small>${esc(o.si)}</small>`],['Parlamentar',o=>esc(o.parl)],['Físico × financeiro',barra],['Repasse',o=>fm(o.rep),'n'],['Fim vigência',o=>br(o.fv),'n']], 15);
-  BM.pintar('b'); BM.realcar(document.getElementById('todos'), 'b');
   }
   // ---------- Obras
   if(ABA==='obras'){
