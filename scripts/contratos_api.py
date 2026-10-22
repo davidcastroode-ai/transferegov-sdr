@@ -3,7 +3,7 @@ Grava em PASTA (branch dados): contratos_api_ctr.csv, contratos_api_emp.csv, con
 (mesmas colunas da planilha "Base API Contratos"). Consulta a API uma vez por dia; nas outras rodadas reaproveita os arquivos do dia.
 Os valores financeiros da API NÃO são usados (não batem com o SIAFI): o painel usa o EXE/RAP do Tesouro.
 Uso: python scripts/contratos_api.py PASTA_SAIDA"""
-import csv, json, os, re, shutil, sys, time, urllib.request, urllib.error
+import csv, json, os, re, shutil, sys, time, urllib.request, urllib.parse, urllib.error
 from concurrent.futures import ThreadPoolExecutor
 
 BASE = 'https://contratos.comprasnet.gov.br'
@@ -21,7 +21,7 @@ ARQ = {
     'arq': ['ID contrato (API)', 'UG contrato', 'Nº contrato', 'Tipo', 'Descrição', 'Link PDF', 'Link SEI', 'Origem'],
     'itn': ['ID contrato (API)', 'UG contrato', 'Nº contrato', 'Item / posto', 'Tipo', 'Quantidade', 'Valor unitário', 'Valor total', 'Nº item da compra'],
     'cro': ['ID contrato (API)', 'UG contrato', 'Nº contrato', 'Mês ref', 'Ano ref', 'Vencimento', 'Valor', 'Tipo'],
-    'pag': ['ID contrato (API)', 'UG contrato', 'Nº contrato', 'Mão de obra exclusiva', 'Total postos (decreto)', 'Total vagas reservadas', 'Percentual reserva vagas', 'Nº contratação', 'Link PNCP'],
+    'pag': ['ID contrato (API)', 'UG contrato', 'Nº contrato', 'Mão de obra exclusiva', 'Total postos (decreto)', 'Total vagas reservadas', 'Percentual reserva vagas', 'Nº contratação', 'Link PNCP', 'Id contratação PNCP', 'Link edital PNCP'],
 }
 nome = lambda k: os.path.join(OUT, f'contratos_api_{k}.csv')
 
@@ -56,6 +56,35 @@ def pagina(i):
             'perc': campo('Percentual reserva vagas'), 'ncontr': campo('Numero contratacao'), 'pncp': pn.group(0) if pn else ''}
 
 
+def compras_pncp(anos):
+    """Id da contratação (edital) de cada contrato no PNCP: API de consulta, contratos do MAPA publicados nos anos pedidos.
+    Devolve {numeroControlePNCP do contrato: numeroControlePncpCompra}."""
+    m = {}
+    for ano in sorted(anos):
+        for ini, fim in [('0101', '0331'), ('0401', '0630'), ('0701', '0930'), ('1001', '1231')]:
+            pg = 1
+            while True:
+                q = urllib.parse.urlencode({'dataInicial': f'{ano}{ini}', 'dataFinal': f'{ano}{fim}', 'cnpjOrgao': '00396895000125', 'pagina': pg, 'tamanhoPagina': 500})
+                try:
+                    with urllib.request.urlopen(urllib.request.Request('https://pncp.gov.br/api/consulta/v1/contratos?' + q, headers={'Accept': 'application/json', 'User-Agent': 'painel-sdr-mapa/1.0'}), timeout=120) as r:
+                        j = json.loads(r.read() or b'{}')
+                except Exception:
+                    break
+                for x in j.get('data') or []:
+                    if x.get('numeroControlePNCP') and x.get('numeroControlePncpCompra'):
+                        m[x['numeroControlePNCP']] = x['numeroControlePncpCompra']
+                if not j.get('paginasRestantes'):
+                    break
+                pg += 1
+    return m
+
+
+def link_edital(idc):
+    # 10724903000179-1-000062/2025  ->  https://pncp.gov.br/app/editais/10724903000179/2025/62
+    mm = re.match(r'(\d{14})-\d+-0*(\d+)/(\d{4})', idc or '')
+    return f'https://pncp.gov.br/app/editais/{mm.group(1)}/{mm.group(3)}/{mm.group(2)}' if mm else ''
+
+
 def num(s):
     s = str(s or '').strip()
     if not s:
@@ -85,6 +114,8 @@ def reaproveitar():
         return False   # arquivo novo (ex.: arquivos do contrato) ainda não existe: consulta a API de novo
     if sum(1 for _ in open(os.path.join(ANT, 'contratos_api_pag.csv'), encoding='utf-8')) < 2:
         return False   # página dos contratos ainda não lida (postos, PNCP)
+    if 'Link edital PNCP' not in open(os.path.join(ANT, 'contratos_api_pag.csv'), encoding='utf-8').readline():
+        return False   # coluna nova (edital no PNCP)
     for k in ARQ:
         q = os.path.join(ANT, f'contratos_api_{k}.csv')
         if os.path.exists(q):
@@ -137,7 +168,21 @@ def main():
             L['cro'].append(ch + [x.get('mesref'), x.get('anoref'), x.get('vencimento'), br(num(x.get('valor'))), x.get('tipo')])
         pg = d.get('pagina') or {}
         if pg:
-            L['pag'].append(ch + [pg.get('mo'), pg.get('postos'), pg.get('vagas'), pg.get('perc'), pg.get('ncontr'), pg.get('pncp')])
+            L['pag'].append(ch + [pg.get('mo'), pg.get('postos'), pg.get('vagas'), pg.get('perc'), pg.get('ncontr'), pg.get('pncp'), '', ''])
+    # edital (contratação) no PNCP: link do contrato no PNCP -> numeroControlePNCP -> id da contratação
+    def ctrl(link):
+        mm = re.search(r'/app/contratos/(\d{14})/(\d{4})/0*(\d+)', link or '')
+        return f'{mm.group(1)}-2-{int(mm.group(3)):06d}/{mm.group(2)}' if mm else ''
+    ctrls = {ctrl(r[8]) for r in L['pag'] if r[8]}
+    anos = {int(c[-4:]) for c in ctrls if c} | {time.localtime().tm_year}
+    try:
+        mp = compras_pncp(anos)
+    except Exception as e:
+        print(f'PNCP: falhou ({e})', flush=True); mp = {}
+    for r in L['pag']:
+        idc = mp.get(ctrl(r[8]), '')
+        r[9], r[10] = idc, link_edital(idc)
+    print(f'PNCP: {len(mp)} contratos do MAPA lidos · {sum(1 for r in L["pag"] if r[9])} com edital ligado', flush=True)
     for k in ARQ:
         gravar(k, L[k])
     print('Contratos.gov.br: ' + ' · '.join(f'{k} {len(v)}' for k, v in L.items()) + f' · {time.time()-t0:.0f}s', flush=True)
