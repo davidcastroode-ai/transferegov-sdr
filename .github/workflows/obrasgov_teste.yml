@@ -15,8 +15,12 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
-      - name: Base Obrasgov das UGs da SDR (só leitura)
-        run: python scripts/obrasgov_sondar.py saida
+      - name: Complemento Obrasgov (só leitura)
+        run: |
+          mkdir -p saida
+          for f in empenhos.csv painel_obras.csv; do curl -sfL "https://raw.githubusercontent.com/${{ github.repository }}/dados/$f" -o saida/$f; done
+          python scripts/obrasgov.py saida
+          rm -f saida/empenhos.csv saida/painel_obras.csv
       - name: Publicar na branch "obrasgov-teste"
         run: |
           cd saida
