@@ -15,8 +15,8 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
-      - name: Sondar API do PNCP (só leitura)
-        run: python scripts/pncp_sondar.py saida
+      - name: Sondar postos e itens dos contratos (só leitura)
+        run: python scripts/postos_sondar.py saida 1017443,68539,85434,90334,93596,96530,97624
 
       - name: Publicar na branch "obrasgov-teste"
         run: |
