@@ -83,6 +83,8 @@ def reaproveitar():
         return False
     if any(not os.path.exists(os.path.join(ANT, f'contratos_api_{k}.csv')) or os.path.getsize(os.path.join(ANT, f'contratos_api_{k}.csv')) < 10 for k in ARQ):
         return False   # arquivo novo (ex.: arquivos do contrato) ainda não existe: consulta a API de novo
+    if sum(1 for _ in open(os.path.join(ANT, 'contratos_api_pag.csv'), encoding='utf-8')) < 2:
+        return False   # página dos contratos ainda não lida (postos, PNCP)
     for k in ARQ:
         q = os.path.join(ANT, f'contratos_api_{k}.csv')
         if os.path.exists(q):
@@ -100,7 +102,7 @@ def main():
         for ativo, cam in [(1, f'/api/contrato/ug/{ug}'), (0, f'/api/contrato/inativo/ug/{ug}')]:
             l = get(cam) or []
             for c in l if isinstance(l, list) else []:
-                c['_ug'] = ug; cs.append(c)
+                c['_ug'] = ug; c['_ativo'] = ativo; cs.append(c)
     print(f'Contratos.gov.br: {len(cs)} contratos', flush=True)
 
     def det(c):
