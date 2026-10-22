@@ -290,7 +290,11 @@ function trocarAba(a){ ABA = a; document.querySelectorAll('#menu a').forEach(x =
 document.addEventListener('change', e => { const k = e.target.dataset.k; if(!k) return; if(e.target.value) SEL[k] = e.target.value; else delete SEL[k]; for(const p in PAG) PAG[p]=0; render(); });
 document.addEventListener('click', e => {
   const ab_ = e.target.closest('#menu a'); if(ab_){ trocarAba(ab_.dataset.aba); return; }
-  const fc = e.target.closest('[data-fichacompleta]'); if(fc){ try{ parent.abrirFichaInst(fc.dataset.fichacompleta); }catch(x){} return; }
+  const fc = e.target.closest('[data-fichacompleta]'); if(fc){ const o = D.find(x => String(x.n)===fc.dataset.fichacompleta); if(!o) return;
+    const tes = o.rs===null ? (TES && TES.mapa ? 'sem nota de empenho no Tesouro' : 'Tesouro ainda carregando') : `RAP a pagar ${R$(o.rs)} · RAP pago ${R$(o.rp)}${o.es ? ' · EXE '+R$(o.es) : ''}`;
+    const dados = {num:o.n, prop:o.prop, situ:o.si, ug:o.ug, fim:br(o.fv), dias:o.dv, lim:br(o.lim), parl:o.parl, emenda:o.emd, tipo:o.tp, acao:o.acao, sitCont:o.lj, rep:o.rep, des:o.des, pd:o.pd, aDes:o.aDes, saldo:o.sc,
+      ultDes:o.ultd, diasSemDes:o.dsd, obra:o.so, fisico:o.vo>0 ? Math.round(o.pf) : null, semMed:o.dsm, inad:o.inad, tce:o.tce, objeto:o.obj, mun:o.munN, uf:o.uf, link:linkTG(o), tes, og:o.og||null};
+    try{ if(parent && parent.abrirFichaRepasse) parent.abrirFichaRepasse(dados, fc); else if(parent && parent.abrirFichaInst) parent.abrirFichaInst(o.n); }catch(x){} return; }
   const pg = e.target.closest('[data-pg]'); if(pg){ PAG[pg.dataset.pg] = (PAG[pg.dataset.pg]||0) + +pg.dataset.d; render(); return; }
   const ab = e.target.closest('[data-ab]'); if(ab && !e.target.closest('a')){ const k = ab.dataset.ab; ABERTO.has(k) ? ABERTO.delete(k) : ABERTO.add(k); render(); return; }
   const f = e.target.closest('[data-k][data-v]'); if(f){ alternar(f.dataset.k, f.dataset.v); for(const p in PAG) PAG[p]=0; render(); }
