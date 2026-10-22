@@ -47,15 +47,6 @@ jobs:
         continue-on-error: true
         run: python scripts/orcamento.py saida
 
-      - name: Complemento Obrasgov (API pública · consulta 1x por dia, nas outras rodadas reaproveita)
-        continue-on-error: true
-        timeout-minutes: 30
-        run: |
-          curl -sfL "https://raw.githubusercontent.com/${{ github.repository }}/dados/obrasgov_complemento.csv" -o /tmp/obrasgov_anterior.csv || echo "sem arquivo anterior"
-          python scripts/obrasgov.py saida
-        env:
-          OBRASGOV_ANTERIOR: /tmp/obrasgov_anterior.csv
-
       - name: Gerar as páginas do painel (Propostas, Empenho, Programas, Movimentação, Obras, Prestação de contas)
         run: python scripts/paginas.py saida
 
