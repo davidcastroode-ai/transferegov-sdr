@@ -19,6 +19,9 @@ ARQ = {
     'his': ['ID contrato (API)', 'UG contrato', 'Nº contrato', 'Tipo do termo', 'Nº do termo', 'Data assinatura', 'Fim vigência', 'Valor global (novo)', 'Observação'],
     'res': ['ID contrato (API)', 'UG contrato', 'Nº contrato', 'Função', 'Nome', 'Portaria', 'Situação'],
     'arq': ['ID contrato (API)', 'UG contrato', 'Nº contrato', 'Tipo', 'Descrição', 'Link PDF', 'Link SEI', 'Origem'],
+    'itn': ['ID contrato (API)', 'UG contrato', 'Nº contrato', 'Item / posto', 'Tipo', 'Quantidade', 'Valor unitário', 'Valor total', 'Nº item da compra'],
+    'cro': ['ID contrato (API)', 'UG contrato', 'Nº contrato', 'Mês ref', 'Ano ref', 'Vencimento', 'Valor', 'Tipo'],
+    'pag': ['ID contrato (API)', 'UG contrato', 'Nº contrato', 'Mão de obra exclusiva', 'Total postos (decreto)', 'Total vagas reservadas', 'Percentual reserva vagas', 'Nº contratação', 'Link PNCP'],
 }
 nome = lambda k: os.path.join(OUT, f'contratos_api_{k}.csv')
 
@@ -36,6 +39,21 @@ def get(caminho):
         except Exception:
             time.sleep(3 * (t + 1))
     raise RuntimeError('falhou: ' + url)
+
+
+def pagina(i):
+    """Campos que só aparecem na página de transparência do contrato (postos, mão de obra exclusiva, link do PNCP)."""
+    try:
+        with urllib.request.urlopen(urllib.request.Request(f'{BASE}/transparencia/contratos/{i}', headers={'User-Agent': 'Mozilla/5.0 painel-sdr-mapa'}), timeout=90) as r:
+            h = r.read().decode('utf-8', 'ignore')
+    except Exception:
+        return {}
+    def campo(rot):
+        m = re.search(r'<strong>\s*' + re.escape(rot) + r'\s*</strong>\s*</td>\s*<td>(.*?)</td>', h, re.S)
+        return re.sub(r'\s+', ' ', re.sub(r'<[^>]+>', ' ', m.group(1))).strip() if m else ''
+    pn = re.search(r"https://pncp\.gov\.br/app/contratos/[0-9/]+", h)
+    return {'mo': campo('Mao obra exclusiva'), 'postos': campo('Total postos contrato decreto'), 'vagas': campo('Total vagas reservadas'),
+            'perc': campo('Percentual reserva vagas'), 'ncontr': campo('Numero contratacao'), 'pncp': pn.group(0) if pn else ''}
 
 
 def num(s):
@@ -87,7 +105,9 @@ def main():
 
     def det(c):
         i = c['id']
-        return c, {k: (get(f'/api/contrato/{i}/{k}') or []) for k in ['empenhos', 'faturas', 'historico', 'responsaveis', 'arquivos']}
+        d = {k: (get(f'/api/contrato/{i}/{k}') or []) for k in ['empenhos', 'faturas', 'historico', 'responsaveis', 'arquivos', 'itens', 'cronograma']}
+        d['pagina'] = pagina(i) if c.get('_ativo') else {}
+        return c, d
     with ThreadPoolExecutor(4) as ex:
         D = list(ex.map(det, cs))
     L = {k: [] for k in ARQ}
@@ -109,6 +129,13 @@ def main():
         for a in d['arquivos'] if isinstance(d['arquivos'], list) else []:
             sei = a.get('link_sei') or ''
             L['arq'].append(ch + [a.get('tipo'), (a.get('descricao') or '')[:200], a.get('path_arquivo') or '', '' if sei in ('null', 'None') else sei, a.get('origem') or ''])
+        for x in d['itens'] if isinstance(d['itens'], list) else []:
+            L['itn'].append(ch + [(x.get('descricao_complementar') or x.get('catmatseritem_id') or '')[:200], x.get('tipo_id'), x.get('quantidade'), br(num(x.get('valorunitario'))), br(num(x.get('valortotal'))), x.get('numero_item_compra')])
+        for x in d['cronograma'] if isinstance(d['cronograma'], list) else []:
+            L['cro'].append(ch + [x.get('mesref'), x.get('anoref'), x.get('vencimento'), br(num(x.get('valor'))), x.get('tipo')])
+        pg = d.get('pagina') or {}
+        if pg:
+            L['pag'].append(ch + [pg.get('mo'), pg.get('postos'), pg.get('vagas'), pg.get('perc'), pg.get('ncontr'), pg.get('pncp')])
     for k in ARQ:
         gravar(k, L[k])
     print('Contratos.gov.br: ' + ' · '.join(f'{k} {len(v)}' for k, v in L.items()) + f' · {time.time()-t0:.0f}s', flush=True)

@@ -52,7 +52,7 @@ jobs:
         timeout-minutes: 30
         run: |
           mkdir -p /tmp/ctr_ant
-          for k in ctr emp fat his res arq; do curl -sfL "https://raw.githubusercontent.com/${{ github.repository }}/dados/contratos_api_$k.csv" -o /tmp/ctr_ant/contratos_api_$k.csv || true; done
+          for k in ctr emp fat his res arq itn cro pag; do curl -sfL "https://raw.githubusercontent.com/${{ github.repository }}/dados/contratos_api_$k.csv" -o /tmp/ctr_ant/contratos_api_$k.csv || true; done
           python scripts/contratos_api.py saida
         env:
           CONTRATOS_ANTERIOR: /tmp/ctr_ant
