@@ -15,8 +15,8 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
-      - name: Sondar API Contratos.gov.br (só leitura)
-        run: python scripts/contratos_sondar.py saida
+      - name: Sondar API de ordens bancárias (sta.api.gov.br · só leitura)
+        run: python scripts/sta_sondar.py saida
 
       - name: Publicar na branch "obrasgov-teste"
         run: |
