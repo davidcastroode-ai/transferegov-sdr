@@ -18,6 +18,7 @@ ARQ = {
     'fat': ['ID contrato (API)', 'UG contrato', 'Nº contrato', 'Nº fatura', 'Emissão', 'Vencimento', 'Valor (− glosa)', 'Situação', 'Data liquidação', 'NP / documento SIAFI'],
     'his': ['ID contrato (API)', 'UG contrato', 'Nº contrato', 'Tipo do termo', 'Nº do termo', 'Data assinatura', 'Fim vigência', 'Valor global (novo)', 'Observação'],
     'res': ['ID contrato (API)', 'UG contrato', 'Nº contrato', 'Função', 'Nome', 'Portaria', 'Situação'],
+    'arq': ['ID contrato (API)', 'UG contrato', 'Nº contrato', 'Tipo', 'Descrição', 'Link PDF', 'Link SEI', 'Origem'],
 }
 nome = lambda k: os.path.join(OUT, f'contratos_api_{k}.csv')
 
@@ -62,6 +63,8 @@ def reaproveitar():
     l = list(csv.DictReader(open(p, encoding='utf-8')))
     if not l or l[0].get('Consultado em') != HOJE:
         return False
+    if any(not os.path.exists(os.path.join(ANT, f'contratos_api_{k}.csv')) or os.path.getsize(os.path.join(ANT, f'contratos_api_{k}.csv')) < 10 for k in ARQ):
+        return False   # arquivo novo (ex.: arquivos do contrato) ainda não existe: consulta a API de novo
     for k in ARQ:
         q = os.path.join(ANT, f'contratos_api_{k}.csv')
         if os.path.exists(q):
@@ -84,7 +87,7 @@ def main():
 
     def det(c):
         i = c['id']
-        return c, {k: (get(f'/api/contrato/{i}/{k}') or []) for k in ['empenhos', 'faturas', 'historico', 'responsaveis']}
+        return c, {k: (get(f'/api/contrato/{i}/{k}') or []) for k in ['empenhos', 'faturas', 'historico', 'responsaveis', 'arquivos']}
     with ThreadPoolExecutor(4) as ex:
         D = list(ex.map(det, cs))
     L = {k: [] for k in ARQ}
@@ -103,6 +106,9 @@ def main():
             L['his'].append(ch + [h.get('tipo'), h.get('numero'), h.get('data_assinatura'), h.get('vigencia_fim'), br(num(h.get('novo_valor_global') or h.get('valor_global'))), (h.get('observacao') or '')[:200]])
         for r in d['responsaveis'] if isinstance(d['responsaveis'], list) else []:
             L['res'].append(ch + [r.get('funcao_id'), re.sub(r'^[\d\*\.\-]+\s*-\s*', '', r.get('usuario') or ''), r.get('portaria') or '', r.get('situacao')])
+        for a in d['arquivos'] if isinstance(d['arquivos'], list) else []:
+            sei = a.get('link_sei') or ''
+            L['arq'].append(ch + [a.get('tipo'), (a.get('descricao') or '')[:200], a.get('path_arquivo') or '', '' if sei in ('null', 'None') else sei, a.get('origem') or ''])
     for k in ARQ:
         gravar(k, L[k])
     print('Contratos.gov.br: ' + ' · '.join(f'{k} {len(v)}' for k, v in L.items()) + f' · {time.time()-t0:.0f}s', flush=True)
