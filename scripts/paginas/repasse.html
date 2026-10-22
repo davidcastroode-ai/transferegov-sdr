@@ -142,8 +142,18 @@ function ficha(o){
    <div style="grid-column:span 4"><span>Tesouro (notas de empenho do contrato)</span>${tes}</div>
   </div>
   ${barra(o)}
+  ${fichaOG(o)}
   <div style="margin-top:10px;font-size:12.5px"><b>Objeto:</b> ${esc(o.obj)}</div>
   <div style="margin-top:8px">${o.id?`<a class="lk" href="${linkTG(o)}" target="_blank">Abrir no Transferegov ↗</a>`:''}<button type="button" class="btn" style="margin:0 0 0 8px;padding:5px 14px" data-fichacompleta="${esc(o.n)}">Ficha completa do instrumento ›</button></div></div>`;
+}
+const brISO = s => { const m = String(s||'').match(/^(\d{4})-(\d{2})-(\d{2})/); return m ? `${m[3]}/${m[2]}/${m[1]}` : (s||''); };
+function fichaOG(o){
+  const g = o.og; if(!g) return '';
+  const par = g.pj ? `<div style="grid-column:span 4;background:#fdecea;border-radius:8px;padding:8px 10px"><span>${esc(g.ps||'Paralisação')} desde ${brISO(g.pd)} · justificativa (Obrasgov)</span>${esc(g.pj)}${g.tr ? `<br><small>Possui tratativas: <b>${esc(g.tr)}</b>${g.ft ? ' · fase: '+esc(g.ft) : ''}</small>` : ''}</div>` : '';
+  const ctr = g.cn ? `<div style="grid-column:span 2"><span>Contrato da obra</span>${esc(g.cn)} · ${esc(g.cf||'')}${g.cc ? `<small>CNPJ ${esc(g.cc)}</small>` : ''}</div><div><span>Valor do contrato · fim da vigência</span>${g.cv ? R$(+g.cv) : '—'} · ${brISO(g.cfv)||'—'}</div><div><span>Transparência</span>${g.cl ? `<a class="lk" href="${esc(g.cl)}" target="_blank">Comprasnet ↗</a>` : '—'}</div>` : '';
+  return `<div class="fg" style="margin-top:10px;border-top:1px dashed #c9d3db;padding-top:8px"><div style="grid-column:span 4;font-size:11px;font-weight:700;color:#1f4e79;letter-spacing:.5px">OBRASGOV (complemento · consultado em ${esc(g.dt||'')})</div>
+    <div><span>Situação no Obrasgov</span>${esc(g.s||'—')}</div><div><span>Físico no Obrasgov</span>${g.pf!==undefined && g.pf!=='' ? Math.round(+g.pf)+'%' : '—'}${g.at ? `<small>atualizado em ${brISO(g.at)}</small>` : ''}</div><div><span>ID da obra</span>${esc(g.id)}</div><div></div>
+    ${par}${ctr}</div>`;
 }
 function tabela(id, L, cols, porPag){
   if(!L.length) return '<p class="d">nenhum contrato neste recorte</p>';
@@ -199,7 +209,7 @@ function render(){
    + kpi('cADes','A desembolsar', L.filter(o=>o.aDes>0), fm(aDes), 'parcelas a liberar', 'amar', (a,b)=>b.aDes-a.aDes, cRep);
   document.getElementById('kpAl').innerHTML =
      kpi('aInad','Inadimplentes', inad, n(inad.length), `${tce.length} em TCE`, 'red', null, [['Inadimplente desde',o=>esc(o.inad),'n'],['Desembolsado',o=>fm(o.des),'n']])
-   + kpi('aPar','Obras paralisadas', par, n(par.length), `+ ${n(inac.length)} inacabadas`, 'red', (a,b)=>b.des-a.des, [['Físico × financeiro',barra],['Sem medição',o=>o.dsm?o.dsm+' dias':'—','n'],['Desembolsado',o=>fm(o.des),'n']])
+   + kpi('aPar','Obras paralisadas', par, n(par.length), `+ ${n(inac.length)} inacabadas`, 'red', (a,b)=>b.des-a.des, [['Físico × financeiro',barra],['Motivo (Obrasgov)',o=>o.og&&o.og.pj?`<span style="font-size:11.5px">${esc(o.og.pj.length>110?o.og.pj.slice(0,110)+'…':o.og.pj)}</span><small>${brISO(o.og.pd)}${o.og.tr?' · tratativas: '+esc(o.og.tr):''}</small>`:'—'],['Sem medição',o=>o.dsm?o.dsm+' dias':'—','n'],['Desembolsado',o=>fm(o.des),'n']])
    + kpi('aSem','Sem desembolso há mais de 1 ano', semDes, n(semDes.length), 'contratos em execução', 'amar', (a,b)=>b.aDes-a.aDes, [['Sem desembolso',o=>o.dsd+' dias','n'],['A desembolsar',o=>fm(o.aDes),'n']])
    + kpi('aLim','Sob liminar judicial', lim, n(lim.length), 'situação contratual', 'amar', null, cRep);
   document.getElementById('kpFin').innerHTML =
@@ -212,6 +222,7 @@ function render(){
      at('tV90','Vigência vence em até 90 dias', v90, 'em execução', (a,b)=>a.dv-b.dv, [['Fim da vigência',o=>br(o.fv)+`<small>faltam ${o.dv} dias</small>`,'n'],['A desembolsar',o=>fm(o.aDes),'n']])
    + at('tVenc','Vigência já vencida e ainda em execução', vencida, 'atualizar situação ou prorrogar', (a,b)=>a.dv-b.dv, [['Fim da vigência',o=>br(o.fv)+`<small>vencida há ${-o.dv} dias</small>`,'n']])
    + at('tObra','Obra sem medição há mais de 120 dias', L.filter(o => +o.dsm>120 && o.so!=='Finalizada'), 'Obrasgov', (a,b)=>(+b.dsm)-(+a.dsm), [['Físico × financeiro',barra],['Sem medição',o=>o.dsm+' dias','n']])
+   + at('tOg','Obra paralisada · motivo informado no Obrasgov', L.filter(o => o.og && o.og.pj), 'justificativa e tratativas', (a,b)=>b.des-a.des, [['Motivo',o=>`<span style="font-size:11.5px">${esc(o.og.pj.length>110?o.og.pj.slice(0,110)+'…':o.og.pj)}</span><small>${brISO(o.og.pd)}${o.og.tr?' · tratativas: '+esc(o.og.tr):''}</small>`],['Desembolsado',o=>fm(o.des),'n']])
    + at('tSc','Saldo em conta acima de 50% do desembolsado', semPg, 'recurso liberado e não pago ao fornecedor', (a,b)=>b.sc-a.sc, [['Saldo em conta',o=>fm(o.sc),'n'],['Desembolsado',o=>fm(o.des),'n']])
    + at('tPc','Prestação de contas com prazo vencido', pcV, 'aguardando prestação de contas', (a,b)=>b.dlim-a.dlim, [['Limite',o=>br(o.lim)+`<small>vencido há ${o.dlim} dias</small>`,'n']])
    + at('tRap','RAP que pode ser cancelado', rapParado, TES&&TES.mapa ? 'saldo de RAP sem execução' : 'aguardando o Tesouro', (a,b)=>(b.rs||0)-(a.rs||0), [['RAP a pagar',o=>o.rs===null?'—':fm(o.rs),'n']]);

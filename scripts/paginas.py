@@ -276,6 +276,7 @@ def repasse(pasta, data_carga):
     hoje = datetime.date.today()
     inst = [r for r in ler(pasta, 'instrumentos.csv') if 'REPASSE' in (r.get('modalidade') or '').upper()]
     obra = {o['nr_instrumento']: o for o in ler(pasta, 'painel_obras.csv')}
+    og = {o['nr_instrumento']: o for o in ler(pasta, 'obrasgov_complemento.csv')}   # complemento da API do Obrasgov (obras ativas)
     emp = collections.defaultdict(list)
     for e in ler(pasta, 'empenhos.csv'):
         emp[e['NR_CONVENIO']].append((e.get('NR_EMPENHO', ''), e.get('UG_EMITENTE', '')))
@@ -311,6 +312,12 @@ def repasse(pasta, data_carga):
                  so=o.get('situacao_obra', '') or '(sem obra no Obrasgov)', pf=f(o.get('pct_fisico')), vo=f(o.get('valor_obra')), dsm=o.get('dias_sem_medicao', ''))
         if ativo:
             x['nes'] = [[a, b] for a, b in emp.get(n, []) if a][:15]
+        g = og.get(n)
+        if g:
+            x['og'] = {k: v for k, v in dict(id=g['id_projeto'], s=g['situacao_api'], pf=g['pct_fisico_api'], at=g['atualizacao_fisica'],
+                       ps=g['paralisacao_situacao'], pd=g['paralisacao_data'], pj=g['paralisacao_justificativa'], tr=g['tratativas'], ft=g['fase_tratativas'],
+                       cn=g['contrato_numero'], cf=g['contrato_fornecedor'], cc=g['contrato_cnpj'], cv=g['contrato_valor'], cfv=g['contrato_fim_vigencia'],
+                       cl=g['contrato_link'], dt=g['consultado_em']).items() if v}
         out.append(x)
     # campos repetitivos viram índice de dicionário (a página fica ~3x menor); a página decodifica
     cat = ['ug', 'si', 'sg', 'ano', 'uf', 'mun', 'munN', 'prop', 'nj', 'parl', 'tp', 'lj', 'acao', 'so', 'ultd', 'fv', 'lim', 'inad']

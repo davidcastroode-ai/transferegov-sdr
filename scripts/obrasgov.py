@@ -116,4 +116,11 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    try:
+        main()
+    except Exception as e:
+        # API fora do ar: mantém o arquivo anterior (mesmo de outro dia) para a página não perder o complemento
+        print(f'Obrasgov: falhou ({e}); mantendo o arquivo anterior', flush=True)
+        if ANTERIOR and os.path.exists(ANTERIOR):
+            import shutil; shutil.copy(ANTERIOR, ARQ)
+        sys.exit(0)
