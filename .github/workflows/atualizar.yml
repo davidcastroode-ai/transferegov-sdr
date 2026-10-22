@@ -47,6 +47,16 @@ jobs:
         continue-on-error: true
         run: python scripts/orcamento.py saida
 
+      - name: Contratos.gov.br (API pública · 1x por dia, nas outras rodadas reaproveita)
+        continue-on-error: true
+        timeout-minutes: 30
+        run: |
+          mkdir -p /tmp/ctr_ant
+          for k in ctr emp fat his res; do curl -sfL "https://raw.githubusercontent.com/${{ github.repository }}/dados/contratos_api_$k.csv" -o /tmp/ctr_ant/contratos_api_$k.csv || true; done
+          python scripts/contratos_api.py saida
+        env:
+          CONTRATOS_ANTERIOR: /tmp/ctr_ant
+
       - name: Gerar as páginas do painel (Propostas, Empenho, Programas, Movimentação, Obras, Prestação de contas)
         run: python scripts/paginas.py saida
 
