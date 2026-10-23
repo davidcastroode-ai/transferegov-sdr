@@ -20,24 +20,30 @@ def log(m):
     LOG.append(m)
 
 
-def pedir(url, metodo='GET', limite=None):
-    req = urllib.request.Request(url, headers=UA, method=metodo)
-    with urllib.request.urlopen(req, timeout=180) as r:
-        final = r.geturl()
-        tam = r.headers.get('Content-Length')
-        if metodo == 'HEAD':
-            return r.status, final, tam, None
-        dados = r.read() if limite is None else r.read(limite)
-        return r.status, final, tam, dados
+def pedir(url, metodo='GET', limite=None, tentativas=8):
+    # o Portal responde 202 ("preparando o arquivo") e só depois redireciona para o zip: espera e tenta de novo
+    for t in range(tentativas):
+        req = urllib.request.Request(url, headers=UA, method=metodo)
+        with urllib.request.urlopen(req, timeout=300) as r:
+            final = r.geturl()
+            tam = r.headers.get('Content-Length')
+            if r.status == 202 and t < tentativas - 1:
+                log(f'    202 (preparando) · nova tentativa em 20 s · {url}')
+                time.sleep(20)
+                continue
+            if metodo == 'HEAD':
+                return r.status, final, tam, None
+            dados = r.read() if limite is None else r.read(limite)
+            return r.status, final, tam, dados
 
 
 def existe(url):
     try:
-        st, final, tam, _ = pedir(url, 'HEAD')
+        st, final, tam, _ = pedir(url, 'HEAD', tentativas=1)
         return st == 200, final, tam
     except Exception as e:
         try:  # alguns servidores não aceitam HEAD
-            st, final, tam, d = pedir(url, 'GET', 2048)
+            st, final, tam, d = pedir(url, 'GET', 2048, tentativas=1)
             ok = st == 200 and d[:2] == b'PK'
             return ok, final, tam
         except Exception as e2:
@@ -118,13 +124,17 @@ for base, tipo in BASES.items():
     # 2) primeiro ano disponível (procura de 1995 até 2025)
     primeiro = None
     tent = []
+    modelo = (r.get('amostra') or {}).get('final', '')
+    per_am = amostra_url(base, tipo).rsplit('/', 1)[1]
+    usa_cdn = modelo.endswith('.zip') and per_am in modelo
     for ano in range(1995, 2026):
+        if not usa_cdn and ano < 2026 and len(tent) > 40: break
         cand = [chave(tipo, ano)] if tipo != 'd' else [chave(tipo, ano, 1, d) for d in (2, 3, 4, 5, 6, 7, 8)]
         if tipo == 'm':
             cand = [chave(tipo, ano, m) for m in (1, 6, 12)]
         ok = False
         for c in cand:
-            o, final, tam = existe(BASE + base + '/' + c)
+            o, final, tam = existe(modelo.replace(per_am, c) if usa_cdn else BASE + base + '/' + c)
             if o:
                 ok = True
                 tent.append([c, 'ok', tam])
@@ -136,6 +146,7 @@ for base, tipo in BASES.items():
             break
     r['primeiro_ano'] = primeiro
     r['tentativas'] = tent[-5:]
+    r['modelo_arquivo'] = modelo if usa_cdn else None
     log(f'  primeiro ano com arquivo: {primeiro}')
     res[base] = r
     json.dump(res, open(os.path.join(SAIDA, 'transparencia_sondagem.json'), 'w'), ensure_ascii=False, indent=1)
