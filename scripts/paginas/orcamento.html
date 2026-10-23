@@ -26,7 +26,7 @@
 </style></head><body>
 <div class="wrap">
 <div class="nota" id="nota"></div>
-<section class="card"><div class="filtros" id="filtros"></div><button class="btn" id="limpar">Limpar filtros</button> <button class="btn" id="impPag" type="button" title="Abre a página numa aba própria para imprimir ou salvar em PDF">🖨 Imprimir / PDF</button>
+<section class="card"><div class="filtros" id="filtros"></div><button class="btn" id="limpar">Limpar filtros</button> <button class="btn" id="impPag" type="button" title="Abre a página numa aba própria para salvar em PDF">📄 Extração em PDF</button>
  <label class="esc"><input type="checkbox" id="todas"> mostrar todas as ações do MAPA</label>
  <span id="contagem" style="font-size:13px;color:#66727c;margin-left:12px"></span></section>
 <div id="corpo"></div>
@@ -148,7 +148,7 @@ function fichaOrc(ac){
   const pos = [...new Set(L.map(o => o.po))].sort(), gnds = [...new Set(L.map(o => o.gnd))].sort();
   document.getElementById('fundoF').innerHTML = `<div class="fo"><div class="cab"><small>Ficha do orçamento · ação orçamentária</small><h2>${esc(ac)}</h2>
     ${T.indisp>1?`<span class="pill vm">Bloqueado ${fm(T.indisp)}</span>`:''}<span class="pill">POs ${esc(pos.join(', '))}</span><span class="pill">${esc(gnds.join(' · '))}</span><span class="pill">${n(new Set(L.map(o => o.ptres)).size)} PTRES</span>
-    <div class="acoes"><button type="button" onclick="imprimirFicha(this.closest('.acoes').parentElement.parentElement, 'Ficha da ação')">🖨 Imprimir / PDF</button><button type="button" data-fecha>✕</button></div></div>
+    <div class="acoes"><button type="button" onclick="imprimirFicha(this.closest('.acoes').parentElement.parentElement, 'Ficha da ação')">📄 Extração em PDF</button><button type="button" data-fecha>✕</button></div></div>
     <div class="corpo"><h3>Caminho do dinheiro</h3>
     ${lin('Lei (dotação inicial)', T.ini, '#1f4e79', T.ini)}${lin('Créditos e cortes', T.sup+T.canc, T.sup+T.canc<0?'#c0392b':'#2e8a57', T.ini)}${lin('Dotação atual', T.atu, '#1f4e79', T.ini)}
     ${lin('Bloqueado', T.indisp, '#c0392b', T.atu)}${lin('Provisionado às UGs', T.provRec, '#5b6eae', T.atu)}${T.destConc>1?lin('Destaque concedido (TED)', T.destConc, '#8e44ad', T.atu):''}
@@ -170,7 +170,7 @@ document.addEventListener('click', e => {
 document.getElementById('impPag').onclick = () => {
   const c = document.querySelector('.wrap').cloneNode(true); c.id = 'impressao';
   const filtros = FIL.filter(([k]) => _selArr(k)).map(([k, nome]) => '<b>'+esc(nome)+':</b> '+esc(SEL[k].map(v => _rotF(k, v)).join(', '))).join(' · ');
-  const card = c.querySelector('#filtros'); if(card) card.closest('section').outerHTML = `<section class="card" style="font-size:13px"><b>Orçamento por ações · filtros:</b> ${filtros || 'nenhum (todas as ações da SDR)'} · impresso em ${new Date().toLocaleString('pt-BR')}</section>`;
+  const card = c.querySelector('#filtros'); if(card) card.closest('section').outerHTML = `<section class="card" style="font-size:13px"><b>Orçamento por ações · filtros:</b> ${filtros || 'nenhum (todas as ações da SDR)'} · extraído em ${new Date().toLocaleString('pt-BR')}</section>`;
   c.querySelectorAll('button,input,.fpop').forEach(x => x.remove());
   imprimirFicha(c, 'Orçamento por ações', true);
 };
