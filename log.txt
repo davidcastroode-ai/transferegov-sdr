@@ -1,0 +1,45 @@
+12:02:06  == despesas
+12:02:07    amostra https://portaldatransparencia.gov.br/download-de-dados/despesas/20250115 -> 200 https://dadosabertos-download.cgu.gov.br/PortalDaTransparencia/saida/despesas/20250115_Despesas.zip 5601661 bytes
+12:02:07    20250115_Despesas_Empenho.csv: 4220 linhas · SDR 0 · MAPA 26 · 63 colunas
+12:02:07    20250115_Despesas_ItemEmpenho.csv: 5710 linhas · SDR 0 · MAPA 0 · 18 colunas
+12:02:07    20250115_Despesas_ItemEmpenhoHistorico.csv: 7231 linhas · SDR 0 · MAPA 0 · 8 colunas
+12:02:07    20250115_Despesas_Liquidacao.csv: 13884 linhas · SDR 0 · MAPA 183 · 28 colunas
+12:02:07    20250115_Despesas_Liquidacao_EmpenhosImpactados.csv: 16178 linhas · SDR 0 · MAPA 0 · 8 colunas
+12:02:08    20250115_Despesas_Pagamento.csv: 30798 linhas · SDR 5 · MAPA 365 · 34 colunas
+12:02:08    20250115_Despesas_Pagamento_EmpenhosImpactados.csv: 31451 linhas · SDR 0 · MAPA 0 · 8 colunas
+12:02:08    20250115_Despesas_Pagamento_FavorecidosFinais.csv: 5668 linhas · SDR 0 · MAPA 0 · 6 colunas
+12:02:08    20250115_Despesas_Pagamento_ListaBancos.csv: 0 linhas · SDR 0 · MAPA 0 · 7 colunas
+12:02:08    20250115_Despesas_Pagamento_ListaFaturas.csv: 1413 linhas · SDR 0 · MAPA 0 · 9 colunas
+12:02:08    20250115_Despesas_Pagamento_ListaPrecatorios.csv: 0 linhas · SDR 0 · MAPA 0 · 5 colunas
+12:02:39    primeiro ano com arquivo: None
+12:02:39  == despesas-execucao
+12:02:40    amostra ERRO HTTP Error 405: Not Allowed
+12:03:51    primeiro ano com arquivo: None
+12:03:51  == orcamento-despesa
+12:03:51    amostra ERRO HTTP Error 405: Not Allowed
+12:04:14    primeiro ano com arquivo: None
+12:04:14  == compras
+12:04:15    amostra ERRO HTTP Error 405: Not Allowed
+12:05:20    primeiro ano com arquivo: None
+12:05:20  == transferencias
+12:05:20    amostra ERRO HTTP Error 405: Not Allowed
+12:05:22    primeiro ano com arquivo: None
+12:05:22  == despesas-favorecidos
+12:05:22      202 (preparando) · nova tentativa em 20 s · https://portaldatransparencia.gov.br/download-de-dados/despesas-favorecidos/202501
+12:05:42      202 (preparando) · nova tentativa em 20 s · https://portaldatransparencia.gov.br/download-de-dados/despesas-favorecidos/202501
+12:06:02      202 (preparando) · nova tentativa em 20 s · https://portaldatransparencia.gov.br/download-de-dados/despesas-favorecidos/202501
+12:06:23      202 (preparando) · nova tentativa em 20 s · https://portaldatransparencia.gov.br/download-de-dados/despesas-favorecidos/202501
+12:06:43      202 (preparando) · nova tentativa em 20 s · https://portaldatransparencia.gov.br/download-de-dados/despesas-favorecidos/202501
+12:07:03      202 (preparando) · nova tentativa em 20 s · https://portaldatransparencia.gov.br/download-de-dados/despesas-favorecidos/202501
+12:07:23      202 (preparando) · nova tentativa em 20 s · https://portaldatransparencia.gov.br/download-de-dados/despesas-favorecidos/202501
+12:07:43    amostra https://portaldatransparencia.gov.br/download-de-dados/despesas-favorecidos/202501 -> 202 https://portaldatransparencia.gov.br/download-de-dados/despesas-favorecidos/202501 0 bytes
+12:07:43    primeiro ano com arquivo: None
+12:07:43  == convenios
+12:07:43      202 (preparando) · nova tentativa em 20 s · https://portaldatransparencia.gov.br/download-de-dados/convenios/20250115
+12:08:03      202 (preparando) · nova tentativa em 20 s · https://portaldatransparencia.gov.br/download-de-dados/convenios/20250115
+12:08:24      202 (preparando) · nova tentativa em 20 s · https://portaldatransparencia.gov.br/download-de-dados/convenios/20250115
+12:08:44      202 (preparando) · nova tentativa em 20 s · https://portaldatransparencia.gov.br/download-de-dados/convenios/20250115
+12:09:04      202 (preparando) · nova tentativa em 20 s · https://portaldatransparencia.gov.br/download-de-dados/convenios/20250115
+12:09:24      202 (preparando) · nova tentativa em 20 s · https://portaldatransparencia.gov.br/download-de-dados/convenios/20250115
+12:09:45    amostra ERRO HTTP Error 405: Not Allowed
+12:11:42    primeiro ano com arquivo: None

@@ -1,0 +1,639 @@
+{
+ "despesas": {
+  "tipo": "diário",
+  "amostra": {
+   "url": "https://portaldatransparencia.gov.br/download-de-dados/despesas/20250115",
+   "final": "https://dadosabertos-download.cgu.gov.br/PortalDaTransparencia/saida/despesas/20250115_Despesas.zip",
+   "status": 200,
+   "bytes": 5601661
+  },
+  "arquivos": [
+   {
+    "arquivo": "20250115_Despesas_Empenho.csv",
+    "colunas": [
+     "Id Empenho",
+     "Código Empenho",
+     "Código Empenho Resumido",
+     "Data Emissão",
+     "Código Tipo Documento",
+     "Tipo Documento",
+     "Tipo Empenho",
+     "Espécie Empenho",
+     "Código Órgão Superior",
+     "Órgão Superior",
+     "Código Órgão",
+     "Órgão",
+     "Código Unidade Gestora",
+     "Unidade Gestora",
+     "Código Gestão",
+     "Gestão",
+     "Código Favorecido",
+     "Favorecido",
+     "Observação",
+     "Código Esfera Orçamentária",
+     "Esfera Orçamentária",
+     "Código Tipo Crédito",
+     "Tipo Crédito",
+     "Código Grupo Fonte Recurso",
+     "Grupo Fonte Recurso",
+     "Código Fonte Recurso",
+     "Fonte Recurso",
+     "Código Unidade Orçamentária",
+     "Unidade Orçamentária",
+     "Código Função",
+     "Função",
+     "Código SubFunção",
+     "SubFunção",
+     "Código Programa",
+     "Programa",
+     "Código Ação",
+     "Ação",
+     "Linguagem Cidadã",
+     "Código Subtítulo (Localizador)",
+     "Subtítulo (Localizador)",
+     "Código Plano Orçamentário",
+     "Plano Orçamentário",
+     "Código Programa Governo",
+     "Nome Programa Governo",
+     "Autor Emenda",
+     "Código Categoria de Despesa",
+     "Categoria de Despesa",
+     "Código Grupo de Despesa",
+     "Grupo de Despesa",
+     "Código Modalidade de Aplicação",
+     "Modalidade de Aplicação",
+     "Código Elemento de Despesa",
+     "Elemento de Despesa",
+     "Processo",
+     "Modalidade de Licitação",
+     "Inciso",
+     "Amparo",
+     "Referência de Dispensa ou Inexigibilidade",
+     "Código Convênio",
+     "Contrato de Repasse / Termo de Parceria / Outros",
+     "Valor Original do Empenho",
+     "Valor do Empenho Convertido pra R$",
+     "Valor Utilizado na Conversão"
+    ],
+    "linhas": 4220,
+    "linhas_ugs_sdr": 0,
+    "linhas_orgao_mapa_22000": 26,
+    "coluna_ug": "Código Unidade Gestora",
+    "exemplos_sdr": []
+   },
+   {
+    "arquivo": "20250115_Despesas_ItemEmpenho.csv",
+    "colunas": [
+     "Id Empenho",
+     "Código Empenho",
+     "Código Categoria de Despesa",
+     "Categoria de Despesa",
+     "Código Grupo de Despesa",
+     "Grupo de Despesa",
+     "Código Modalidade de Aplicação",
+     "Modalidade de Aplicação",
+     "Código Elemento de Despesa",
+     "Elemento de Despesa",
+     "Código SubElemento de Despesa",
+     "SubElemento de Despesa",
+     "Descrição",
+     "Quantidade",
+     "Valor Unitário",
+     "Valor Total",
+     "Sequencial",
+     "Valor Atual"
+    ],
+    "linhas": 5710,
+    "linhas_ugs_sdr": 0,
+    "linhas_orgao_mapa_22000": 0,
+    "coluna_ug": null,
+    "exemplos_sdr": []
+   },
+   {
+    "arquivo": "20250115_Despesas_ItemEmpenhoHistorico.csv",
+    "colunas": [
+     "Id Empenho",
+     "Código Empenho",
+     "Sequencial",
+     "Tipo Operação",
+     "Data Operação",
+     "Quantidade Item",
+     "Valor Unitário Item",
+     "Valor Total Item"
+    ],
+    "linhas": 7231,
+    "linhas_ugs_sdr": 0,
+    "linhas_orgao_mapa_22000": 0,
+    "coluna_ug": null,
+    "exemplos_sdr": []
+   },
+   {
+    "arquivo": "20250115_Despesas_Liquidacao.csv",
+    "colunas": [
+     "Código Liquidação",
+     "Código Liquidação Resumido",
+     "Data Emissão",
+     "Código Tipo Documento",
+     "Tipo Documento",
+     "Código Órgão Superior",
+     "Órgão Superior",
+     "Código Órgão",
+     "Órgão",
+     "Código Unidade Gestora",
+     "Unidade Gestora",
+     "Código Gestão",
+     "Gestão",
+     "Código Favorecido",
+     "Favorecido",
+     "Observação",
+     "Código Categoria de Despesa",
+     "Categoria de Despesa",
+     "Código Grupo de Despesa",
+     "Grupo de Despesa",
+     "Código Modalidade de Aplicação",
+     "Modalidade de Aplicação",
+     "Código Elemento de Despesa",
+     "Elemento de Despesa",
+     "Código Plano Orçamentário",
+     "Plano Orçamentário",
+     "Código Programa Governo",
+     "Nome Programa Governo"
+    ],
+    "linhas": 13884,
+    "linhas_ugs_sdr": 0,
+    "linhas_orgao_mapa_22000": 183,
+    "coluna_ug": "Código Unidade Gestora",
+    "exemplos_sdr": []
+   },
+   {
+    "arquivo": "20250115_Despesas_Liquidacao_EmpenhosImpactados.csv",
+    "colunas": [
+     "Código Liquidação",
+     "Código Empenho",
+     "Código Natureza Despesa Completa",
+     "Subitem",
+     "Valor Liquidado (R$)",
+     "Valor Restos a Pagar Inscritos (R$)",
+     "Valor Restos a Pagar Cancelado (R$)",
+     "Valor Restos a Pagar Pagos (R$)"
+    ],
+    "linhas": 16178,
+    "linhas_ugs_sdr": 0,
+    "linhas_orgao_mapa_22000": 0,
+    "coluna_ug": null,
+    "exemplos_sdr": []
+   },
+   {
+    "arquivo": "20250115_Despesas_Pagamento.csv",
+    "colunas": [
+     "Código Pagamento",
+     "Código Pagamento Resumido",
+     "Data Emissão",
+     "Código Tipo Documento",
+     "Tipo Documento",
+     "Tipo OB",
+     "Extraorçamentário",
+     "Código Órgão Superior",
+     "Órgão Superior",
+     "Código Órgão",
+     "Órgão",
+     "Código Unidade Gestora",
+     "Unidade Gestora",
+     "Código Gestão",
+     "Gestão",
+     "Código Favorecido",
+     "Favorecido",
+     "Observação",
+     "Processo",
+     "Código Categoria de Despesa",
+     "Categoria de Despesa",
+     "Código Grupo de Despesa",
+     "Grupo de Despesa",
+     "Código Modalidade de Aplicação",
+     "Modalidade de Aplicação",
+     "Código Elemento de Despesa",
+     "Elemento de Despesa",
+     "Código Plano Orçamentário",
+     "Plano Orçamentário",
+     "Código Programa Governo",
+     "Nome Programa Governo",
+     "Valor Original do Pagamento",
+     "Valor do Pagamento Convertido pra R$",
+     "Valor Utilizado na Conversão"
+    ],
+    "linhas": 30798,
+    "linhas_ugs_sdr": 5,
+    "linhas_orgao_mapa_22000": 365,
+    "coluna_ug": "Código Unidade Gestora",
+    "exemplos_sdr": [
+     {
+      "Código Pagamento": "130141000012025DF800004",
+      "Código Pagamento Resumido": "2025DF800004",
+      "Data Emissão": "15/01/2025",
+      "Código Tipo Documento": "DF",
+      "Tipo Documento": "Documento de Arrecadação Federal",
+      "Tipo OB": "Não se aplica",
+      "Extraorçamentário": "NÃO",
+      "Código Órgão Superior": "22000",
+      "Órgão Superior": "Ministério da Agricultura e Pecuária",
+      "Código Órgão": "22000",
+      "Órgão": "Ministério da Agricultura e Pecuária - Unid",
+      "Código Unidade Gestora": "130141",
+      "Unidade Gestora": "SUBSECRETARIA DE ORCAMENTO,PLANEJAMENTO E ADM",
+      "Código Gestão": "00001",
+      "Gestão": "TESOURO NACIONAL",
+      "Código Favorecido": "11162311000173",
+      "Favorecido": "R7 FACILITIES - MANUTENCAO E SERVICOS LTDA",
+      "Observação": "INSS ENF 4069 - C. N 76/2023 - SERV NAT CONTINUADA SUPERVISOR ADM - N I E SUPERVISOR ADM TEC ESPECIALIZADO - N II, CONF PROCESSO 21000.069531/2024-72. NOVEMBRO/2024. ATESTO DE SERVICO CGPI-SPOA (39321881).",
+      "Processo": "21000011993202409",
+      "Código Categoria de Despesa": "3",
+      "Categoria de Despesa": "DESPESAS CORRENTES",
+      "Código Grupo de Despesa": "3",
+      "Grupo de Despesa": "Outras Despesas Correntes",
+      "Código Modalidade de Aplicação": "90",
+      "Modalidade de Aplicação": "Aplicações Diretas",
+      "Código Elemento de Despesa": "37",
+      "Elemento de Despesa": "Locação de Mão-de-Obra",
+      "Código Plano Orçamentário": "0000",
+      "Plano Orçamentário": "FOMENTO AO SETOR AGROPECUARIO - DESPESAS DIVERSAS",
+      "Código Programa Governo": "00",
+      "Nome Programa Governo": "Sem informação",
+      "Valor Original do Pagamento": "16715,35",
+      "Valor do Pagamento Convertido pra R$": "16715,35",
+      "Valor Utilizado na Conversão": "1,0000"
+     },
+     {
+      "Código Pagamento": "130141000012025OB000055",
+      "Código Pagamento Resumido": "2025OB000055",
+      "Data Emissão": "15/01/2025",
+      "Código Tipo Documento": "OB",
+      "Tipo Documento": "Ordem Bancária",
+      "Tipo OB": "OBC/OBB PARA TERCEIROS EM OUTROS BANCOS",
+      "Extraorçamentário": "NÃO",
+      "Código Órgão Superior": "22000",
+      "Órgão Superior": "Ministério da Agricultura e Pecuária",
+      "Código Órgão": "22000",
+      "Órgão": "Ministério da Agricultura e Pecuária - Unid",
+      "Código Unidade Gestora": "130141",
+      "Unidade Gestora": "SUBSECRETARIA DE ORCAMENTO,PLANEJAMENTO E ADM",
+      "Código Gestão": "00001",
+      "Gestão": "TESOURO NACIONAL",
+      "Código Favorecido": "11162311000173",
+      "Favorecido": "R7 FACILITIES - MANUTENCAO E SERVICOS LTDA",
+      "Observação": "PGTO DO INSTR. DE COBRANCA NUM.: 4129A, CONTRATO N: 00076/2023 - 11.162.311/0001-73 - R7 FACILITIES - MANUTENCAO E SERVICOS LTDA, PROC. NUM.: 21000.040048/2023-25, DO FORNECIMENTO/SERVICO PRESTADO(S) AO MES: 12/2024.",
+      "Processo": "21000.040048/2023-25",
+      "Código Categoria de Despesa": "3",
+      "Categoria de Despesa": "DESPESAS CORRENTES",
+      "Código Grupo de Despesa": "3",
+      "Grupo de Despesa": "Outras Despesas Correntes",
+      "Código Modalidade de Aplicação": "90",
+      "Modalidade de Aplicação": "Aplicações Diretas",
+      "Código Elemento de Despesa": "39",
+      "Elemento de Despesa": "Outros Serviços de Terceiros - Pessoa Juríd",
+      "Código Plano Orçamentário": "0000",
+      "Plano Orçamentário": "FOMENTO AO SETOR AGROPECUARIO - DESPESAS DIVERSAS",
+      "Código Programa Governo": "00",
+      "Nome Programa Governo": "Sem informação",
+      "Valor Original do Pagamento": "26061,15",
+      "Valor do Pagamento Convertido pra R$": "26061,15",
+      "Valor Utilizado na Conversão": "1,0000"
+     },
+     {
+      "Código Pagamento": "130141000012025DF800003",
+      "Código Pagamento Resumido": "2025DF800003",
+      "Data Emissão": "15/01/2025",
+      "Código Tipo Documento": "DF",
+      "Tipo Documento": "Documento de Arrecadação Federal",
+      "Tipo OB": "Não se aplica",
+      "Extraorçamentário": "NÃO",
+      "Código Órgão Superior": "22000",
+      "Órgão Superior": "Ministério da Agricultura e Pecuária",
+      "Código Órgão": "22000",
+      "Órgão": "Ministério da Agricultura e Pecuária - Unid",
+      "Código Unidade Gestora": "130141",
+      "Unidade Gestora": "SUBSECRETARIA DE ORCAMENTO,PLANEJAMENTO E ADM",
+      "Código Gestão": "00001",
+      "Gestão": "TESOURO NACIONAL",
+      "Código Favorecido": "11162311000173",
+      "Favorecido": "R7 FACILITIES - MANUTENCAO E SERVICOS LTDA",
+      "Observação": "RECOLHIMENTO INSS ENF 4067 CONTRATO N 29/2023 - SERVICO DE NATUREZA CONTINUADA DE ENGENHEIRO CIVIL, CONFORME PROCESSO . COMPETENCIA NOVEMBRO/2024. NOTA FISCAL N 4067 (39321264)",
+      "Processo": "21000066733202462",
+      "Código Categoria de Despesa": "3",
+      "Categoria de Despesa": "DESPESAS CORRENTES",
+      "Código Grupo de Despesa": "3",
+      "Grupo de Despesa": "Outras Despesas Correntes",
+      "Código Modalidade de Aplicação": "90",
+      "Modalidade de Aplicação": "Aplicações Diretas",
+      "Código Elemento de Despesa": "37",
+      "Elemento de Despesa": "Locação de Mão-de-Obra",
+      "Código Plano Orçamentário": "0000",
+      "Plano Orçamentário": "FOMENTO AO SETOR AGROPECUARIO - DESPESAS DIVERSAS",
+      "Código Programa Governo": "00",
+      "Nome Programa Governo": "Sem informação",
+      "Valor Original do Pagamento": "5687,00",
+      "Valor do Pagamento Convertido pra R$": "5687,00",
+      "Valor Utilizado na Conversão": "1,0000"
+     }
+    ]
+   },
+   {
+    "arquivo": "20250115_Despesas_Pagamento_EmpenhosImpactados.csv",
+    "colunas": [
+     "Código Pagamento",
+     "Código Empenho",
+     "Código Natureza Despesa Completa",
+     "Subitem",
+     "Valor Pago (R$)",
+     "Valor Restos a Pagar Inscritos (R$)",
+     "Valor Restos a Pagar Cancelado (R$)",
+     "Valor Restos a Pagar Pagos (R$)"
+    ],
+    "linhas": 31451,
+    "linhas_ugs_sdr": 0,
+    "linhas_orgao_mapa_22000": 0,
+    "coluna_ug": null,
+    "exemplos_sdr": []
+   },
+   {
+    "arquivo": "20250115_Despesas_Pagamento_FavorecidosFinais.csv",
+    "colunas": [
+     "Código Pagamento",
+     "Código Lista",
+     "Data Emissão",
+     "Código Favorecido",
+     "Favorecido",
+     "Valor do Pagamento em R$"
+    ],
+    "linhas": 5668,
+    "linhas_ugs_sdr": 0,
+    "linhas_orgao_mapa_22000": 0,
+    "coluna_ug": null,
+    "exemplos_sdr": []
+   },
+   {
+    "arquivo": "20250115_Despesas_Pagamento_ListaBancos.csv",
+    "colunas": [
+     "Código Pagamento",
+     "Código Lista",
+     "Data Emissão",
+     "Código Banco",
+     "Nome Banco",
+     "Agência",
+     "Valor em R$"
+    ],
+    "linhas": 0,
+    "linhas_ugs_sdr": 0,
+    "linhas_orgao_mapa_22000": 0,
+    "coluna_ug": null,
+    "exemplos_sdr": []
+   },
+   {
+    "arquivo": "20250115_Despesas_Pagamento_ListaFaturas.csv",
+    "colunas": [
+     "Código Pagamento",
+     "Código Lista",
+     "Data Emissão",
+     "Código Sequência",
+     "Valor Lançamento em R$",
+     "Valor Desconto em R$",
+     "Valor Juros em R$",
+     "Valor Dedução em R$",
+     "Valor Acréscimo em R$"
+    ],
+    "linhas": 1413,
+    "linhas_ugs_sdr": 0,
+    "linhas_orgao_mapa_22000": 0,
+    "coluna_ug": null,
+    "exemplos_sdr": []
+   },
+   {
+    "arquivo": "20250115_Despesas_Pagamento_ListaPrecatorios.csv",
+    "colunas": [
+     "Código Pagamento",
+     "Código Lista",
+     "Data Emissão",
+     "Número Parcela",
+     "Valor Precatorio em R$"
+    ],
+    "linhas": 0,
+    "linhas_ugs_sdr": 0,
+    "linhas_orgao_mapa_22000": 0,
+    "coluna_ug": null,
+    "exemplos_sdr": []
+   }
+  ],
+  "primeiro_ano": null,
+  "tentativas": [
+   [
+    "2021",
+    "não"
+   ],
+   [
+    "2022",
+    "não"
+   ],
+   [
+    "2023",
+    "não"
+   ],
+   [
+    "2024",
+    "não"
+   ],
+   [
+    "2025",
+    "não"
+   ]
+  ],
+  "modelo_arquivo": "https://dadosabertos-download.cgu.gov.br/PortalDaTransparencia/saida/despesas/20250115_Despesas.zip"
+ },
+ "despesas-execucao": {
+  "tipo": "mensal",
+  "amostra": {
+   "url": "https://portaldatransparencia.gov.br/download-de-dados/despesas-execucao/202501",
+   "erro": "HTTP Error 405: Not Allowed"
+  },
+  "primeiro_ano": null,
+  "tentativas": [
+   [
+    "2021",
+    "não"
+   ],
+   [
+    "2022",
+    "não"
+   ],
+   [
+    "2023",
+    "não"
+   ],
+   [
+    "2024",
+    "não"
+   ],
+   [
+    "2025",
+    "não"
+   ]
+  ],
+  "modelo_arquivo": null
+ },
+ "orcamento-despesa": {
+  "tipo": "anual",
+  "amostra": {
+   "url": "https://portaldatransparencia.gov.br/download-de-dados/orcamento-despesa/2025",
+   "erro": "HTTP Error 405: Not Allowed"
+  },
+  "primeiro_ano": null,
+  "tentativas": [
+   [
+    "2021",
+    "não"
+   ],
+   [
+    "2022",
+    "não"
+   ],
+   [
+    "2023",
+    "não"
+   ],
+   [
+    "2024",
+    "não"
+   ],
+   [
+    "2025",
+    "não"
+   ]
+  ],
+  "modelo_arquivo": null
+ },
+ "compras": {
+  "tipo": "mensal",
+  "amostra": {
+   "url": "https://portaldatransparencia.gov.br/download-de-dados/compras/202501",
+   "erro": "HTTP Error 405: Not Allowed"
+  },
+  "primeiro_ano": null,
+  "tentativas": [
+   [
+    "2021",
+    "não"
+   ],
+   [
+    "2022",
+    "não"
+   ],
+   [
+    "2023",
+    "não"
+   ],
+   [
+    "2024",
+    "não"
+   ],
+   [
+    "2025",
+    "não"
+   ]
+  ],
+  "modelo_arquivo": null
+ },
+ "transferencias": {
+  "tipo": "mensal",
+  "amostra": {
+   "url": "https://portaldatransparencia.gov.br/download-de-dados/transferencias/202501",
+   "erro": "HTTP Error 405: Not Allowed"
+  },
+  "primeiro_ano": null,
+  "tentativas": [
+   [
+    "2021",
+    "não"
+   ],
+   [
+    "2022",
+    "não"
+   ],
+   [
+    "2023",
+    "não"
+   ],
+   [
+    "2024",
+    "não"
+   ],
+   [
+    "2025",
+    "não"
+   ]
+  ],
+  "modelo_arquivo": null
+ },
+ "despesas-favorecidos": {
+  "tipo": "mensal",
+  "amostra": {
+   "url": "https://portaldatransparencia.gov.br/download-de-dados/despesas-favorecidos/202501",
+   "final": "https://portaldatransparencia.gov.br/download-de-dados/despesas-favorecidos/202501",
+   "status": 202,
+   "bytes": 0,
+   "inicio": ""
+  },
+  "primeiro_ano": null,
+  "tentativas": [
+   [
+    "2021",
+    "não"
+   ],
+   [
+    "2022",
+    "não"
+   ],
+   [
+    "2023",
+    "não"
+   ],
+   [
+    "2024",
+    "não"
+   ],
+   [
+    "2025",
+    "não"
+   ]
+  ],
+  "modelo_arquivo": null
+ },
+ "convenios": {
+  "tipo": "diário",
+  "amostra": {
+   "url": "https://portaldatransparencia.gov.br/download-de-dados/convenios/20250115",
+   "erro": "HTTP Error 405: Not Allowed"
+  },
+  "primeiro_ano": null,
+  "tentativas": [
+   [
+    "2021",
+    "não"
+   ],
+   [
+    "2022",
+    "não"
+   ],
+   [
+    "2023",
+    "não"
+   ],
+   [
+    "2024",
+    "não"
+   ],
+   [
+    "2025",
+    "não"
+   ]
+  ],
+  "modelo_arquivo": null
+ }
+}
