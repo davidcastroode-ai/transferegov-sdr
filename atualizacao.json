@@ -1,0 +1,436 @@
+{
+ "gerado_em": "24/10/2026 09:12",
+ "ugs": [
+  "130010",
+  "130141",
+  "135098",
+  "420013",
+  "130255"
+ ],
+ "cabecalhos": {
+  "convenio": [
+   "NR_CONVENIO",
+   "ID_PROPOSTA",
+   "DIA",
+   "MES",
+   "ANO",
+   "DIA_ASSIN_CONV",
+   "SIT_CONVENIO",
+   "SUBSITUACAO_CONV",
+   "SITUACAO_PUBLICACAO",
+   "INSTRUMENTO_ATIVO",
+   "IND_OPERA_OBTV",
+   "NR_PROCESSO",
+   "UG_EMITENTE",
+   "DIA_PUBL_CONV",
+   "DIA_INIC_VIGENC_CONV",
+   "DIA_FIM_VIGENC_CONV",
+   "DIA_FIM_VIGENC_ORIGINAL_CONV",
+   "DIAS_PREST_CONTAS",
+   "DIA_LIMITE_PREST_CONTAS",
+   "DATA_SUSPENSIVA",
+   "DATA_RETIRADA_SUSPENSIVA",
+   "DIAS_CLAUSULA_SUSPENSIVA",
+   "SITUACAO_CONTRATACAO",
+   "IND_ASSINADO",
+   "MOTIVO_SUSPENSAO",
+   "IND_FOTO",
+   "QTDE_CONVENIOS",
+   "QTD_TA",
+   "QTD_PRORROGA",
+   "VL_GLOBAL_CONV",
+   "VL_REPASSE_CONV",
+   "VL_CONTRAPARTIDA_CONV",
+   "VL_EMPENHADO_CONV",
+   "VL_DESEMBOLSADO_CONV",
+   "VL_SALDO_REMAN_TESOURO",
+   "VL_SALDO_REMAN_CONVENENTE",
+   "VL_RENDIMENTO_APLICACAO",
+   "VL_INGRESSO_CONTRAPARTIDA",
+   "VL_SALDO_CONTA",
+   "VALOR_GLOBAL_ORIGINAL_CONV"
+  ],
+  "programa_proposta": [
+   "ID_PROGRAMA",
+   "ID_PROPOSTA"
+  ],
+  "programa": [
+   "COD_ORGAO_SUP_PROGRAMA",
+   "DESC_ORGAO_SUP_PROGRAMA",
+   "ID_PROGRAMA",
+   "COD_PROGRAMA",
+   "NOME_PROGRAMA",
+   "SIT_PROGRAMA",
+   "DATA_DISPONIBILIZACAO",
+   "ANO_DISPONIBILIZACAO",
+   "DT_PROG_INI_RECEB_PROP",
+   "DT_PROG_FIM_RECEB_PROP",
+   "DT_PROG_INI_EMENDA_PAR",
+   "DT_PROG_FIM_EMENDA_PAR",
+   "DT_PROG_INI_BENEF_ESP",
+   "DT_PROG_FIM_BENEF_ESP",
+   "MODALIDADE_PROGRAMA",
+   "NATUREZA_JURIDICA_PROGRAMA",
+   "UF_PROGRAMA",
+   "ACAO_ORCAMENTARIA",
+   "NOME_SUBTIPO_PROGRAMA",
+   "DESCRICAO_SUBTIPO_PROGRAMA"
+  ],
+  "proposta": [
+   "ID_PROPOSTA",
+   "UF_PROPONENTE",
+   "MUNIC_PROPONENTE",
+   "COD_MUNIC_IBGE",
+   "COD_ORGAO_SUP",
+   "DESC_ORGAO_SUP",
+   "NATUREZA_JURIDICA",
+   "NR_PROPOSTA",
+   "DIA_PROP",
+   "MES_PROP",
+   "ANO_PROP",
+   "DIA_PROPOSTA",
+   "COD_ORGAO",
+   "DESC_ORGAO",
+   "MODALIDADE",
+   "IDENTIF_PROPONENTE",
+   "NM_PROPONENTE",
+   "CEP_PROPONENTE",
+   "ENDERECO_PROPONENTE",
+   "BAIRRO_PROPONENTE",
+   "NM_BANCO",
+   "SITUACAO_CONTA",
+   "SITUACAO_PROJETO_BASICO",
+   "SIT_PROPOSTA",
+   "DIA_INIC_VIGENCIA_PROPOSTA",
+   "DIA_FIM_VIGENCIA_PROPOSTA",
+   "OBJETO_PROPOSTA",
+   "ITEM_INVESTIMENTO",
+   "ENVIADA_MANDATARIA",
+   "NOME_SUBTIPO_PROPOSTA",
+   "DESCRICAO_SUBTIPO_PROPOSTA",
+   "VL_GLOBAL_PROP",
+   "VL_REPASSE_PROP",
+   "VL_CONTRAPARTIDA_PROP",
+   "CD_AGENCIA",
+   "CD_CONTA"
+  ],
+  "emenda": [
+   "ID_PROPOSTA",
+   "QUALIF_PROPONENTE",
+   "COD_PROGRAMA_EMENDA",
+   "NR_EMENDA",
+   "NOME_PARLAMENTAR",
+   "BENEFICIARIO_EMENDA",
+   "IND_IMPOSITIVO",
+   "TIPO_PARLAMENTAR",
+   "VALOR_REPASSE_PROPOSTA_EMENDA",
+   "VALOR_REPASSE_EMENDA"
+  ],
+  "empenho": [
+   "ID_EMPENHO",
+   "NR_CONVENIO",
+   "NR_EMPENHO",
+   "TIPO_NOTA",
+   "DESC_TIPO_NOTA",
+   "DATA_EMISSAO",
+   "COD_SITUACAO_EMPENHO",
+   "DESC_SITUACAO_EMPENHO",
+   "UG_EMITENTE",
+   "UG_RESPONSAVEL",
+   "FONTE_RECURSO",
+   "NATUREZA_DESPESA",
+   "PLANO_INTERNO",
+   "PTRES",
+   "VALOR_EMPENHO",
+   "RESULTADO_PRIMARIO",
+   "OBSERVACAO_EMPENHO",
+   "DESCRICAO_EMENDA_SIAFI"
+  ],
+  "desembolso": [
+   "ID_DESEMBOLSO",
+   "NR_CONVENIO",
+   "DT_ULT_DESEMBOLSO",
+   "QTD_DIAS_SEM_DESEMBOLSO",
+   "DATA_DESEMBOLSO",
+   "ANO_DESEMBOLSO",
+   "MES_DESEMBOLSO",
+   "NR_SIAFI",
+   "UG_EMITENTE_DH",
+   "OBSERVACAO_DH",
+   "VL_DESEMBOLSADO"
+  ],
+  "termo_aditivo": [
+   "NR_CONVENIO",
+   "ID_SOLICITACAO",
+   "NUMERO_TA",
+   "TIPO_TA",
+   "VL_GLOBAL_TA",
+   "VL_REPASSE_TA",
+   "VL_CONTRAPARTIDA_TA",
+   "DT_ASSINATURA_TA",
+   "DT_INICIO_TA",
+   "DT_FIM_TA",
+   "JUSTIFICATIVA_TA"
+  ],
+  "prorroga_oficio": [
+   "NR_CONVENIO",
+   "NR_PRORROGA",
+   "DT_INICIO_PRORROGA",
+   "DT_FIM_PRORROGA",
+   "DIAS_PRORROGA",
+   "DT_ASSINATURA_PRORROGA",
+   "SIT_PRORROGA"
+  ],
+  "historico_situacao": [
+   "ID_PROPOSTA",
+   "NR_CONVENIO",
+   "DIA_HISTORICO_SIT",
+   "HISTORICO_SIT",
+   "DIAS_HISTORICO_SIT",
+   "COD_HISTORICO_SIT"
+  ],
+  "pagamento": [
+   "NR_MOV_FIN",
+   "NR_CONVENIO",
+   "IDENTIF_FORNECEDOR",
+   "NOME_FORNECEDOR",
+   "TP_MOV_FINANCEIRA",
+   "DATA_PAG",
+   "NR_DL",
+   "DESC_DL",
+   "VL_PAGO",
+   "ID_DL",
+   "DATA_EMISSAO_DL"
+  ],
+  "cronograma_desembolso": [
+   "ID_PROPOSTA",
+   "NR_CONVENIO",
+   "NR_PARCELA_CRONO_DESEMBOLSO",
+   "MES_CRONO_DESEMBOLSO",
+   "ANO_CRONO_DESEMBOLSO",
+   "TIPO_RESP_CRONO_DESEMBOLSO",
+   "VALOR_PARCELA_CRONO_DESEMBOLSO"
+  ],
+  "solicitacao_ajuste_pt": [
+   "ID_AJUSTE_PT",
+   "ID_PROPOSTA",
+   "NR_AJUSTE_PT",
+   "DATA_SOLICITACAO_AJUSTE_PT",
+   "SITUACAO_SOLICITACAO_AJUSTE_PT"
+  ],
+  "dados_obrasgov_geral": [
+   "ID_PROJETO_INVESTIMENTO",
+   "NR_INSTRUMENTO",
+   "PROGRAMA_GOVERNO",
+   "LINK_TRANSPARENCIA"
+  ],
+  "acomp_obras_contratos_medicoes_modulo_empresas": [
+   "ID_PROPOSTA",
+   "ID_CONTRATO_MEDICAO_ACOMPANHAMENTO_OBRA",
+   "ID_MEDICAO_ACOMPANHAMENTO_OBRA",
+   "DATA_INICIO_OBRA_CONTRATO_ACOMPANHAMENTO_OBRA",
+   "CNPJ_FORNECEDOR_CONTRATO_ACOMPANHAMENTO_OBRA",
+   "NUMERO_MEDICAO_ACOMPANHAMENTO_OBRA",
+   "NR_ULTIMA_MEDICAO_ACOMPANHAMENTO_OBRA",
+   "SITUACAO_MEDICAO_ACOMPANHAMENTO_OBRA",
+   "DATA_INICIO_MEDICAO_OBJETO_ACOMPANHAMENTO_OBRA",
+   "DATA_FIM_MEDICAO_OBJETO_ACOMPANHAMENTO_OBRA",
+   "QTD_DIAS_SEM_MEDICAO_ACOMPANHAMENTO_OBRA"
+  ],
+  "acomp_obras_valores_itens_medicao_modulo_empresas": [
+   "ID_SUBMETA_VRPL",
+   "ID_CONTRATO_MEDICAO_ACOMPANHAMENTO_OBRA",
+   "VALOR_EXECUCAO_FISICA_ACUMULADA_TOTAL_ACOMPANHAMENTO_OBRA",
+   "VALOR_EXECUCAO_FISICA_ACUMULADA_CONCEDENTE_ACOMPANHAMENTO_OBRA",
+   "VALOR_EXECUCAO_FISICA_ACUMULADA_CONVENENTE_ACOMPANHAMENTO_OBRA",
+   "VALOR_EXECUCAO_FISICA_ACUMULADA_EMPRESA_ACOMPANHAMENTO_OBRA"
+  ],
+  "resumo_fisico_financeiro": [
+   "ID_PROPOSTA",
+   "VALOR_TOTAL_RESUMO_FISICO_FINANCEIRO",
+   "VALOR_REALIZADO_RESUMO_FISICO_FINANCEIRO",
+   "PERCENTUAL_EXECUCAO_RESUMO_FISICO_FINANCEIRO"
+  ]
+ },
+ "contagens": {
+  "obras": 3126,
+  "obras_medicoes": 2080,
+  "obras_itens_medicao": 0,
+  "resumo_fisico_financeiro": 2303,
+  "instrumentos": 33817,
+  "propostas": 208985,
+  "empenhos": 47133,
+  "desembolsos": 33366,
+  "aditivos": 49563,
+  "prorrogacoes": 6946,
+  "emendas": 26822,
+  "programas": 635
+ },
+ "data_carga": "23/10/2026 06:47:48",
+ "propostas_por_ano": {
+  "2008": {
+   "total": 2941,
+   "celebradas": 97
+  },
+  "2009": {
+   "total": 12571,
+   "celebradas": 1975
+  },
+  "2010": {
+   "total": 8375,
+   "celebradas": 2505
+  },
+  "2011": {
+   "total": 10953,
+   "celebradas": 1614
+  },
+  "2012": {
+   "total": 3757,
+   "celebradas": 1654
+  },
+  "2013": {
+   "total": 14067,
+   "celebradas": 2562
+  },
+  "2014": {
+   "total": 3544,
+   "celebradas": 1493
+  },
+  "2015": {
+   "total": 6309,
+   "celebradas": 799
+  },
+  "2016": {
+   "total": 6260,
+   "celebradas": 1680
+  },
+  "2017": {
+   "total": 17385,
+   "celebradas": 1929
+  },
+  "2018": {
+   "total": 16482,
+   "celebradas": 2583
+  },
+  "2019": {
+   "total": 21618,
+   "celebradas": 2820
+  },
+  "2020": {
+   "total": 13210,
+   "celebradas": 2106
+  },
+  "2021": {
+   "total": 28205,
+   "celebradas": 2858
+  },
+  "2022": {
+   "total": 12905,
+   "celebradas": 1292
+  },
+  "2023": {
+   "total": 16748,
+   "celebradas": 1157
+  },
+  "2024": {
+   "total": 1825,
+   "celebradas": 903
+  },
+  "2025": {
+   "total": 8153,
+   "celebradas": 1160
+  },
+  "2026": {
+   "total": 3677,
+   "celebradas": 624
+  }
+ },
+ "propostas_csv_desde": 2023,
+ "obras_dias_de_historico": 9,
+ "obras_por_situacao": {
+  "Não iniciada": 872,
+  "Em andamento": 210,
+  "Paralisada": 267,
+  "Inacabada": 829,
+  "Finalizada": 1356
+ },
+ "log": [
+  "12:12:47  baixou siconv_convenio.zip · 17.6 MB · 0.7 s",
+  "12:12:50  baixou siconv_programa_proposta.zip · 6.2 MB · 3.1 s",
+  "12:12:53  baixou siconv_programa.zip · 10.6 MB · 3.3 s",
+  "12:12:55  baixou siconv_proposta.zip · 196.5 MB · 2.3 s",
+  "12:12:58  baixou siconv_emenda.zip · 7.9 MB · 3.0 s",
+  "12:12:59  baixou siconv_empenho.zip · 22.4 MB · 0.5 s",
+  "12:13:02  baixou siconv_desembolso.zip · 16.0 MB · 3.4 s",
+  "12:13:03  baixou siconv_termo_aditivo.zip · 58.3 MB · 1.2 s",
+  "12:13:04  baixou siconv_prorroga_oficio.zip · 1.9 MB · 0.3 s",
+  "12:13:04  baixou data_carga_siconv.zip · 0.0 MB · 0.1 s",
+  "12:13:06  baixou siconv_dados_obrasgov_geral.zip · 0.7 MB · 2.6 s",
+  "12:13:09  baixou siconv_acomp_obras_contratos_medicoes_modulo_empresas.zip · 0.8 MB · 2.4 s",
+  "12:13:12  baixou siconv_acomp_obras_valores_itens_medicao_modulo_empresas.zip · 0.4 MB · 2.7 s",
+  "12:13:12  baixou siconv_resumo_fisico_financeiro.zip · 0.4 MB · 0.3 s",
+  "12:13:13  baixou siconv_historico_situacao.zip · 99.2 MB · 1.2 s",
+  "12:13:17  baixou siconv_pagamento.zip · 355.5 MB · 4.2 s",
+  "12:13:19  baixou siconv_cronograma_desembolso.zip · 18.7 MB · 1.9 s",
+  "12:13:19  baixou siconv_solicitacao_ajuste_pt.zip · 1.8 MB · 0.3 s",
+  "12:13:21  instrumentos da SDR: 33826",
+  "12:13:23  programas da SDR: 635 · propostas no escopo: 244240",
+  "12:13:44  propostas lidas (só concedente 22000): 208985",
+  "12:13:44  gravou instrumentos_outros_orgaos.csv · 9 linhas · 0.0 MB",
+  "12:13:44  instrumentos de outros órgãos retirados: 9 (746866, 713352, 853989, 909538, 853863, 731015, 730873, 710830, 827866) · ficam 33817",
+  "12:13:47  siconv_empenho: 47133 linhas da SDR",
+  "12:13:49  siconv_desembolso: 33366 linhas da SDR",
+  "12:13:52  siconv_termo_aditivo: 49563 linhas da SDR",
+  "12:13:52  siconv_prorroga_oficio: 6946 linhas da SDR",
+  "12:14:10  siconv_historico_situacao: 810655 linhas da SDR",
+  "12:14:38  siconv_pagamento: 137529 linhas da SDR",
+  "12:14:43  siconv_cronograma_desembolso: 76528 linhas da SDR",
+  "12:14:44  siconv_solicitacao_ajuste_pt: 26642 linhas da SDR",
+  "12:14:57  ação orçamentária preenchida pela PTRES das notas: 0 instrumentos",
+  "12:14:59  gravou instrumentos.csv · 33817 linhas · 31.2 MB",
+  "12:14:59  gravou painel_instrumentos.csv · 33817 linhas · 15.4 MB",
+  "12:15:00  gravou planilha_parcerias.csv · 33817 linhas · 23.6 MB",
+  "12:15:04  gravou propostas.csv · 30403 linhas · 20.7 MB",
+  "12:15:04  gravou propostas_por_ano/propostas_2008.csv · 2941 linhas · 2.2 MB",
+  "12:15:04  gravou propostas_por_ano/propostas_2009.csv · 12571 linhas · 8.6 MB",
+  "12:15:04  gravou propostas_por_ano/propostas_2010.csv · 8375 linhas · 5.2 MB",
+  "12:15:05  gravou propostas_por_ano/propostas_2011.csv · 10953 linhas · 6.4 MB",
+  "12:15:05  gravou propostas_por_ano/propostas_2012.csv · 3757 linhas · 2.3 MB",
+  "12:15:05  gravou propostas_por_ano/propostas_2013.csv · 14067 linhas · 8.2 MB",
+  "12:15:05  gravou propostas_por_ano/propostas_2014.csv · 3544 linhas · 2.3 MB",
+  "12:15:05  gravou propostas_por_ano/propostas_2015.csv · 6309 linhas · 3.8 MB",
+  "12:15:05  gravou propostas_por_ano/propostas_2016.csv · 6260 linhas · 3.8 MB",
+  "12:15:05  gravou propostas_por_ano/propostas_2017.csv · 17385 linhas · 10.3 MB",
+  "12:15:05  gravou propostas_por_ano/propostas_2018.csv · 16482 linhas · 9.8 MB",
+  "12:15:06  gravou propostas_por_ano/propostas_2019.csv · 21618 linhas · 13.2 MB",
+  "12:15:06  gravou propostas_por_ano/propostas_2020.csv · 13210 linhas · 8.0 MB",
+  "12:15:06  gravou propostas_por_ano/propostas_2021.csv · 28205 linhas · 17.4 MB",
+  "12:15:07  gravou propostas_por_ano/propostas_2022.csv · 12905 linhas · 7.7 MB",
+  "12:15:07  gravou propostas_por_ano/propostas_2023.csv · 16748 linhas · 11.5 MB",
+  "12:15:07  gravou propostas_por_ano/propostas_2024.csv · 1825 linhas · 1.3 MB",
+  "12:15:07  gravou propostas_por_ano/propostas_2025.csv · 8153 linhas · 5.4 MB",
+  "12:15:07  gravou propostas_por_ano/propostas_2026.csv · 3677 linhas · 2.4 MB",
+  "12:15:08  gravou planilha_propostas.csv · 30403 linhas · 18.5 MB",
+  "12:15:08  gravou empenhos.csv · 47133 linhas · 8.9 MB",
+  "12:15:08  gravou painel_empenhos.csv · 47133 linhas · 4.0 MB",
+  "12:15:08  gravou desembolsos.csv · 33366 linhas · 4.8 MB",
+  "12:15:09  gravou painel_desembolsos.csv · 33366 linhas · 3.9 MB",
+  "12:15:09  gravou aditivos.csv · 49563 linhas · 18.3 MB",
+  "12:15:09  gravou prorrogacoes.csv · 6946 linhas · 0.4 MB",
+  "12:15:10  gravou historico_situacao.csv · 810655 linhas · 52.7 MB",
+  "12:15:11  gravou pagamentos.csv · 137529 linhas · 19.5 MB",
+  "12:15:11  gravou cronograma_desembolso.csv · 76528 linhas · 3.2 MB",
+  "12:15:11  gravou ajustes_pt.csv · 26642 linhas · 1.3 MB",
+  "12:15:11  gravou emendas.csv · 26822 linhas · 3.2 MB",
+  "12:15:11  siconv_dados_obrasgov_geral: 3126 linhas da SDR (chave: NR_INSTRUMENTO)",
+  "12:15:11  gravou obras.csv · 3126 linhas · 0.6 MB",
+  "12:15:11  siconv_acomp_obras_contratos_medicoes_modulo_empresas: 2080 linhas da SDR (chave: ID_PROPOSTA)",
+  "12:15:11  gravou obras_medicoes.csv · 2080 linhas · 0.2 MB",
+  "12:15:11  siconv_acomp_obras_valores_itens_medicao_modulo_empresas: 0 linhas da SDR (chave: None)",
+  "12:15:11  gravou obras_itens_medicao.csv · 0 linhas · 0.0 MB",
+  "12:15:12  siconv_resumo_fisico_financeiro: 2303 linhas da SDR (chave: ID_PROPOSTA)",
+  "12:15:12  gravou resumo_fisico_financeiro.csv · 2303 linhas · 0.1 MB",
+  "12:15:12  gravou historico_obras.csv · 20732 linhas · 0.7 MB",
+  "12:15:12  gravou painel_obras.csv · 3534 linhas · 1.7 MB"
+ ]
+}
