@@ -47,6 +47,43 @@ G = collections.defaultdict(lambda: collections.defaultdict(lambda: [0, 0]))
 ITENS = collections.defaultdict(list)
 por_prop = {p['id_proposta']: p for p in prop}
 por_inst = {i['nr_instrumento']: i for i in inst}
+inst_por_idprop = {i['id_proposta']: i for i in inst if i.get('id_proposta')}  # propostas antigas não estão na tabela de propostas
+
+
+# ---------- UG da proposta ----------
+# No Transferegov a proposta só ganha UG quando vira instrumento. Para as demais, a UG é deduzida, nesta ordem:
+# 1) UG do instrumento; 2) contrato de repasse → 135098 (mandatária); 3) UG dos instrumentos já assinados do mesmo programa e modalidade
+# (quando ≥ 90% saíram pela mesma UG); 4) idem pela ação orçamentária. O que não se encaixa fica sem UG (só entra no consolidado).
+_pm = collections.defaultdict(collections.Counter)
+_am = collections.defaultdict(collections.Counter)
+for _p in prop:
+    if _p.get('ug_emitente'):
+        _pm[(_p.get('cod_programa'), _p.get('modalidade'))][_p['ug_emitente']] += 1
+        _am[((_p.get('acao_orcamentaria') or '')[:4], _p.get('modalidade'))][_p['ug_emitente']] += 1
+REGRA_UG = collections.Counter()
+
+
+def ug_prop(p):
+    if p.get('_ug') is not None:
+        return p['_ug']
+    ug, regra = '', 'sem UG identificada'
+    if p.get('ug_emitente'):
+        ug, regra = p['ug_emitente'], 'UG do instrumento'
+    elif p.get('modalidade') == 'CONTRATO DE REPASSE':
+        ug, regra = '135098', 'contrato de repasse (mandatária)'
+    else:
+        for mapa, chave, rot in ((_pm, (p.get('cod_programa'), p.get('modalidade')), 'pelo programa'),
+                                 (_am, ((p.get('acao_orcamentaria') or '')[:4], p.get('modalidade')), 'pela ação')):
+            m = mapa.get(chave)
+            if m:
+                u, n = m.most_common(1)[0]
+                if n / sum(m.values()) >= 0.9:
+                    ug, regra = u, rot
+                    break
+    p['_ug'] = ug
+    p['_regra'] = regra
+    REGRA_UG[regra] += 1
+    return ug
 
 
 def grupo(ug, mod):
@@ -77,10 +114,10 @@ ap1 = collections.defaultdict(lambda: [0, set()])
 for k, l in hp.items():
     if k in por_prop and any(s in ENVIO and t >= C1 for t, s in l):
         p = por_prop[k]
-        g = ap1[grupo(p.get('ug_emitente'), p.get('modalidade'))]
+        g = ap1[grupo(ug_prop(p), p.get('modalidade'))]
         g[0] += 1
         g[1].add(p.get('cod_programa'))
-        ITENS['AP-01'].append([p['nr_proposta'], p.get('ug_emitente', ''), p.get('modalidade', ''), p.get('programa', '')[:80], p.get('proponente', '')[:60]])
+        ITENS['AP-01'].append([p['nr_proposta'], ug_prop(p), p.get('modalidade', ''), p.get('programa', '')[:80], p.get('proponente', '')[:60]])
 AP1 = {g: [v[0], sorted(x for x in v[1] if x)] for g, v in ap1.items()}
 
 # ---------- AP-02 e AP-03 · propostas (5 anos, pelo ano da proposta) ----------
@@ -94,13 +131,13 @@ for p in prop:
     if ano < ano5 or not sit or 'Cadastrad' in sit:
         continue
     analisada = any(x in sit for x in ('Aprovad', 'Rejeitad', 'Eliminada'))
-    conta('AP-02', p.get('ug_emitente'), p.get('modalidade'), analisada,
-          [p['nr_proposta'], p.get('ug_emitente', ''), p.get('modalidade', ''), sit, p.get('proponente', '')[:60]] if not analisada else None)
+    conta('AP-02', ug_prop(p), p.get('modalidade'), analisada,
+          [p['nr_proposta'], ug_prop(p), p.get('modalidade', ''), sit, p.get('proponente', '')[:60]] if not analisada else None)
     aprovada = 'Aprovad' in sit or p.get('celebrada') == 'SIM'
     if aprovada:
         cel = p.get('celebrada') == 'SIM' or bool(p.get('nr_instrumento'))
-        conta('AP-03', p.get('ug_emitente'), p.get('modalidade'), cel,
-              [p['nr_proposta'], p.get('ug_emitente', ''), p.get('modalidade', ''), sit, p.get('proponente', '')[:60]] if not cel else None)
+        conta('AP-03', ug_prop(p), p.get('modalidade'), cel,
+              [p['nr_proposta'], ug_prop(p), p.get('modalidade', ''), sit, p.get('proponente', '')[:60]] if not cel else None)
 
 # ---------- EX-02 · cláusula suspensiva (assinados nos 5 anos, convênio e contrato de repasse) ----------
 for i in inst:
@@ -146,8 +183,9 @@ for k, l in hp.items():
     i = None
     p = por_prop.get(k)
     nr = (p or {}).get('nr_instrumento') or ''
-    i = por_inst.get(nr)
-    ug = (i or p or {}).get('ug_emitente', '')
+    i = por_inst.get(nr) or inst_por_idprop.get(k)
+    nr = nr or (i or {}).get('nr_instrumento', '')
+    ug = (i or {}).get('ug_emitente', '') or (ug_prop(p) if p else '')
     mod = (i or p or {}).get('modalidade', '')
     prop_ = (i or p or {}).get('proponente', '')[:60]
     ok = sf == 'PRESTACAO_CONTAS_APROVADA'
@@ -180,6 +218,7 @@ saida = {
     'janela': {'inicio_5a': C5.strftime('%d/%m/%Y'), 'inicio_12m': C1.strftime('%d/%m/%Y')},
     'grupos': {g: {k: v for k, v in d.items()} for g, d in G.items()},
     'ap01': AP1,
+    'ug_propostas': dict(REGRA_UG),
     'itens': ITENS,
 }
 with open(os.path.join(P, 'indicadores.json'), 'w', encoding='utf-8') as f:
@@ -189,6 +228,7 @@ for d in G.values():
     for k, (a, b) in d.items():
         tot[k][0] += a
         tot[k][1] += b
+print('UG das propostas:', dict(REGRA_UG))
 for k in sorted(tot):
     a, b = tot[k]
     print(f'{k}: {a} / {b} = {a / b if b else 0:.4f}')
