@@ -1,0 +1,61 @@
+name: Carga histórica (Portal da Transparência)
+
+on:
+  workflow_dispatch:
+    inputs:
+      anos:
+        description: 'Anos (lista JSON)'
+        default: '[2014,2015,2016,2017,2018,2019,2020,2021,2022,2023,2024,2025]'
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  ano:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix:
+        ano: ${{ fromJSON(github.event.inputs.anos) }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Despesas do ano (empenho, liquidação, pagamento)
+        run: python scripts/historico_portal.py despesas ${{ matrix.ano }} saida/${{ matrix.ano }}
+      - name: Execução e compras (mensais)
+        run: python scripts/historico_portal.py mensal ${{ matrix.ano }} saida/${{ matrix.ano }}
+      - name: Orçamento (anual)
+        run: python scripts/historico_portal.py orcamento ${{ matrix.ano }} saida/${{ matrix.ano }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: hist-${{ matrix.ano }}
+          path: saida/${{ matrix.ano }}
+          retention-days: 7
+
+  publicar:
+    needs: ano
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: novos
+      - name: Publicar na branch "historico" (guarda os anos já carregados)
+        run: |
+          git init -q h && cd h
+          git config user.name  "robo-transferegov"
+          git config user.email "robo-transferegov@users.noreply.github.com"
+          URL="https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git"
+          if git fetch -q "$URL" historico 2>/dev/null; then git checkout -q -b historico FETCH_HEAD; else git checkout -q -b historico; fi
+          for d in ../novos/hist-*; do a="${d##*-}"; mkdir -p "$a"; cp -r "$d"/. "$a"/; done
+          ls -R | head -80
+          git add -A
+          git commit -q -m "Carga histórica Portal · $(date -u -d '-3 hours' '+%d/%m/%Y %H:%M')" || true
+          git push -q "$URL" historico
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
