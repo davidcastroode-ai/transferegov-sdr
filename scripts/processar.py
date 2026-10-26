@@ -17,7 +17,8 @@ ORGAO_MAPA = '22000'
 UGS_SDR = ['130010', '130141', '135098', '420013', '130255']
 ARQUIVOS = ['siconv_convenio', 'siconv_programa_proposta', 'siconv_programa', 'siconv_proposta', 'siconv_emenda',
             'siconv_empenho', 'siconv_desembolso', 'siconv_termo_aditivo', 'siconv_prorroga_oficio', 'data_carga_siconv',
-            'siconv_dados_obrasgov_geral', 'siconv_acomp_obras_contratos_medicoes_modulo_empresas', 'siconv_acomp_obras_valores_itens_medicao_modulo_empresas', 'siconv_resumo_fisico_financeiro', 'siconv_historico_situacao', 'siconv_pagamento', 'siconv_cronograma_desembolso', 'siconv_solicitacao_ajuste_pt']
+            'siconv_dados_obrasgov_geral', 'siconv_acomp_obras_contratos_medicoes_modulo_empresas', 'siconv_acomp_obras_valores_itens_medicao_modulo_empresas', 'siconv_resumo_fisico_financeiro', 'siconv_historico_situacao', 'siconv_pagamento', 'siconv_cronograma_desembolso', 'siconv_solicitacao_ajuste_pt',
+            'siconv_plano_aplicacao_detalhado', 'siconv_meta_crono_fisico', 'siconv_etapa_crono_fisico']
 TMP = os.environ.get('FONTE_LOCAL') or '/tmp/transferegov'
 csv.field_size_limit(10**9)
 LOG = []
@@ -207,6 +208,15 @@ def main(saida):
     cab_pg, pagamentos = do_conv('siconv_pagamento')
     cab_cr, cronograma = do_conv('siconv_cronograma_desembolso')
     cab_aj, ajustes_pt = do_conv('siconv_solicitacao_ajuste_pt')
+    # plano de trabalho: PAD (itens) e cronograma físico (metas e etapas) · para o relatório do instrumento
+    cab_pad, pad = do_conv('siconv_plano_aplicacao_detalhado')
+    cab_mt, metas = do_conv('siconv_meta_crono_fisico')
+    cab_et, it_et = linhas('siconv_etapa_crono_fisico')
+    meta['cabecalhos']['etapa_crono_fisico'] = cab_et
+    ids_meta = {m.get('ID_META') for m in metas if m.get('ID_META')}
+    etapas = [r for r in it_et if r.get('ID_META') in ids_meta] if cab_et and 'ID_META' in cab_et else \
+             [r for r in it_et if r.get('NR_CONVENIO') in conv] if cab_et and 'NR_CONVENIO' in cab_et else []
+    log(f'siconv_etapa_crono_fisico: {len(etapas)} linhas da SDR')
     # histórico: primeira vez que o instrumento ficou INADIMPLENTE e a sequência de situações
     inad_c, hist_c = {}, {}
     for h in historico:
@@ -476,6 +486,9 @@ def main(saida):
     gravar(saida, 'pagamentos.csv', cab_pg or ['NR_CONVENIO'], pagamentos)
     gravar(saida, 'cronograma_desembolso.csv', cab_cr or ['NR_CONVENIO'], cronograma)
     gravar(saida, 'ajustes_pt.csv', cab_aj or ['NR_CONVENIO'], ajustes_pt)
+    gravar(saida, 'pad.csv', cab_pad or ['ID_PROPOSTA'], pad)
+    gravar(saida, 'metas.csv', cab_mt or ['ID_META'], metas)
+    gravar(saida, 'etapas.csv', cab_et or ['ID_META'], etapas)
     gravar(saida, 'emendas.csv', meta['cabecalhos'].get('emenda') or ['ID_PROPOSTA'], emendas)
 
     # obras (Obrasgov / acompanhamento de obras): filtra pelo nº do instrumento ou pelo ID da proposta, o que o arquivo tiver

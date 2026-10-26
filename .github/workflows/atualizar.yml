@@ -61,6 +61,10 @@ jobs:
         continue-on-error: true
         run: python scripts/indicadores.py saida
 
+      - name: Relatório do instrumento (um arquivo por grupo de instrumentos + índice da busca)
+        continue-on-error: true
+        run: python scripts/relatorio.py saida
+
       - name: Gerar as páginas do painel (Propostas, Empenho, Programas, Movimentação, Obras, Prestação de contas)
         run: python scripts/paginas.py saida
 
