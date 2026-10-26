@@ -350,6 +350,9 @@ def main(saida):
         datas = [x for x in (data(next((a.get(k) for k in a if 'DATA' in k or k.startswith('DT_')), '')) for a in ajs) if x]
         r['qtd_ajustes_pt'] = str(len(ajs))
         r['ultimo_ajuste_pt'] = br(max(datas)) if datas else ''
+        # solicitações de ajuste do PT ainda em aberto (não aprovadas nem negadas)
+        abertos = sorted({(a.get('SITUACAO_SOLICITACAO_AJUSTE_PT') or '').strip() for a in ajs} - {'', 'Ajustado e Aprovado', 'Não Autorizado'})
+        r['ajuste_pt_aberto'] = ' | '.join(abertos)
         rep_orig = num(r.get('valor_repasse_proposta'))
         r['reducao_repasse'] = v2(max(0.0, rep_orig - num(r['valor_repasse']))) if rep_orig else '0.00'
     inst.sort(key=lambda r: (r['ano'] or '0000', r['nr_instrumento']), reverse=True)
@@ -360,7 +363,7 @@ def main(saida):
             'limite_prestacao_contas', 'nr_processo', 'modalidade', 'proponente', 'uf', 'municipio', 'natureza_juridica', 'tipo_parlamentar',
             'valor_repasse', 'valor_desembolsado', 'valor_a_desembolsar', 'ultimo_desembolso', 'dias_sem_desembolso', 'qtd_aditivos',
             'qtd_prorrogacoes', 'notas_empenho', 'saldo_em_conta', 'subsituacao', 'em_processo_tce', 'inadimplente_desde', 'ugs_empenho', 'acao_orcamentaria', 'cod_programa', 'programa', 'valor_global', 'valor_global_original',
-            'valor_repasse_proposta', 'supressao_repasse_ta', 'qtd_ajustes_pt', 'ultimo_ajuste_pt', 'reducao_repasse', 'aditivos_valor', 'objeto']
+            'valor_repasse_proposta', 'supressao_repasse_ta', 'qtd_ajustes_pt', 'ultimo_ajuste_pt', 'ajuste_pt_aberto', 'reducao_repasse', 'aditivos_valor', 'objeto']
     gravar(saida, 'painel_instrumentos.csv', leve, [{**r, 'objeto': r['objeto'][:160]} for r in inst])
 
     # 6b. arquivo no formato da planilha "Parcerias" (mesmos nomes e ordem de colunas A:AH), usado pelo Apps Script da planilha
