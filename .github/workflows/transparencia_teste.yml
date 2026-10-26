@@ -16,7 +16,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Sondar as bases de download (só leitura)
-        run: python scripts/transparencia_sondar.py saida
+        run: python scripts/transparencia_sondar2.py saida
       - name: Publicar na branch "transparencia-teste"
         if: always()
         run: |
