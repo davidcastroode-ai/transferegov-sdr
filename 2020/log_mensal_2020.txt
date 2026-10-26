@@ -1,0 +1,67 @@
+18:23:31    despesas-execucao 202001 202001_Despesas.csv: 145 linhas das UGs
+18:23:33    compras 202001 202001_Apostilamento.csv: 0 linhas das UGs
+18:23:33    compras 202001 202001_Compras.csv: 1 linhas das UGs
+18:23:33    compras 202001 202001_ItemCompra.csv: 32 linhas das UGs
+18:23:33    compras 202001 202001_TermoAditivo.csv: 0 linhas das UGs
+18:23:37    despesas-execucao 202002 202002_Despesas.csv: 44 linhas das UGs
+18:23:39    compras 202002 202002_Apostilamento.csv: 0 linhas das UGs
+18:23:39    compras 202002 202002_Compras.csv: 0 linhas das UGs
+18:23:39    compras 202002 202002_ItemCompra.csv: 0 linhas das UGs
+18:23:39    compras 202002 202002_TermoAditivo.csv: 0 linhas das UGs
+18:23:43    despesas-execucao 202003 202003_Despesas.csv: 61 linhas das UGs
+18:23:45    compras 202003 202003_Apostilamento.csv: 0 linhas das UGs
+18:23:45    compras 202003 202003_Compras.csv: 1 linhas das UGs
+18:23:46    compras 202003 202003_ItemCompra.csv: 2 linhas das UGs
+18:23:46    compras 202003 202003_TermoAditivo.csv: 0 linhas das UGs
+18:23:46      405 em 202004_Despesas.zip · nova tentativa em 5s
+18:23:51      405 em 202004_Despesas.zip · nova tentativa em 10s
+18:24:01      405 em 202004_Despesas.zip · nova tentativa em 20s
+18:24:21      405 em 202004_Despesas.zip · nova tentativa em 40s
+18:25:01      405 em 202004_Despesas.zip · nova tentativa em 80s
+18:26:21      405 em 202004_Despesas.zip · nova tentativa em 120s
+18:28:21    FALHOU: https://dadosabertos-download.cgu.gov.br/PortalDaTransparencia/saida/despesas-execucao/202004_Despesas.zip
+18:28:22    despesas-execucao 202004: falhou
+18:28:25    compras 202004 202004_Apostilamento.csv: 0 linhas das UGs
+18:28:25    compras 202004 202004_Compras.csv: 4 linhas das UGs
+18:28:25    compras 202004 202004_ItemCompra.csv: 10 linhas das UGs
+18:28:25    compras 202004 202004_TermoAditivo.csv: 0 linhas das UGs
+18:28:29    despesas-execucao 202005 202005_Despesas.csv: 221 linhas das UGs
+18:28:31    compras 202005 202005_Apostilamento.csv: 0 linhas das UGs
+18:28:31    compras 202005 202005_Compras.csv: 0 linhas das UGs
+18:28:31    compras 202005 202005_ItemCompra.csv: 0 linhas das UGs
+18:28:31    compras 202005 202005_TermoAditivo.csv: 0 linhas das UGs
+18:28:34    despesas-execucao 202006 202006_Despesas.csv: 408 linhas das UGs
+18:28:36    compras 202006 202006_Apostilamento.csv: 0 linhas das UGs
+18:28:36    compras 202006 202006_Compras.csv: 0 linhas das UGs
+18:28:36    compras 202006 202006_ItemCompra.csv: 0 linhas das UGs
+18:28:36    compras 202006 202006_TermoAditivo.csv: 0 linhas das UGs
+18:28:40    despesas-execucao 202007 202007_Despesas.csv: 306 linhas das UGs
+18:28:42    compras 202007 202007_Apostilamento.csv: 0 linhas das UGs
+18:28:43    compras 202007 202007_Compras.csv: 0 linhas das UGs
+18:28:43    compras 202007 202007_ItemCompra.csv: 0 linhas das UGs
+18:28:43    compras 202007 202007_TermoAditivo.csv: 0 linhas das UGs
+18:28:46    despesas-execucao 202008 202008_Despesas.csv: 229 linhas das UGs
+18:28:49    compras 202008 202008_Apostilamento.csv: 0 linhas das UGs
+18:28:49    compras 202008 202008_Compras.csv: 0 linhas das UGs
+18:28:49    compras 202008 202008_ItemCompra.csv: 0 linhas das UGs
+18:28:49    compras 202008 202008_TermoAditivo.csv: 0 linhas das UGs
+18:28:53    despesas-execucao 202009 202009_Despesas.csv: 55 linhas das UGs
+18:28:55    compras 202009 202009_Apostilamento.csv: 0 linhas das UGs
+18:28:55    compras 202009 202009_Compras.csv: 1 linhas das UGs
+18:28:55    compras 202009 202009_ItemCompra.csv: 10 linhas das UGs
+18:28:55    compras 202009 202009_TermoAditivo.csv: 5 linhas das UGs
+18:28:59    despesas-execucao 202010 202010_Despesas.csv: 130 linhas das UGs
+18:29:02    compras 202010 202010_Apostilamento.csv: 0 linhas das UGs
+18:29:02    compras 202010 202010_Compras.csv: 0 linhas das UGs
+18:29:02    compras 202010 202010_ItemCompra.csv: 0 linhas das UGs
+18:29:02    compras 202010 202010_TermoAditivo.csv: 0 linhas das UGs
+18:29:06    despesas-execucao 202011 202011_Despesas.csv: 247 linhas das UGs
+18:29:08    compras 202011 202011_Apostilamento.csv: 0 linhas das UGs
+18:29:08    compras 202011 202011_Compras.csv: 1 linhas das UGs
+18:29:08    compras 202011 202011_ItemCompra.csv: 2 linhas das UGs
+18:29:08    compras 202011 202011_TermoAditivo.csv: 0 linhas das UGs
+18:29:13    despesas-execucao 202012 202012_Despesas.csv: 511 linhas das UGs
+18:29:15    compras 202012 202012_Apostilamento.csv: 0 linhas das UGs
+18:29:15    compras 202012 202012_Compras.csv: 2 linhas das UGs
+18:29:16    compras 202012 202012_ItemCompra.csv: 4 linhas das UGs
+18:29:16    compras 202012 202012_TermoAditivo.csv: 4 linhas das UGs

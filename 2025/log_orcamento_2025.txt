@@ -1,0 +1,8 @@
+19:57:05      405 em 2025_OrcamentoDespesa.zip · nova tentativa em 5s
+19:57:10      405 em 2025_OrcamentoDespesa.zip · nova tentativa em 10s
+19:57:20      405 em 2025_OrcamentoDespesa.zip · nova tentativa em 20s
+19:57:41      405 em 2025_OrcamentoDespesa.zip · nova tentativa em 40s
+19:58:21      405 em 2025_OrcamentoDespesa.zip · nova tentativa em 80s
+19:59:41      405 em 2025_OrcamentoDespesa.zip · nova tentativa em 120s
+20:01:41    FALHOU: https://dadosabertos-download.cgu.gov.br/PortalDaTransparencia/saida/orcamento-despesa/2025_OrcamentoDespesa.zip
+20:01:41  orçamento 2025: sem arquivo

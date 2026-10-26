@@ -1,0 +1,64 @@
+16:57:47    despesas-execucao 201901 201901_Despesas.csv: 61 linhas das UGs
+16:57:49    compras 201901 201901_Apostilamento.csv: 0 linhas das UGs
+16:57:49    compras 201901 201901_Compras.csv: 0 linhas das UGs
+16:57:49    compras 201901 201901_ItemCompra.csv: 0 linhas das UGs
+16:57:49    compras 201901 201901_TermoAditivo.csv: 0 linhas das UGs
+16:57:52    despesas-execucao 201902 201902_Despesas.csv: 22 linhas das UGs
+16:57:54    compras 201902 201902_Apostilamento.csv: 0 linhas das UGs
+16:57:54    compras 201902 201902_Compras.csv: 0 linhas das UGs
+16:57:54    compras 201902 201902_ItemCompra.csv: 0 linhas das UGs
+16:57:54    compras 201902 201902_TermoAditivo.csv: 0 linhas das UGs
+16:57:56    despesas-execucao 201903 201903_Despesas.csv: 32 linhas das UGs
+16:57:59    compras 201903 201903_Apostilamento.csv: 0 linhas das UGs
+16:57:59    compras 201903 201903_Compras.csv: 1 linhas das UGs
+16:57:59    compras 201903 201903_ItemCompra.csv: 2 linhas das UGs
+16:57:59    compras 201903 201903_TermoAditivo.csv: 1 linhas das UGs
+16:58:01    despesas-execucao 201904 201904_Despesas.csv: 214 linhas das UGs
+16:58:03    compras 201904 201904_Apostilamento.csv: 0 linhas das UGs
+16:58:03    compras 201904 201904_Compras.csv: 1 linhas das UGs
+16:58:03    compras 201904 201904_ItemCompra.csv: 2 linhas das UGs
+16:58:03    compras 201904 201904_TermoAditivo.csv: 5 linhas das UGs
+16:58:06    despesas-execucao 201905 201905_Despesas.csv: 162 linhas das UGs
+16:58:08    compras 201905 201905_Apostilamento.csv: 0 linhas das UGs
+16:58:08    compras 201905 201905_Compras.csv: 1 linhas das UGs
+16:58:08    compras 201905 201905_ItemCompra.csv: 2 linhas das UGs
+16:58:08    compras 201905 201905_TermoAditivo.csv: 3 linhas das UGs
+16:58:11    despesas-execucao 201906 201906_Despesas.csv: 161 linhas das UGs
+16:58:13    compras 201906 201906_Apostilamento.csv: 0 linhas das UGs
+16:58:13    compras 201906 201906_Compras.csv: 0 linhas das UGs
+16:58:13    compras 201906 201906_ItemCompra.csv: 0 linhas das UGs
+16:58:13    compras 201906 201906_TermoAditivo.csv: 0 linhas das UGs
+16:58:16    despesas-execucao 201907 201907_Despesas.csv: 312 linhas das UGs
+16:58:16      405 em 201907_Compras.zip · nova tentativa em 5s
+16:58:21      405 em 201907_Compras.zip · nova tentativa em 10s
+16:58:31      405 em 201907_Compras.zip · nova tentativa em 20s
+16:58:51      405 em 201907_Compras.zip · nova tentativa em 40s
+16:59:31      405 em 201907_Compras.zip · nova tentativa em 80s
+17:00:51      405 em 201907_Compras.zip · nova tentativa em 120s
+17:02:51    FALHOU: https://dadosabertos-download.cgu.gov.br/PortalDaTransparencia/saida/compras/201907_Compras.zip
+17:02:52    compras 201907: falhou
+17:02:55    despesas-execucao 201908 201908_Despesas.csv: 229 linhas das UGs
+17:02:57    compras 201908 201908_Apostilamento.csv: 0 linhas das UGs
+17:02:57    compras 201908 201908_Compras.csv: 0 linhas das UGs
+17:02:58    compras 201908 201908_ItemCompra.csv: 0 linhas das UGs
+17:02:58    compras 201908 201908_TermoAditivo.csv: 0 linhas das UGs
+17:03:00    despesas-execucao 201909 201909_Despesas.csv: 256 linhas das UGs
+17:03:02    compras 201909 201909_Apostilamento.csv: 0 linhas das UGs
+17:03:02    compras 201909 201909_Compras.csv: 3 linhas das UGs
+17:03:02    compras 201909 201909_ItemCompra.csv: 6 linhas das UGs
+17:03:02    compras 201909 201909_TermoAditivo.csv: 11 linhas das UGs
+17:03:05    despesas-execucao 201910 201910_Despesas.csv: 233 linhas das UGs
+17:03:07    compras 201910 201910_Apostilamento.csv: 0 linhas das UGs
+17:03:07    compras 201910 201910_Compras.csv: 6 linhas das UGs
+17:03:07    compras 201910 201910_ItemCompra.csv: 50 linhas das UGs
+17:03:07    compras 201910 201910_TermoAditivo.csv: 3 linhas das UGs
+17:03:10    despesas-execucao 201911 201911_Despesas.csv: 386 linhas das UGs
+17:03:12    compras 201911 201911_Apostilamento.csv: 0 linhas das UGs
+17:03:12    compras 201911 201911_Compras.csv: 1 linhas das UGs
+17:03:12    compras 201911 201911_ItemCompra.csv: 2 linhas das UGs
+17:03:12    compras 201911 201911_TermoAditivo.csv: 5 linhas das UGs
+17:03:15    despesas-execucao 201912 201912_Despesas.csv: 1345 linhas das UGs
+17:03:18    compras 201912 201912_Apostilamento.csv: 0 linhas das UGs
+17:03:18    compras 201912 201912_Compras.csv: 0 linhas das UGs
+17:03:18    compras 201912 201912_ItemCompra.csv: 0 linhas das UGs
+17:03:18    compras 201912 201912_TermoAditivo.csv: 0 linhas das UGs

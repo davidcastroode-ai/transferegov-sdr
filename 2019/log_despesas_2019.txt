@@ -1,0 +1,121 @@
+15:38:49      403 em 20190120_Despesas.zip · nova tentativa em 5s
+15:39:07      403 em 20190126_Despesas.zip · nova tentativa em 5s
+15:39:17      405 em 20190129_Despesas.zip · nova tentativa em 5s
+15:39:22      405 em 20190129_Despesas.zip · nova tentativa em 10s
+15:39:33      405 em 20190129_Despesas.zip · nova tentativa em 20s
+15:39:53      405 em 20190129_Despesas.zip · nova tentativa em 40s
+15:40:33      405 em 20190129_Despesas.zip · nova tentativa em 80s
+15:41:53      405 em 20190129_Despesas.zip · nova tentativa em 120s
+15:43:53    FALHOU: https://dadosabertos-download.cgu.gov.br/PortalDaTransparencia/saida/despesas/20190129_Despesas.zip
+15:44:02    20190202: 30 dias lidos · {'emp': 90, 'liq': 43, 'pag': 54, 'liq_ne': 46, 'pag_ne': 55}
+15:44:46      405 em 20190222_Despesas.zip · nova tentativa em 5s
+15:44:51      405 em 20190222_Despesas.zip · nova tentativa em 10s
+15:45:01      405 em 20190222_Despesas.zip · nova tentativa em 20s
+15:45:21      405 em 20190222_Despesas.zip · nova tentativa em 40s
+15:46:01      405 em 20190222_Despesas.zip · nova tentativa em 80s
+15:47:22      405 em 20190222_Despesas.zip · nova tentativa em 120s
+15:49:22    FALHOU: https://dadosabertos-download.cgu.gov.br/PortalDaTransparencia/saida/despesas/20190222_Despesas.zip
+15:49:23      405 em 20190223_Despesas.zip · nova tentativa em 5s
+15:49:46    20190305: 60 dias lidos · {'emp': 137, 'liq': 85, 'pag': 90, 'liq_ne': 94, 'pag_ne': 95}
+15:50:15      405 em 20190319_Despesas.zip · nova tentativa em 5s
+15:50:20      405 em 20190319_Despesas.zip · nova tentativa em 10s
+15:50:31      405 em 20190319_Despesas.zip · nova tentativa em 20s
+15:50:51      405 em 20190319_Despesas.zip · nova tentativa em 40s
+15:51:31      405 em 20190319_Despesas.zip · nova tentativa em 80s
+15:52:51      405 em 20190319_Despesas.zip · nova tentativa em 120s
+15:54:51    FALHOU: https://dadosabertos-download.cgu.gov.br/PortalDaTransparencia/saida/despesas/20190319_Despesas.zip
+15:54:52      405 em 20190320_Despesas.zip · nova tentativa em 5s
+15:55:38    20190405: 90 dias lidos · {'emp': 205, 'liq': 288, 'pag': 277, 'liq_ne': 306, 'pag_ne': 285}
+15:55:55      405 em 20190414_Despesas.zip · nova tentativa em 5s
+15:56:00      405 em 20190414_Despesas.zip · nova tentativa em 10s
+15:56:10      405 em 20190414_Despesas.zip · nova tentativa em 20s
+15:56:30      405 em 20190414_Despesas.zip · nova tentativa em 40s
+15:57:11      405 em 20190414_Despesas.zip · nova tentativa em 80s
+15:58:31      405 em 20190414_Despesas.zip · nova tentativa em 120s
+16:00:31    FALHOU: https://dadosabertos-download.cgu.gov.br/PortalDaTransparencia/saida/despesas/20190414_Despesas.zip
+16:00:32      405 em 20190415_Despesas.zip · nova tentativa em 5s
+16:01:27    20190506: 120 dias lidos · {'emp': 255, 'liq': 599, 'pag': 605, 'liq_ne': 620, 'pag_ne': 619}
+16:01:27      405 em 20190507_Despesas.zip · nova tentativa em 5s
+16:01:33      405 em 20190507_Despesas.zip · nova tentativa em 10s
+16:01:43      405 em 20190507_Despesas.zip · nova tentativa em 20s
+16:02:03      405 em 20190507_Despesas.zip · nova tentativa em 40s
+16:02:43      405 em 20190507_Despesas.zip · nova tentativa em 80s
+16:04:03      405 em 20190507_Despesas.zip · nova tentativa em 120s
+16:06:03    FALHOU: https://dadosabertos-download.cgu.gov.br/PortalDaTransparencia/saida/despesas/20190507_Despesas.zip
+16:06:04      405 em 20190508_Despesas.zip · nova tentativa em 5s
+16:06:09      405 em 20190508_Despesas.zip · nova tentativa em 10s
+16:07:16      405 em 20190601_Despesas.zip · nova tentativa em 5s
+16:07:21      405 em 20190601_Despesas.zip · nova tentativa em 10s
+16:07:31      405 em 20190601_Despesas.zip · nova tentativa em 20s
+16:07:51      405 em 20190601_Despesas.zip · nova tentativa em 40s
+16:08:31      405 em 20190601_Despesas.zip · nova tentativa em 80s
+16:09:52      405 em 20190601_Despesas.zip · nova tentativa em 120s
+16:11:52    FALHOU: https://dadosabertos-download.cgu.gov.br/PortalDaTransparencia/saida/despesas/20190601_Despesas.zip
+16:12:09    20190607: 150 dias lidos · {'emp': 321, 'liq': 828, 'pag': 863, 'liq_ne': 867, 'pag_ne': 891}
+16:12:47      405 em 20190625_Despesas.zip · nova tentativa em 5s
+16:12:53      405 em 20190625_Despesas.zip · nova tentativa em 10s
+16:13:03      405 em 20190625_Despesas.zip · nova tentativa em 20s
+16:13:23      405 em 20190625_Despesas.zip · nova tentativa em 40s
+16:14:03      405 em 20190625_Despesas.zip · nova tentativa em 80s
+16:15:23      405 em 20190625_Despesas.zip · nova tentativa em 120s
+16:17:23    FALHOU: https://dadosabertos-download.cgu.gov.br/PortalDaTransparencia/saida/despesas/20190625_Despesas.zip
+16:17:24      405 em 20190626_Despesas.zip · nova tentativa em 5s
+16:17:58    20190708: 180 dias lidos · {'emp': 363, 'liq': 1073, 'pag': 1146, 'liq_ne': 1222, 'pag_ne': 1194}
+16:18:26      405 em 20190719_Despesas.zip · nova tentativa em 5s
+16:18:31      405 em 20190719_Despesas.zip · nova tentativa em 10s
+16:18:41      405 em 20190719_Despesas.zip · nova tentativa em 20s
+16:19:01      405 em 20190719_Despesas.zip · nova tentativa em 40s
+16:19:41      405 em 20190719_Despesas.zip · nova tentativa em 80s
+16:21:02      405 em 20190719_Despesas.zip · nova tentativa em 120s
+16:23:02    FALHOU: https://dadosabertos-download.cgu.gov.br/PortalDaTransparencia/saida/despesas/20190719_Despesas.zip
+16:23:46      405 em 20190808_Despesas.zip · nova tentativa em 5s
+16:23:51      405 em 20190808_Despesas.zip · nova tentativa em 10s
+16:24:01      405 em 20190808_Despesas.zip · nova tentativa em 20s
+16:24:21      405 em 20190808_Despesas.zip · nova tentativa em 40s
+16:25:01      405 em 20190808_Despesas.zip · nova tentativa em 80s
+16:26:21      405 em 20190808_Despesas.zip · nova tentativa em 120s
+16:28:21    FALHOU: https://dadosabertos-download.cgu.gov.br/PortalDaTransparencia/saida/despesas/20190808_Despesas.zip
+16:28:25    20190809: 210 dias lidos · {'emp': 428, 'liq': 1457, 'pag': 1525, 'liq_ne': 1826, 'pag_ne': 1675}
+16:29:28      405 em 20190904_Despesas.zip · nova tentativa em 5s
+16:29:33      405 em 20190904_Despesas.zip · nova tentativa em 10s
+16:29:43      405 em 20190904_Despesas.zip · nova tentativa em 20s
+16:30:03      405 em 20190904_Despesas.zip · nova tentativa em 40s
+16:30:43      405 em 20190904_Despesas.zip · nova tentativa em 80s
+16:32:04      405 em 20190904_Despesas.zip · nova tentativa em 120s
+16:34:04    FALHOU: https://dadosabertos-download.cgu.gov.br/PortalDaTransparencia/saida/despesas/20190904_Despesas.zip
+16:34:04      405 em 20190905_Despesas.zip · nova tentativa em 5s
+16:34:20    20190909: 240 dias lidos · {'emp': 460, 'liq': 1740, 'pag': 1812, 'liq_ne': 2212, 'pag_ne': 2174}
+16:35:15      405 em 20191003_Despesas.zip · nova tentativa em 5s
+16:35:20      405 em 20191003_Despesas.zip · nova tentativa em 10s
+16:35:30      405 em 20191003_Despesas.zip · nova tentativa em 20s
+16:35:50      405 em 20191003_Despesas.zip · nova tentativa em 40s
+16:36:30      405 em 20191003_Despesas.zip · nova tentativa em 80s
+16:37:50      405 em 20191003_Despesas.zip · nova tentativa em 120s
+16:39:50    FALHOU: https://dadosabertos-download.cgu.gov.br/PortalDaTransparencia/saida/despesas/20191003_Despesas.zip
+16:40:08    20191010: 270 dias lidos · {'emp': 1320, 'liq': 2031, 'pag': 2071, 'liq_ne': 2542, 'pag_ne': 2444}
+16:40:58      405 em 20191101_Despesas.zip · nova tentativa em 5s
+16:41:03      405 em 20191101_Despesas.zip · nova tentativa em 10s
+16:41:13      405 em 20191101_Despesas.zip · nova tentativa em 20s
+16:41:33      405 em 20191101_Despesas.zip · nova tentativa em 40s
+16:42:13      405 em 20191101_Despesas.zip · nova tentativa em 80s
+16:43:33      405 em 20191101_Despesas.zip · nova tentativa em 120s
+16:45:33    FALHOU: https://dadosabertos-download.cgu.gov.br/PortalDaTransparencia/saida/despesas/20191101_Despesas.zip
+16:45:34      405 em 20191102_Despesas.zip · nova tentativa em 5s
+16:46:00    20191110: 300 dias lidos · {'emp': 1455, 'liq': 2400, 'pag': 2237, 'liq_ne': 3018, 'pag_ne': 2612}
+16:46:37      405 em 20191123_Despesas.zip · nova tentativa em 5s
+16:46:42      405 em 20191123_Despesas.zip · nova tentativa em 10s
+16:46:52      405 em 20191123_Despesas.zip · nova tentativa em 20s
+16:47:12      405 em 20191123_Despesas.zip · nova tentativa em 40s
+16:47:52      405 em 20191123_Despesas.zip · nova tentativa em 80s
+16:49:12      405 em 20191123_Despesas.zip · nova tentativa em 120s
+16:51:12    FALHOU: https://dadosabertos-download.cgu.gov.br/PortalDaTransparencia/saida/despesas/20191123_Despesas.zip
+16:51:14      403 em 20191124_Despesas.zip · nova tentativa em 5s
+16:52:14    20191212: 330 dias lidos · {'emp': 3010, 'liq': 2876, 'pag': 2867, 'liq_ne': 3664, 'pag_ne': 3313}
+16:52:35      405 em 20191220_Despesas.zip · nova tentativa em 5s
+16:52:40      405 em 20191220_Despesas.zip · nova tentativa em 10s
+16:52:50      405 em 20191220_Despesas.zip · nova tentativa em 20s
+16:53:10      405 em 20191220_Despesas.zip · nova tentativa em 40s
+16:53:51      405 em 20191220_Despesas.zip · nova tentativa em 80s
+16:55:11      405 em 20191220_Despesas.zip · nova tentativa em 120s
+16:57:11    FALHOU: https://dadosabertos-download.cgu.gov.br/PortalDaTransparencia/saida/despesas/20191220_Despesas.zip
+16:57:44  despesas 2019: 348 dias com arquivo · 14 falhas · {'emp': 6173, 'liq': 6022, 'pag': 3054, 'liq_ne': 12561, 'pag_ne': 3499}

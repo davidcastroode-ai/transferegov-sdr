@@ -1,0 +1,127 @@
+14:12:18      403 em 20150118_Despesas.zip · nova tentativa em 5s
+14:12:47      405 em 20150129_Despesas.zip · nova tentativa em 5s
+14:12:52      405 em 20150129_Despesas.zip · nova tentativa em 10s
+14:13:02      405 em 20150129_Despesas.zip · nova tentativa em 20s
+14:13:22      405 em 20150129_Despesas.zip · nova tentativa em 40s
+14:14:02      405 em 20150129_Despesas.zip · nova tentativa em 80s
+14:15:22      405 em 20150129_Despesas.zip · nova tentativa em 120s
+14:17:22    FALHOU: https://dadosabertos-download.cgu.gov.br/PortalDaTransparencia/saida/despesas/20150129_Despesas.zip
+14:17:23      405 em 20150130_Despesas.zip · nova tentativa em 5s
+14:17:28      405 em 20150130_Despesas.zip · nova tentativa em 10s
+14:17:53    20150201: 30 dias lidos · {'emp': 27, 'liq': 42, 'pag': 73, 'liq_ne': 49, 'pag_ne': 71}
+14:18:45      405 em 20150226_Despesas.zip · nova tentativa em 5s
+14:18:50      405 em 20150226_Despesas.zip · nova tentativa em 10s
+14:19:00      405 em 20150226_Despesas.zip · nova tentativa em 20s
+14:19:20      405 em 20150226_Despesas.zip · nova tentativa em 40s
+14:20:00      405 em 20150226_Despesas.zip · nova tentativa em 80s
+14:21:20      405 em 20150226_Despesas.zip · nova tentativa em 120s
+14:23:20    FALHOU: https://dadosabertos-download.cgu.gov.br/PortalDaTransparencia/saida/despesas/20150226_Despesas.zip
+14:23:21      405 em 20150227_Despesas.zip · nova tentativa em 5s
+14:23:40    20150304: 60 dias lidos · {'emp': 70, 'liq': 380, 'pag': 315, 'liq_ne': 1245, 'pag_ne': 312}
+14:24:17      405 em 20150321_Despesas.zip · nova tentativa em 5s
+14:24:22      405 em 20150321_Despesas.zip · nova tentativa em 10s
+14:24:32      405 em 20150321_Despesas.zip · nova tentativa em 20s
+14:24:52      405 em 20150321_Despesas.zip · nova tentativa em 40s
+14:25:32      405 em 20150321_Despesas.zip · nova tentativa em 80s
+14:26:53      405 em 20150321_Despesas.zip · nova tentativa em 120s
+14:28:53    FALHOU: https://dadosabertos-download.cgu.gov.br/PortalDaTransparencia/saida/despesas/20150321_Despesas.zip
+14:28:53      405 em 20150322_Despesas.zip · nova tentativa em 5s
+14:28:58      405 em 20150322_Despesas.zip · nova tentativa em 10s
+14:29:38    20150404: 90 dias lidos · {'emp': 119, 'liq': 498, 'pag': 409, 'liq_ne': 1422, 'pag_ne': 419}
+14:29:55      405 em 20150412_Despesas.zip · nova tentativa em 5s
+14:30:00      405 em 20150412_Despesas.zip · nova tentativa em 10s
+14:30:10      405 em 20150412_Despesas.zip · nova tentativa em 20s
+14:30:30      405 em 20150412_Despesas.zip · nova tentativa em 40s
+14:31:11      405 em 20150412_Despesas.zip · nova tentativa em 80s
+14:32:31      405 em 20150412_Despesas.zip · nova tentativa em 120s
+14:34:31    FALHOU: https://dadosabertos-download.cgu.gov.br/PortalDaTransparencia/saida/despesas/20150412_Despesas.zip
+14:35:25    20150505: 120 dias lidos · {'emp': 199, 'liq': 703, 'pag': 508, 'liq_ne': 1771, 'pag_ne': 517}
+14:35:25      405 em 20150506_Despesas.zip · nova tentativa em 5s
+14:35:30      405 em 20150506_Despesas.zip · nova tentativa em 10s
+14:35:40      405 em 20150506_Despesas.zip · nova tentativa em 20s
+14:36:00      405 em 20150506_Despesas.zip · nova tentativa em 40s
+14:36:41      405 em 20150506_Despesas.zip · nova tentativa em 80s
+14:38:01      405 em 20150506_Despesas.zip · nova tentativa em 120s
+14:40:01    FALHOU: https://dadosabertos-download.cgu.gov.br/PortalDaTransparencia/saida/despesas/20150506_Despesas.zip
+14:40:02      405 em 20150507_Despesas.zip · nova tentativa em 5s
+14:41:08      405 em 20150602_Despesas.zip · nova tentativa em 5s
+14:41:13      405 em 20150602_Despesas.zip · nova tentativa em 10s
+14:41:23      405 em 20150602_Despesas.zip · nova tentativa em 20s
+14:41:43      405 em 20150602_Despesas.zip · nova tentativa em 40s
+14:42:23      405 em 20150602_Despesas.zip · nova tentativa em 80s
+14:43:43      405 em 20150602_Despesas.zip · nova tentativa em 120s
+14:45:43    FALHOU: https://dadosabertos-download.cgu.gov.br/PortalDaTransparencia/saida/despesas/20150602_Despesas.zip
+14:45:44      405 em 20150603_Despesas.zip · nova tentativa em 5s
+14:45:58    20150606: 150 dias lidos · {'emp': 463, 'liq': 884, 'pag': 560, 'liq_ne': 2002, 'pag_ne': 569}
+14:46:36      405 em 20150623_Despesas.zip · nova tentativa em 5s
+14:46:41      405 em 20150623_Despesas.zip · nova tentativa em 10s
+14:46:51      405 em 20150623_Despesas.zip · nova tentativa em 20s
+14:47:11      405 em 20150623_Despesas.zip · nova tentativa em 40s
+14:47:51      405 em 20150623_Despesas.zip · nova tentativa em 80s
+14:49:11      405 em 20150623_Despesas.zip · nova tentativa em 120s
+14:51:11    FALHOU: https://dadosabertos-download.cgu.gov.br/PortalDaTransparencia/saida/despesas/20150623_Despesas.zip
+14:51:12      405 em 20150624_Despesas.zip · nova tentativa em 5s
+14:51:51    20150707: 180 dias lidos · {'emp': 515, 'liq': 1099, 'pag': 676, 'liq_ne': 2233, 'pag_ne': 683}
+14:52:16      405 em 20150718_Despesas.zip · nova tentativa em 5s
+14:52:21      405 em 20150718_Despesas.zip · nova tentativa em 10s
+14:52:31      405 em 20150718_Despesas.zip · nova tentativa em 20s
+14:52:51      405 em 20150718_Despesas.zip · nova tentativa em 40s
+14:53:31      405 em 20150718_Despesas.zip · nova tentativa em 80s
+14:54:51      405 em 20150718_Despesas.zip · nova tentativa em 120s
+14:56:51    FALHOU: https://dadosabertos-download.cgu.gov.br/PortalDaTransparencia/saida/despesas/20150718_Despesas.zip
+14:57:25      405 em 20150802_Despesas.zip · nova tentativa em 5s
+14:57:30      405 em 20150802_Despesas.zip · nova tentativa em 10s
+14:57:40      405 em 20150802_Despesas.zip · nova tentativa em 20s
+14:58:16    20150807: 210 dias lidos · {'emp': 627, 'liq': 1314, 'pag': 769, 'liq_ne': 2560, 'pag_ne': 795}
+14:58:26      405 em 20150813_Despesas.zip · nova tentativa em 5s
+14:58:31      405 em 20150813_Despesas.zip · nova tentativa em 10s
+14:58:41      405 em 20150813_Despesas.zip · nova tentativa em 20s
+14:59:02      405 em 20150813_Despesas.zip · nova tentativa em 40s
+14:59:42      405 em 20150813_Despesas.zip · nova tentativa em 80s
+15:01:02      405 em 20150813_Despesas.zip · nova tentativa em 120s
+15:03:02    FALHOU: https://dadosabertos-download.cgu.gov.br/PortalDaTransparencia/saida/despesas/20150813_Despesas.zip
+15:03:56      405 em 20150905_Despesas.zip · nova tentativa em 5s
+15:04:01      405 em 20150905_Despesas.zip · nova tentativa em 10s
+15:04:11      405 em 20150905_Despesas.zip · nova tentativa em 20s
+15:04:31      405 em 20150905_Despesas.zip · nova tentativa em 40s
+15:05:12      405 em 20150905_Despesas.zip · nova tentativa em 80s
+15:06:32      405 em 20150905_Despesas.zip · nova tentativa em 120s
+15:08:32    FALHOU: https://dadosabertos-download.cgu.gov.br/PortalDaTransparencia/saida/despesas/20150905_Despesas.zip
+15:08:38    20150908: 240 dias lidos · {'emp': 755, 'liq': 2017, 'pag': 1520, 'liq_ne': 3266, 'pag_ne': 1555}
+15:09:25      405 em 20150929_Despesas.zip · nova tentativa em 5s
+15:09:30      405 em 20150929_Despesas.zip · nova tentativa em 10s
+15:09:40      405 em 20150929_Despesas.zip · nova tentativa em 20s
+15:10:00      405 em 20150929_Despesas.zip · nova tentativa em 40s
+15:10:40      405 em 20150929_Despesas.zip · nova tentativa em 80s
+15:12:01      405 em 20150929_Despesas.zip · nova tentativa em 120s
+15:14:01    FALHOU: https://dadosabertos-download.cgu.gov.br/PortalDaTransparencia/saida/despesas/20150929_Despesas.zip
+15:14:27    20151009: 270 dias lidos · {'emp': 890, 'liq': 2460, 'pag': 1912, 'liq_ne': 3712, 'pag_ne': 1948}
+15:15:05      405 em 20151027_Despesas.zip · nova tentativa em 5s
+15:15:10      405 em 20151027_Despesas.zip · nova tentativa em 10s
+15:15:20      405 em 20151027_Despesas.zip · nova tentativa em 20s
+15:15:40      405 em 20151027_Despesas.zip · nova tentativa em 40s
+15:16:20      405 em 20151027_Despesas.zip · nova tentativa em 80s
+15:17:41      405 em 20151027_Despesas.zip · nova tentativa em 120s
+15:19:41    FALHOU: https://dadosabertos-download.cgu.gov.br/PortalDaTransparencia/saida/despesas/20151027_Despesas.zip
+15:19:42      405 em 20151028_Despesas.zip · nova tentativa em 5s
+15:20:18    20151109: 300 dias lidos · {'emp': 1242, 'liq': 2570, 'pag': 2028, 'liq_ne': 3831, 'pag_ne': 2062}
+15:20:36      405 em 20151117_Despesas.zip · nova tentativa em 5s
+15:20:41      405 em 20151117_Despesas.zip · nova tentativa em 10s
+15:20:52      405 em 20151117_Despesas.zip · nova tentativa em 20s
+15:21:12      405 em 20151117_Despesas.zip · nova tentativa em 40s
+15:21:52      405 em 20151117_Despesas.zip · nova tentativa em 80s
+15:23:12      405 em 20151117_Despesas.zip · nova tentativa em 120s
+15:25:12    FALHOU: https://dadosabertos-download.cgu.gov.br/PortalDaTransparencia/saida/despesas/20151117_Despesas.zip
+15:25:13      405 em 20151118_Despesas.zip · nova tentativa em 5s
+15:25:29      403 em 20151122_Despesas.zip · nova tentativa em 5s
+15:26:28    20151211: 330 dias lidos · {'emp': 1895, 'liq': 2814, 'pag': 2249, 'liq_ne': 4148, 'pag_ne': 2287}
+15:26:28      405 em 20151212_Despesas.zip · nova tentativa em 5s
+15:26:33      405 em 20151212_Despesas.zip · nova tentativa em 10s
+15:26:43      405 em 20151212_Despesas.zip · nova tentativa em 20s
+15:27:03      405 em 20151212_Despesas.zip · nova tentativa em 40s
+15:27:43      405 em 20151212_Despesas.zip · nova tentativa em 80s
+15:29:04      405 em 20151212_Despesas.zip · nova tentativa em 120s
+15:31:04    FALHOU: https://dadosabertos-download.cgu.gov.br/PortalDaTransparencia/saida/despesas/20151212_Despesas.zip
+15:31:04      405 em 20151213_Despesas.zip · nova tentativa em 5s
+15:31:43      403 em 20151227_Despesas.zip · nova tentativa em 5s
+15:32:03  despesas 2015: 348 dias com arquivo · 14 falhas · {'emp': 2242, 'liq': 3178, 'pag': 2866, 'liq_ne': 5626, 'pag_ne': 2908}

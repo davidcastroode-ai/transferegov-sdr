@@ -1,0 +1,68 @@
+18:28:40    despesas-execucao 202101 202101_Despesas.csv: 12 linhas das UGs
+18:28:41    compras 202101 202101_Apostilamento.csv: 0 linhas das UGs
+18:28:41    compras 202101 202101_Compras.csv: 2 linhas das UGs
+18:28:41    compras 202101 202101_ItemCompra.csv: 4 linhas das UGs
+18:28:41    compras 202101 202101_TermoAditivo.csv: 3 linhas das UGs
+18:28:43    despesas-execucao 202102 202102_Despesas.csv: 20 linhas das UGs
+18:28:45    compras 202102 202102_Apostilamento.csv: 0 linhas das UGs
+18:28:45    compras 202102 202102_Compras.csv: 4 linhas das UGs
+18:28:45    compras 202102 202102_ItemCompra.csv: 8 linhas das UGs
+18:28:45    compras 202102 202102_TermoAditivo.csv: 16 linhas das UGs
+18:28:47    despesas-execucao 202103 202103_Despesas.csv: 29 linhas das UGs
+18:28:49    compras 202103 202103_Apostilamento.csv: 0 linhas das UGs
+18:28:49    compras 202103 202103_Compras.csv: 1 linhas das UGs
+18:28:49    compras 202103 202103_ItemCompra.csv: 2 linhas das UGs
+18:28:49    compras 202103 202103_TermoAditivo.csv: 4 linhas das UGs
+18:28:51    despesas-execucao 202104 202104_Despesas.csv: 195 linhas das UGs
+18:28:52    compras 202104 202104_Apostilamento.csv: 0 linhas das UGs
+18:28:52    compras 202104 202104_Compras.csv: 2 linhas das UGs
+18:28:53    compras 202104 202104_ItemCompra.csv: 4 linhas das UGs
+18:28:53    compras 202104 202104_TermoAditivo.csv: 5 linhas das UGs
+18:28:55    despesas-execucao 202105 202105_Despesas.csv: 30 linhas das UGs
+18:28:57    compras 202105 202105_Apostilamento.csv: 0 linhas das UGs
+18:28:57    compras 202105 202105_Compras.csv: 0 linhas das UGs
+18:28:57    compras 202105 202105_ItemCompra.csv: 0 linhas das UGs
+18:28:57    compras 202105 202105_TermoAditivo.csv: 0 linhas das UGs
+18:28:59    despesas-execucao 202106 202106_Despesas.csv: 220 linhas das UGs
+18:29:00    compras 202106 202106_Apostilamento.csv: 0 linhas das UGs
+18:29:00    compras 202106 202106_Compras.csv: 0 linhas das UGs
+18:29:00    compras 202106 202106_ItemCompra.csv: 0 linhas das UGs
+18:29:00    compras 202106 202106_TermoAditivo.csv: 0 linhas das UGs
+18:29:02    despesas-execucao 202107 202107_Despesas.csv: 220 linhas das UGs
+18:29:04    compras 202107 202107_Apostilamento.csv: 0 linhas das UGs
+18:29:04    compras 202107 202107_Compras.csv: 0 linhas das UGs
+18:29:04    compras 202107 202107_ItemCompra.csv: 0 linhas das UGs
+18:29:04    compras 202107 202107_TermoAditivo.csv: 0 linhas das UGs
+18:29:06    despesas-execucao 202108 202108_Despesas.csv: 162 linhas das UGs
+18:29:08    compras 202108 202108_Apostilamento.csv: 0 linhas das UGs
+18:29:08    compras 202108 202108_Compras.csv: 1 linhas das UGs
+18:29:08    compras 202108 202108_ItemCompra.csv: 0 linhas das UGs
+18:29:08    compras 202108 202108_TermoAditivo.csv: 0 linhas das UGs
+18:29:11    despesas-execucao 202109 202109_Despesas.csv: 274 linhas das UGs
+18:29:12    compras 202109 202109_Apostilamento.csv: 0 linhas das UGs
+18:29:12    compras 202109 202109_Compras.csv: 0 linhas das UGs
+18:29:12    compras 202109 202109_ItemCompra.csv: 0 linhas das UGs
+18:29:12    compras 202109 202109_TermoAditivo.csv: 0 linhas das UGs
+18:29:14    despesas-execucao 202110 202110_Despesas.csv: 189 linhas das UGs
+18:29:16    compras 202110 202110_Apostilamento.csv: 0 linhas das UGs
+18:29:16    compras 202110 202110_Compras.csv: 1 linhas das UGs
+18:29:16    compras 202110 202110_ItemCompra.csv: 2 linhas das UGs
+18:29:16    compras 202110 202110_TermoAditivo.csv: 4 linhas das UGs
+18:29:16      405 em 202111_Despesas.zip · nova tentativa em 5s
+18:29:21      405 em 202111_Despesas.zip · nova tentativa em 10s
+18:29:31      405 em 202111_Despesas.zip · nova tentativa em 20s
+18:29:51      405 em 202111_Despesas.zip · nova tentativa em 40s
+18:30:31      405 em 202111_Despesas.zip · nova tentativa em 80s
+18:31:51      405 em 202111_Despesas.zip · nova tentativa em 120s
+18:33:51    FALHOU: https://dadosabertos-download.cgu.gov.br/PortalDaTransparencia/saida/despesas-execucao/202111_Despesas.zip
+18:33:52    despesas-execucao 202111: falhou
+18:33:52      405 em 202111_Compras.zip · nova tentativa em 5s
+18:33:59    compras 202111 202111_Apostilamento.csv: 0 linhas das UGs
+18:33:59    compras 202111 202111_Compras.csv: 2 linhas das UGs
+18:33:59    compras 202111 202111_ItemCompra.csv: 4 linhas das UGs
+18:33:59    compras 202111 202111_TermoAditivo.csv: 6 linhas das UGs
+18:34:02    despesas-execucao 202112 202112_Despesas.csv: 476 linhas das UGs
+18:34:04    compras 202112 202112_Apostilamento.csv: 0 linhas das UGs
+18:34:04    compras 202112 202112_Compras.csv: 4 linhas das UGs
+18:34:04    compras 202112 202112_ItemCompra.csv: 8 linhas das UGs
+18:34:04    compras 202112 202112_TermoAditivo.csv: 0 linhas das UGs

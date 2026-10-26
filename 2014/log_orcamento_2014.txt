@@ -1,0 +1,8 @@
+15:33:27      405 em 2014_OrcamentoDespesa.zip · nova tentativa em 5s
+15:33:32      405 em 2014_OrcamentoDespesa.zip · nova tentativa em 10s
+15:33:42      405 em 2014_OrcamentoDespesa.zip · nova tentativa em 20s
+15:34:02      405 em 2014_OrcamentoDespesa.zip · nova tentativa em 40s
+15:34:42      405 em 2014_OrcamentoDespesa.zip · nova tentativa em 80s
+15:36:02      405 em 2014_OrcamentoDespesa.zip · nova tentativa em 120s
+15:38:02    FALHOU: https://dadosabertos-download.cgu.gov.br/PortalDaTransparencia/saida/orcamento-despesa/2014_OrcamentoDespesa.zip
+15:38:02  orçamento 2014: sem arquivo
