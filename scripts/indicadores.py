@@ -90,13 +90,22 @@ def grupo(ug, mod):
     return (ug or '') + '|' + (mod or '')
 
 
-def conta(ind, ug, mod, numerador, item=None):
+GA = collections.defaultdict(lambda: collections.defaultdict(lambda: [0, 0]))   # por ano: "ug|mod|ano"
+ITENS_ANO = collections.defaultdict(list)                                          # ano de cada item da lista (mesma ordem de ITENS)
+
+
+def conta(ind, ug, mod, numerador, item=None, ano=None):
+    v = (numerador if isinstance(numerador, (int, float)) and not isinstance(numerador, bool) else 1) if numerador else 0
     g = G[grupo(ug, mod)][ind]
     g[1] += 1
-    if numerador:
-        g[0] += numerador if isinstance(numerador, (int, float)) and not isinstance(numerador, bool) else 1
+    g[0] += v
+    if ano:
+        ga = GA[grupo(ug, mod) + '|' + str(ano)][ind]
+        ga[1] += 1
+        ga[0] += v
     if item is not None:
         ITENS[ind].append(item)
+        ITENS_ANO[ind].append(ano or '')
 
 
 # ---------- histórico por proposta ----------
@@ -118,7 +127,19 @@ for k, l in hp.items():
         g[0] += 1
         g[1].add(p.get('cod_programa'))
         ITENS['AP-01'].append([p['nr_proposta'], ug_prop(p), p.get('modalidade', ''), p.get('programa', '')[:80], p.get('proponente', '')[:60]])
+        ITENS_ANO['AP-01'].append(min(t for t, s in l if s in ENVIO and t >= C1).year)
 AP1 = {g: [v[0], sorted(x for x in v[1] if x)] for g, v in ap1.items()}
+# AP-01 por ano civil: propostas enviadas pela primeira vez no ano ÷ programas distintos dessas propostas
+ap1a = collections.defaultdict(lambda: [0, set()])
+for k, l in hp.items():
+    if k in por_prop:
+        env = [t for t, s in l if s in ENVIO]
+        if env and min(env).year >= C5.year + 1:
+            p = por_prop[k]
+            g = ap1a[grupo(ug_prop(p), p.get('modalidade')) + '|' + str(min(env).year)]
+            g[0] += 1
+            g[1].add(p.get('cod_programa'))
+AP1A = {g: [v[0], sorted(x for x in v[1] if x)] for g, v in ap1a.items()}
 
 # ---------- AP-02 e AP-03 · propostas (5 anos, pelo ano da proposta) ----------
 ano5 = C5.year + (1 if C5.month > 6 else 0)
@@ -132,12 +153,12 @@ for p in prop:
         continue
     analisada = any(x in sit for x in ('Aprovad', 'Rejeitad', 'Eliminada'))
     conta('AP-02', ug_prop(p), p.get('modalidade'), analisada,
-          [p['nr_proposta'], ug_prop(p), p.get('modalidade', ''), sit, p.get('proponente', '')[:60]] if not analisada else None)
+          [p['nr_proposta'], ug_prop(p), p.get('modalidade', ''), sit, p.get('proponente', '')[:60]] if not analisada else None, ano)
     aprovada = 'Aprovad' in sit or p.get('celebrada') == 'SIM'
     if aprovada:
         cel = p.get('celebrada') == 'SIM' or bool(p.get('nr_instrumento'))
         conta('AP-03', ug_prop(p), p.get('modalidade'), cel,
-              [p['nr_proposta'], ug_prop(p), p.get('modalidade', ''), sit, p.get('proponente', '')[:60]] if not cel else None)
+              [p['nr_proposta'], ug_prop(p), p.get('modalidade', ''), sit, p.get('proponente', '')[:60]] if not cel else None, ano)
 
 # ---------- EX-02 · cláusula suspensiva (assinados nos 5 anos, convênio e contrato de repasse) ----------
 for i in inst:
@@ -146,7 +167,7 @@ for i in inst:
         continue
     sus = 'Suspensiva' in (i.get('situacao_contratacao') or '') or bool((i.get('clausula_suspensiva_ate') or '').strip())
     conta('EX-02', i.get('ug_emitente'), i.get('modalidade'), sus,
-          [i['nr_instrumento'], i.get('ug_emitente', ''), i.get('modalidade', ''), i.get('situacao_contratacao', ''), i.get('proponente', '')[:60], i.get('clausula_suspensiva_ate', '')] if sus else None)
+          [i['nr_instrumento'], i.get('ug_emitente', ''), i.get('modalidade', ''), i.get('situacao_contratacao', ''), i.get('proponente', '')[:60], i.get('clausula_suspensiva_ate', '')] if sus else None, a.year)
 
 # ---------- EX-03 · sem desembolso 60+ dias (aproximado: conta da assinatura, sem a data do aceite da licitação) ----------
 dd = collections.defaultdict(list)
@@ -189,7 +210,7 @@ for k, l in hp.items():
     mod = (i or p or {}).get('modalidade', '')
     prop_ = (i or p or {}).get('proponente', '')[:60]
     ok = sf == 'PRESTACAO_CONTAS_APROVADA'
-    conta('PC-02', ug, mod, ok, [nr or k, ug, mod, sf.replace('_', ' ').title(), prop_, tf.strftime('%d/%m/%Y')] if not ok else None)
+    conta('PC-02', ug, mod, ok, [nr or k, ug, mod, sf.replace('_', ' ').title(), prop_, tf.strftime('%d/%m/%Y')] if not ok else None, tf.year)
     ini = next((t for t, s in l if s == 'PRESTACAO_CONTAS_ENVIADA_ANALISE'), None)
     if ini and ini <= tf:
         tot, comp, cur = (tf - ini).days, 0, None
@@ -202,7 +223,7 @@ for k, l in hp.items():
                 comp += (t - cur).days
                 cur = None
         dias = max(0, tot - comp)
-        conta('PC-03', ug, mod, dias, [nr or k, ug, mod, dias, prop_, ini.strftime('%d/%m/%Y'), tf.strftime('%d/%m/%Y')])
+        conta('PC-03', ug, mod, dias, [nr or k, ug, mod, dias, prop_, ini.strftime('%d/%m/%Y'), tf.strftime('%d/%m/%Y')], tf.year)
 
 # ---------- PC-04 · encerrados com saldo em conta (estoque total) ----------
 ENC = {'Cancelado', 'Prestação de Contas Aprovada', 'Prestação de Contas Aprovada com Ressalvas', 'Prestação de Contas Concluída',
@@ -218,6 +239,10 @@ saida = {
     'janela': {'inicio_5a': C5.strftime('%d/%m/%Y'), 'inicio_12m': C1.strftime('%d/%m/%Y')},
     'grupos': {g: {k: v for k, v in d.items()} for g, d in G.items()},
     'ap01': AP1,
+    'grupos_ano': {g: {k: v for k, v in d.items()} for g, d in GA.items() if int(g.rsplit('|', 1)[1]) >= C5.year + 1},
+    'ap01_ano': AP1A,
+    'itens_ano': ITENS_ANO,
+    'anos': sorted({int(g.rsplit('|', 1)[1]) for g in GA if int(g.rsplit('|', 1)[1]) >= C5.year + 1}),
     'ug_propostas': dict(REGRA_UG),
     'itens': ITENS,
 }
