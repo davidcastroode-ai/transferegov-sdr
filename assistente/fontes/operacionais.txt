@@ -1,0 +1,472 @@
+BANCO DE PERGUNTAS OPERACIONAIS — EXECUÇÃO, STATUS E SITUAÇÃO
+
+Assistente Virtual da Administração Pública
+
+Finalidade: criar uma base de perguntas para consultas rápidas sobre
+andamento processual, execução física, orçamentária e financeira,
+pendências, prazos, liberações e encerramento de instrumentos e
+contratos.
+
+Total: 210 perguntas — 7 categorias, com 30 perguntas por categoria.
+
+1. CONVÊNIOS — EXECUÇÃO E STATUS
+
+1.  Qual é a situação atual do convênio?
+
+2.  Em que etapa de execução se encontra o convênio?
+
+3.  O convênio está ativo, vencido ou encerrado?
+
+4.  Qual é o status atual do processo do convênio?
+
+5.  O convênio já foi assinado por todas as partes?
+
+6.  O convênio já foi publicado oficialmente?
+
+7.  O convênio já está apto para iniciar a execução?
+
+8.  Existe alguma pendência documental no convênio?
+
+9.  Quais documentos ainda faltam para regularizar o convênio?
+
+10. O plano de trabalho do convênio já foi aprovado?
+
+11. Os recursos do convênio já foram liberados?
+
+12. Qual é o valor já liberado para o convênio?
+
+13. Qual é o saldo disponível para execução do convênio?
+
+14. Qual percentual do objeto do convênio já foi executado?
+
+15. As metas previstas no plano de trabalho estão sendo cumpridas?
+
+16. Existe alguma etapa do convênio em atraso?
+
+17. Qual é o prazo restante para execução do convênio?
+
+18. O convênio está próximo do vencimento?
+
+19. A solicitação de prorrogação do convênio já foi analisada?
+
+20. A alteração do plano de trabalho já foi aprovada?
+
+21. Existe alguma pendência que esteja impedindo a liberação de
+    recursos?
+
+22. A prestação de contas do convênio já foi apresentada?
+
+23. Qual é o status da análise da prestação de contas?
+
+24. Existe alguma diligência pendente na prestação de contas?
+
+25. O convenente já respondeu às solicitações de correção?
+
+26. Existe saldo de recursos a devolver ao final do convênio?
+
+27. O convênio já foi concluído fisicamente e financeiramente?
+
+28. O encerramento do convênio já foi registrado no sistema?
+
+29. Existe alguma restrição ou irregularidade registrada no convênio?
+
+30. Qual é a próxima providência necessária para dar andamento ao
+    convênio?
+
+2. TERMO DE FOMENTO — EXECUÇÃO E STATUS
+
+1.  Qual é a situação atual do termo de fomento?
+
+2.  Em que fase está a execução da parceria?
+
+3.  O termo de fomento já foi assinado?
+
+4.  A parceria já foi publicada e formalizada?
+
+5.  O termo de fomento está vigente?
+
+6.  Qual é a data de término da vigência?
+
+7.  O plano de trabalho já foi aprovado?
+
+8.  Existe alguma pendência para iniciar a execução da parceria?
+
+9.  A OSC já apresentou todos os documentos necessários?
+
+10. A primeira parcela dos recursos já foi liberada?
+
+11. Qual é o valor total repassado à organização?
+
+12. Qual é o saldo financeiro disponível na parceria?
+
+13. Qual percentual das metas pactuadas já foi executado?
+
+14. As atividades previstas estão sendo realizadas conforme o
+    cronograma?
+
+15. Existem metas atrasadas ou não cumpridas?
+
+16. O relatório de execução do objeto já foi apresentado?
+
+17. O monitoramento da parceria está atualizado?
+
+18. Existe algum relatório de visita técnica pendente?
+
+19. A solicitação de alteração do plano de trabalho já foi aprovada?
+
+20. A prorrogação da parceria já foi solicitada ou autorizada?
+
+21. Existe alguma pendência documental ou financeira da OSC?
+
+22. Há alguma diligência aguardando resposta da organização?
+
+23. A prestação de contas já foi protocolada?
+
+24. Em que etapa está a análise da prestação de contas?
+
+25. A prestação de contas foi aprovada, aprovada com ressalvas ou
+    rejeitada?
+
+26. Existe alguma medida corretiva pendente para regularizar a parceria?
+
+27. Há recursos remanescentes a devolver?
+
+28. O objeto da parceria já foi concluído?
+
+29. O termo de fomento já está encerrado no sistema?
+
+30. Qual é a próxima ação necessária para regularizar ou concluir a
+    parceria?
+
+3. CONTRATO DE REPASSE — EXECUÇÃO E STATUS
+
+1.  Qual é a situação atual do contrato de repasse?
+
+2.  Em qual etapa está a operação de repasse?
+
+3.  O contrato de repasse já foi formalizado?
+
+4.  O instrumento está vigente?
+
+5.  Qual é o prazo restante para conclusão do contrato?
+
+6.  O plano de trabalho já foi aprovado?
+
+7.  O projeto técnico já foi analisado pelo agente financeiro?
+
+8.  Existe alguma pendência na documentação técnica?
+
+9.  O processo licitatório já foi aprovado?
+
+10. A obra ou o serviço já foi autorizado para iniciar?
+
+11. A ordem de serviço já foi emitida?
+
+12. Qual é o percentual de execução física da obra?
+
+13. Qual é o percentual de execução financeira da operação?
+
+14. Qual é o valor total contratado para a execução do objeto?
+
+15. Quanto já foi medido e atestado?
+
+16. Quanto já foi pago ao executor da obra?
+
+17. Existem parcelas de recursos pendentes de liberação?
+
+18. Qual é o status da última solicitação de pagamento?
+
+19. Existe alguma pendência de análise pelo agente financeiro?
+
+20. O cronograma físico-financeiro está sendo cumprido?
+
+21. A obra está atrasada em relação ao cronograma aprovado?
+
+22. Existe alguma medição pendente de aprovação?
+
+23. A reprogramação da obra já foi autorizada?
+
+24. Há alguma restrição técnica, ambiental ou documental impedindo a
+    continuidade?
+
+25. A vistoria mais recente já foi realizada?
+
+26. A obra já foi concluída e recebida formalmente?
+
+27. O relatório de conclusão do objeto já foi apresentado?
+
+28. A prestação de contas já foi encaminhada para análise?
+
+29. O contrato de repasse já foi encerrado pelo agente financeiro?
+
+30. Qual é a pendência prioritária para dar continuidade à operação?
+
+4. TERMO DE EXECUÇÃO DESCENTRALIZADA (TED) — EXECUÇÃO E STATUS
+
+1.  Qual é a situação atual do TED?
+
+2.  Em qual etapa de execução se encontra o TED?
+
+3.  O TED já foi assinado pelas unidades envolvidas?
+
+4.  O instrumento já está vigente?
+
+5.  Qual é o prazo final para execução do TED?
+
+6.  O plano de trabalho já foi aprovado?
+
+7.  Os créditos orçamentários já foram descentralizados?
+
+8.  Qual é o valor de crédito orçamentário descentralizado?
+
+9.  Existe crédito disponível para continuar a execução?
+
+10. Os recursos financeiros necessários já foram disponibilizados?
+
+11. Qual é o valor empenhado no âmbito do TED?
+
+12. Qual é o valor liquidado e pago na execução do TED?
+
+13. Qual é o saldo orçamentário ainda disponível?
+
+14. Qual percentual do objeto já foi executado?
+
+15. As metas previstas no plano de trabalho estão sendo cumpridas?
+
+16. Existe alguma etapa da execução em atraso?
+
+17. A unidade descentralizada já iniciou as atividades?
+
+18. Existe alguma pendência na documentação do TED?
+
+19. A solicitação de alteração do plano de trabalho já foi analisada?
+
+20. A prorrogação da vigência do TED já foi autorizada?
+
+21. Existe alguma restrição orçamentária que impeça a execução?
+
+22. O relatório de execução parcial já foi apresentado?
+
+23. O relatório de cumprimento do objeto já foi entregue?
+
+24. Existe alguma diligência pendente na análise da execução?
+
+25. A unidade descentralizada já respondeu às solicitações de
+    esclarecimento?
+
+26. Existem créditos ou recursos financeiros não utilizados?
+
+27. A devolução de saldos já foi providenciada, quando aplicável?
+
+28. O objeto do TED já foi integralmente executado?
+
+29. O processo de encerramento do TED já foi concluído?
+
+30. Qual é a próxima providência para regularizar ou finalizar o TED?
+
+5. CONTRATOS ADMINISTRATIVOS, CONTRATOS.GOV.BR E ATAS — EXECUÇÃO E
+STATUS
+
+5.1. Gestão e acompanhamento contratual
+
+1.  Qual é a situação atual do contrato administrativo?
+
+2.  Qual é o status do contrato no Contratos.gov.br?
+
+3.  O contrato já foi assinado e publicado?
+
+4.  O contrato está ativo, suspenso ou encerrado?
+
+5.  Qual é a data de início e término da vigência contratual?
+
+6.  Qual é o saldo atual do contrato?
+
+7.  Qual é o valor total contratado e o valor já executado?
+
+8.  Qual percentual do objeto contratual já foi executado?
+
+9.  Existe alguma pendência para iniciar a execução?
+
+10. A designação do gestor e dos fiscais do contrato já foi registrada?
+
+11. Os fiscais estão registrando as ocorrências da execução?
+
+12. Existe alguma notificação pendente de resposta do contratado?
+
+13. A solicitação de aditivo contratual já foi analisada?
+
+14. O pedido de prorrogação contratual já foi aprovado?
+
+15. Existe saldo orçamentário para manter a execução do contrato?
+
+5.2. Água, energia, mão de obra, limpeza e vigilância
+
+16. O contrato de água e esgoto está ativo e regular?
+
+17. Existem faturas de água pendentes de pagamento?
+
+18. Qual é a situação dos pagamentos das contas de água?
+
+19. O contrato de energia elétrica está vigente?
+
+20. Existem faturas de energia vencidas ou pendentes de liquidação?
+
+21. O pagamento das faturas de energia já foi processado?
+
+22. O contrato de mão de obra terceirizada está com a documentação
+    regular?
+
+23. A empresa terceirizada apresentou a documentação trabalhista
+    exigida?
+
+24. Existem postos de trabalho descobertos ou profissionais ausentes?
+
+25. O contrato de limpeza está sendo executado conforme os níveis de
+    serviço previstos?
+
+26. Existem ocorrências ou não conformidades pendentes no contrato de
+    limpeza?
+
+27. O contrato de vigilância está com os postos e escalas devidamente
+    cobertos?
+
+28. Existem ocorrências de fiscalização pendentes no contrato de
+    vigilância?
+
+5.3. Atas e encerramento
+
+29. Qual é a situação atual da ata de registro de preços e de sua
+    vigência?
+
+30. O contrato já foi concluído, recebido e encaminhado para
+    encerramento?
+
+6. ORÇAMENTO PÚBLICO — EXECUÇÃO E STATUS
+
+1.  Qual é a situação atual da execução orçamentária da unidade?
+
+2.  Qual é o orçamento autorizado para a unidade neste exercício?
+
+3.  Qual é o saldo orçamentário disponível atualmente?
+
+4.  Quanto do orçamento já foi empenhado?
+
+5.  Quanto do orçamento já foi liquidado?
+
+6.  Quanto do orçamento já foi pago?
+
+7.  Qual é o percentual de execução orçamentária até o momento?
+
+8.  Existe dotação disponível para atender à nova despesa?
+
+9.  Qual é o status da solicitação de crédito orçamentário?
+
+10. O pedido de emissão de empenho já foi analisado?
+
+11. A nota de empenho já foi emitida?
+
+12. Qual é o saldo atual da nota de empenho?
+
+13. Existe alguma solicitação de reforço de empenho pendente?
+
+14. A anulação ou o cancelamento do empenho já foi processado?
+
+15. Existe saldo de empenho suficiente para cobrir o contrato?
+
+16. A dotação orçamentária está compatível com o objeto da despesa?
+
+17. A classificação orçamentária já foi validada?
+
+18. Existe alguma restrição na fonte ou destinação de recursos?
+
+19. O crédito orçamentário já foi descentralizado para a unidade
+    executora?
+
+20. A descentralização de crédito já foi registrada no sistema?
+
+21. Existe alguma solicitação de remanejamento orçamentário em análise?
+
+22. O pedido de crédito adicional já foi autorizado?
+
+23. Qual é o status dos restos a pagar da unidade?
+
+24. Existem restos a pagar pendentes de liquidação?
+
+25. Existem empenhos inscritos em restos a pagar aguardando pagamento?
+
+26. Há bloqueio ou contingenciamento afetando a dotação?
+
+27. Existe orçamento disponível para prorrogar o contrato?
+
+28. A programação orçamentária está compatível com o cronograma de
+    execução?
+
+29. Quais despesas estão comprometendo o saldo orçamentário da unidade?
+
+30. Qual é a pendência que impede o prosseguimento da execução
+    orçamentária?
+
+7. FINANCEIRO — EXECUÇÃO E STATUS
+
+1.  Qual é a situação atual do processo de pagamento?
+
+2.  Em qual etapa está o pagamento da nota fiscal?
+
+3.  A nota fiscal já foi recebida e atestada?
+
+4.  A despesa já foi liquidada?
+
+5.  O pagamento já foi autorizado?
+
+6.  A ordem bancária já foi emitida?
+
+7.  Qual é a data do pagamento realizado?
+
+8.  Existe alguma previsão de pagamento registrada no processo?
+
+9.  Qual é o motivo de o pagamento ainda estar pendente?
+
+10. Existe alguma pendência documental que impeça o pagamento?
+
+11. O processo está aguardando conferência ou liquidação?
+
+12. Existem retenções tributárias pendentes de cálculo ou registro?
+
+13. As retenções tributárias já foram processadas?
+
+14. O fornecedor possui alguma pendência cadastral ou fiscal?
+
+15. Os dados bancários do fornecedor foram validados?
+
+16. O pagamento foi devolvido ou rejeitado pela instituição bancária?
+
+17. Existe alguma divergência entre a nota fiscal e o valor autorizado?
+
+18. Qual é o valor bruto, o valor retido e o valor líquido do pagamento?
+
+19. Existem notas fiscais vencidas aguardando pagamento?
+
+20. Qual é o saldo de pagamentos pendentes por contrato?
+
+21. O pagamento está respeitando os procedimentos e a ordem cronológica
+    aplicáveis?
+
+22. O limite financeiro está disponível para efetuar o pagamento?
+
+23. Existe empenho suficiente para liquidar a despesa?
+
+24. Existe despesa liquidada aguardando disponibilidade financeira?
+
+25. O pagamento de restos a pagar já foi processado?
+
+26. Existe pagamento em duplicidade ou necessidade de estorno?
+
+27. A devolução de valores recebidos indevidamente já foi regularizada?
+
+28. Existem recursos financeiros remanescentes a devolver?
+
+29. Qual é o total de pagamentos realizados no período consultado?
+
+30. Qual é a próxima providência para concluir o processo financeiro?
+
+8. PADRÃO DE RESPOSTA PARA CONSULTAS DE STATUS
