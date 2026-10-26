@@ -57,6 +57,10 @@ jobs:
         env:
           CONTRATOS_ANTERIOR: /tmp/ctr_ant
 
+      - name: Indicadores do IDTRU-DL (visão do repassador · 5 UGs da SDR)
+        continue-on-error: true
+        run: python scripts/indicadores.py saida
+
       - name: Gerar as páginas do painel (Propostas, Empenho, Programas, Movimentação, Obras, Prestação de contas)
         run: python scripts/paginas.py saida
 
