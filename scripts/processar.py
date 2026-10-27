@@ -18,7 +18,8 @@ UGS_SDR = ['130010', '130141', '135098', '420013', '130255']
 ARQUIVOS = ['siconv_convenio', 'siconv_programa_proposta', 'siconv_programa', 'siconv_proposta', 'siconv_emenda',
             'siconv_empenho', 'siconv_desembolso', 'siconv_termo_aditivo', 'siconv_prorroga_oficio', 'data_carga_siconv',
             'siconv_dados_obrasgov_geral', 'siconv_acomp_obras_contratos_medicoes_modulo_empresas', 'siconv_acomp_obras_valores_itens_medicao_modulo_empresas', 'siconv_resumo_fisico_financeiro', 'siconv_historico_situacao', 'siconv_pagamento', 'siconv_cronograma_desembolso', 'siconv_solicitacao_ajuste_pt',
-            'siconv_plano_aplicacao_detalhado', 'siconv_meta_crono_fisico', 'siconv_etapa_crono_fisico']
+            'siconv_plano_aplicacao_detalhado', 'siconv_meta_crono_fisico', 'siconv_etapa_crono_fisico',
+            'siconv_licitacao', 'siconv_contrato']   # execução do convenente (processos de execução e contratos)
 TMP = os.environ.get('FONTE_LOCAL') or '/tmp/transferegov'
 csv.field_size_limit(10**9)
 LOG = []
@@ -217,6 +218,22 @@ def main(saida):
     etapas = [r for r in it_et if r.get('ID_META') in ids_meta] if cab_et and 'ID_META' in cab_et else \
              [r for r in it_et if r.get('NR_CONVENIO') in conv] if cab_et and 'NR_CONVENIO' in cab_et else []
     log(f'siconv_etapa_crono_fisico: {len(etapas)} linhas da SDR')
+    # execução do convenente: processos de execução (licitações) e contratos/subconvênios registrados no Transferegov
+    cab_lic, licitacoes = do_conv('siconv_licitacao')
+    cab_ctc, it_ctc = linhas('siconv_contrato')
+    meta['cabecalhos']['contrato'] = cab_ctc
+    ids_lic = {r.get('ID_LICITACAO') for r in licitacoes if r.get('ID_LICITACAO')}
+    props_sdr = {c.get('ID_PROPOSTA') for c in conv.values()}
+    if cab_ctc and 'NR_CONVENIO' in cab_ctc:
+        contratos_conv = [r for r in it_ctc if r.get('NR_CONVENIO') in conv]
+    elif cab_ctc and 'ID_PROPOSTA' in cab_ctc:
+        contratos_conv = [r for r in it_ctc if r.get('ID_PROPOSTA') in props_sdr]
+    elif cab_ctc and 'ID_LICITACAO' in cab_ctc:
+        contratos_conv = [r for r in it_ctc if r.get('ID_LICITACAO') in ids_lic]
+    else:
+        contratos_conv = []
+    log(f'siconv_contrato: {len(contratos_conv)} linhas da SDR · colunas: {",".join(cab_ctc or [])}')
+    log(f'siconv_licitacao: colunas: {",".join(cab_lic or [])}')
     # histórico: primeira vez que o instrumento ficou INADIMPLENTE e a sequência de situações
     inad_c, hist_c = {}, {}
     for h in historico:
@@ -487,6 +504,8 @@ def main(saida):
     gravar(saida, 'cronograma_desembolso.csv', cab_cr or ['NR_CONVENIO'], cronograma)
     gravar(saida, 'ajustes_pt.csv', cab_aj or ['NR_CONVENIO'], ajustes_pt)
     gravar(saida, 'pad.csv', cab_pad or ['ID_PROPOSTA'], pad)
+    gravar(saida, 'licitacoes.csv', cab_lic or ['NR_CONVENIO'], licitacoes)
+    gravar(saida, 'contratos_convenente.csv', cab_ctc or ['NR_CONVENIO'], contratos_conv)
     gravar(saida, 'metas.csv', cab_mt or ['ID_META'], metas)
     gravar(saida, 'etapas.csv', cab_et or ['ID_META'], etapas)
     gravar(saida, 'emendas.csv', meta['cabecalhos'].get('emenda') or ['ID_PROPOSTA'], emendas)

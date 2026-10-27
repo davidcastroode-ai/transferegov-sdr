@@ -82,7 +82,7 @@ for r in ler('pagamentos.csv'):
         continue
     doc = ' '.join(x for x in [r.get('DESC_DL', ''), r.get('NR_DL', '')] if x)
     cnpj = r.get('IDENTIF_FORNECEDOR', '')
-    R[n]['pag'].append([r.get('DATA_PAG', ''), r.get('NOME_FORNECEDOR', ''), cnpj, doc, num(r.get('VL_PAGO')), r.get('TP_MOV_FINANCEIRA', '')])
+    R[n]['pag'].append([r.get('DATA_PAG', ''), r.get('NOME_FORNECEDOR', ''), cnpj, doc, num(r.get('VL_PAGO')), r.get('TP_MOV_FINANCEIRA', ''), r.get('DATA_EMISSAO_DL', '')])
     if cnpj:
         f = FORN.setdefault(cnpj, [r.get('NOME_FORNECEDOR', ''), set()])
         f[1].add(n)
@@ -134,6 +134,22 @@ for r in ler('pad.csv'):
                             pega(r, 'UND_FORNECIMENTO_ITEM', 'UNIDADE_FORNECIMENTO'), num(pega(r, 'VALOR_UNITARIO_ITEM', 'VL_UNITARIO_ITEM')),
                             num(pega(r, 'VALOR_TOTAL_ITEM', 'VL_TOTAL_ITEM')), pega(r, 'SIT_ITEM', 'SITUACAO_ITEM'), pega(r, 'ID_META', ''), pega(r, 'ID_ETAPA', '')])
 
+# execução do convenente: processos de execução (licitações) e contratos/subconvênios · guarda as colunas como vêm (o painel escolhe o que mostrar)
+TIRA = {'NR_CONVENIO', 'ID_PROPOSTA'}
+def enxuto(r):
+    return {k: v for k, v in r.items() if v not in (None, '') and k not in TIRA}
+lic_nr = {}
+for r in ler('licitacoes.csv'):
+    n = nr_de(r)
+    if n:
+        R[n]['lic'].append(enxuto(r))
+        if r.get('ID_LICITACAO'):
+            lic_nr[r['ID_LICITACAO']] = n
+for r in ler('contratos_convenente.csv'):
+    n = nr_de(r) or lic_nr.get(r.get('ID_LICITACAO') or '', '')
+    if n:
+        R[n]['ctc'].append(enxuto(r))
+
 # metas e etapas do cronograma físico
 etapas = collections.defaultdict(list)
 for r in ler('etapas.csv'):
@@ -178,4 +194,5 @@ with gzip.open(os.path.join(OUT, 'indice.json.gz'), 'wt', encoding='utf-8', comp
     json.dump({'inst': ind, 'forn': forn}, f, ensure_ascii=False, separators=(',', ':'))
 tam = sum(os.path.getsize(os.path.join(OUT, x)) for x in os.listdir(OUT))
 print(f'relatório: {len(R)} instrumentos · {len(pedacos)} pedaços · {len(forn)} fornecedores · {tam/1048576:.1f} MB')
+print('com processo de execução:', sum(1 for d in R.values() if d.get('lic')), '· com contrato do convenente:', sum(1 for d in R.values() if d.get('ctc')))
 print('com PAD:', sum(1 for d in R.values() if d.get('pad')), '· com metas:', sum(1 for d in R.values() if d.get('metas')))

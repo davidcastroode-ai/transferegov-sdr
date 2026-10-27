@@ -28,17 +28,20 @@ nome = lambda k: os.path.join(OUT, f'contratos_api_{k}.csv')
 
 def get(caminho):
     url = BASE + caminho
+    erro = ''
     for t in range(4):
         try:
             with urllib.request.urlopen(urllib.request.Request(url, headers={'Accept': 'application/json', 'User-Agent': 'painel-sdr-mapa/1.0'}), timeout=90) as r:
                 return json.loads(r.read())
         except urllib.error.HTTPError as e:
-            if e.code in (400, 401, 403, 404):
+            if e.code in (400, 401, 404):
                 return None
-            time.sleep(3 * (t + 1))
-        except Exception:
-            time.sleep(3 * (t + 1))
-    raise RuntimeError('falhou: ' + url)
+            erro = f'HTTP {e.code} {e.reason} · {(e.read() or b"")[:300].decode("utf-8", "ignore")}'   # 403/429/5xx: guarda o motivo para o diagnóstico
+            time.sleep(5 * (t + 1))
+        except Exception as e:
+            erro = f'{type(e).__name__}: {e}'
+            time.sleep(5 * (t + 1))
+    raise RuntimeError(f'falhou: {url} · último erro: {erro}')
 
 
 def pagina(i):
