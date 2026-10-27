@@ -65,10 +65,16 @@ def compras_pncp(anos):
             pg = 1
             while True:
                 q = urllib.parse.urlencode({'dataInicial': f'{ano}{ini}', 'dataFinal': f'{ano}{fim}', 'cnpjOrgao': '00396895000125', 'pagina': pg, 'tamanhoPagina': 500})
-                try:
-                    with urllib.request.urlopen(urllib.request.Request('https://pncp.gov.br/api/consulta/v1/contratos?' + q, headers={'Accept': 'application/json', 'User-Agent': 'painel-sdr-mapa/1.0'}), timeout=120) as r:
-                        j = json.loads(r.read() or b'{}')
-                except Exception:
+                j = None
+                for tent in range(3):   # a API do PNCP oscila: tenta 3 vezes antes de desistir da janela
+                    try:
+                        with urllib.request.urlopen(urllib.request.Request('https://pncp.gov.br/api/consulta/v1/contratos?' + q, headers={'Accept': 'application/json', 'User-Agent': 'painel-sdr-mapa/1.0'}), timeout=120) as r:
+                            j = json.loads(r.read() or b'{}')
+                        break
+                    except Exception as e:
+                        DIAG.append(f'consulta {ano}{ini}-{fim} pág {pg} tentativa {tent+1}: {e}')
+                        time.sleep(5 * (tent + 1))
+                if j is None:
                     break
                 for x in j.get('data') or []:
                     if x.get('numeroControlePNCP') and x.get('numeroControlePncpCompra'):
@@ -77,6 +83,33 @@ def compras_pncp(anos):
                     break
                 pg += 1
     return m
+
+
+DIAG = []
+
+
+def compra_do_contrato(link):
+    """Plano B, um contrato por vez: consulta o contrato na API do PNCP e devolve o id da contratação (edital)."""
+    mm = re.search(r'/app/contratos/(\d{14})/(\d{4})/0*(\d+)', link or '')
+    if not mm:
+        return ''
+    url = f'https://pncp.gov.br/api/pncp/v1/orgaos/{mm.group(1)}/contratos/{mm.group(2)}/{mm.group(3)}'
+    for tent in range(2):
+        try:
+            with urllib.request.urlopen(urllib.request.Request(url, headers={'Accept': 'application/json', 'User-Agent': 'painel-sdr-mapa/1.0'}), timeout=60) as r:
+                j = json.loads(r.read() or b'{}')
+            idc = j.get('numeroControlePncpCompra') or ''
+            if not idc:
+                oc = (j.get('orgaoEntidade') or {}).get('cnpj') or mm.group(1)
+                if j.get('anoCompra') and j.get('sequencialCompra'):
+                    idc = f"{oc}-1-{int(j['sequencialCompra']):06d}/{j['anoCompra']}"
+            if not idc:
+                DIAG.append(f'contrato {url}: sem id da compra (chaves: {", ".join(sorted(j)[:40])})')
+            return idc
+        except Exception as e:
+            DIAG.append(f'contrato {url} tentativa {tent+1}: {e}')
+            time.sleep(3)
+    return ''
 
 
 def link_edital(idc):
@@ -116,6 +149,10 @@ def reaproveitar():
         return False   # página dos contratos ainda não lida (postos, PNCP)
     if 'Link edital PNCP' not in open(os.path.join(ANT, 'contratos_api_pag.csv'), encoding='utf-8').readline():
         return False   # coluna nova (edital no PNCP)
+    pg = list(csv.DictReader(open(os.path.join(ANT, 'contratos_api_pag.csv'), encoding='utf-8')))
+    com_link = [x for x in pg if x.get('Link PNCP')]
+    if com_link and sum(1 for x in com_link if x.get('Id contratação PNCP')) < 0.5 * len(com_link):
+        return False   # poucos editais ligados (a API do PNCP falhou na rodada anterior): consulta de novo
     for k in ARQ:
         q = os.path.join(ANT, f'contratos_api_{k}.csv')
         if os.path.exists(q):
@@ -179,9 +216,18 @@ def main():
         mp = compras_pncp(anos)
     except Exception as e:
         print(f'PNCP: falhou ({e})', flush=True); mp = {}
+    plano_b = 0
     for r in L['pag']:
         idc = mp.get(ctrl(r[8]), '')
+        if not idc and r[8]:
+            idc = compra_do_contrato(r[8]); plano_b += 1 if idc else 0
         r[9], r[10] = idc, link_edital(idc)
+    print(f'PNCP: {plano_b} edital(is) achado(s) consultando contrato por contrato', flush=True)
+    try:
+        with open(os.path.join(os.path.dirname(nome('pag')), 'pncp_diagnostico.txt'), 'w', encoding='utf-8') as fh:
+            fh.write('\n'.join(DIAG[:400]) or 'sem erros')
+    except Exception:
+        pass
     print(f'PNCP: {len(mp)} contratos do MAPA lidos · {sum(1 for r in L["pag"] if r[9])} com edital ligado', flush=True)
     for k in ARQ:
         gravar(k, L[k])
