@@ -72,6 +72,24 @@ jobs:
       - name: Gerar as páginas do painel (Propostas, Empenho, Programas, Movimentação, Obras, Prestação de contas)
         run: python scripts/paginas.py saida
 
+      - name: Comprimir os arquivos grandes que só o robô usa (.csv → .csv.gz)
+        run: |
+          python - <<'PY'
+          import gzip, os, shutil
+          # ficam como .csv (lidos de fora: painel, Apps Script das planilhas ou a rodada seguinte do robô)
+          FICA = {'planilha_parcerias.csv', 'planilha_propostas.csv', 'painel_instrumentos.csv', 'painel_empenhos.csv', 'painel_obras.csv',
+                  'historico_obras.csv', 'instrumentos_outros_orgaos.csv'}
+          for raiz, _, arqs in os.walk('saida'):
+              for a in arqs:
+                  c = os.path.join(raiz, a)
+                  if not a.endswith('.csv') or a in FICA or a.startswith('contratos_api_') or '/ted' in raiz or os.path.getsize(c) < 8 * 1048576:
+                      continue
+                  with open(c, 'rb') as fi, gzip.open(c + '.gz', 'wb', compresslevel=9) as fo:
+                      shutil.copyfileobj(fi, fo)
+                  print(f'{c}: {os.path.getsize(c)/1048576:.1f} MB -> {os.path.getsize(c + ".gz")/1048576:.1f} MB')
+                  os.remove(c)
+          PY
+
       - name: Publicar na branch "dados"
         run: |
           cd saida
