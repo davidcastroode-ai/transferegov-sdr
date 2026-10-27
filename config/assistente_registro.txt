@@ -1,2 +1,2 @@
-# aba de registro das perguntas do assistente (planilha BANCO_DE_DADOS_PERGUNTAS, publicada em CSV)
-https://docs.google.com/spreadsheets/d/e/2PACX-1vS2YDd3zTtdbxo_fFK7RFLS67CsEjCv9ZCT-NVESssr3uOtHBeTeuuqobbR8JzqhzLRUPNNmXNWVRLz/pub?output=csv
+# aba REGISTRO ASSISTENTE (planilha BANCO DE DADOS PERGUNTAS), publicada em CSV
+https://docs.google.com/spreadsheets/d/e/2PACX-1vS2YDd3zTtdbxo_fFK7RFLS67CsEjCv9ZCT-NVESssr3uOtHBeTeuuqobbR8JzqhzLRUPNNmXNWVRLz/pub?gid=1285480920&single=true&output=csv
