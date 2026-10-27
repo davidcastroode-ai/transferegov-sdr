@@ -10,7 +10,7 @@ Escopo SDR:
 Uso:  python scripts/processar.py PASTA_DE_SAIDA
       (variável FONTE_LOCAL=pasta com os .zip já baixados, para testar sem internet)
 """
-import csv, io, json, os, sys, time, urllib.request, zipfile, datetime, re
+import csv, gzip, io, json, os, sys, time, urllib.request, zipfile, datetime, re
 
 BASE = 'https://api-publica.transferegov.gestao.gov.br/downloads/dadosgov/'
 ORGAO_MAPA = '22000'
@@ -392,6 +392,8 @@ def main(saida):
             'qtd_prorrogacoes', 'notas_empenho', 'saldo_em_conta', 'subsituacao', 'em_processo_tce', 'inadimplente_desde', 'ugs_empenho', 'acao_orcamentaria', 'cod_programa', 'programa', 'valor_global', 'valor_global_original',
             'valor_repasse_proposta', 'supressao_repasse_ta', 'qtd_ajustes_pt', 'ultimo_ajuste_pt', 'ajuste_pt_aberto', 'reducao_repasse', 'aditivos_valor', 'objeto']
     gravar(saida, 'painel_instrumentos.csv', leve, [{**r, 'objeto': r['objeto'][:160]} for r in inst])
+    with open(os.path.join(saida, 'painel_instrumentos.csv'), 'rb') as fi, gzip.open(os.path.join(saida, 'painel_instrumentos.csv.gz'), 'wb', compresslevel=9) as fo:
+        fo.write(fi.read())   # o painel baixa a versão comprimida (15 MB → 2,6 MB)
 
     # 6b. arquivo no formato da planilha "Parcerias" (mesmos nomes e ordem de colunas A:AH), usado pelo Apps Script da planilha
     def faixa(d):
@@ -427,6 +429,17 @@ def main(saida):
             ('Sem Desembolso' if emexec and d is None else '-'),
             (faixa(d) if emexec and d is not None else '-')])))
     gravar(saida, 'planilha_parcerias.csv', COLS_PLAN, plan)
+    # painel mais leve: o painel não baixa as colunas de link da planilha (42% do tamanho); monta os links por estes ids
+    lk = {'prop': {}, 'prog': {}}
+    for r in inst:
+        if r.get('id_proposta'):
+            lk['prop'][r['nr_instrumento']] = r['id_proposta']
+        ids = [x for x in (r.get('id_programa') or '').split(' | ') if x]
+        if ids and r.get('cod_programa'):
+            lk['prog'].setdefault(r['cod_programa'], ids[0])
+    with gzip.open(os.path.join(saida, 'parc_links.json.gz'), 'wt', encoding='utf-8', compresslevel=9) as fh:
+        json.dump(lk, fh, separators=(',', ':'))
+    log(f"gravou parc_links.json.gz · {len(lk['prop'])} instrumentos · {len(lk['prog'])} programas")
 
     # 7. propostas (todas do escopo, celebradas ou não)
     props = []
