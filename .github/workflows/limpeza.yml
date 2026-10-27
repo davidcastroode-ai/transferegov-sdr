@@ -1,0 +1,24 @@
+name: Limpeza de ramos antigos
+
+on:
+  workflow_dispatch:
+    inputs:
+      ramos:
+        description: 'Ramos para apagar (separados por espaço)'
+        default: 'diag obrasgov-teste transparencia-teste'
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  apagar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Apagar os ramos pedidos (nunca main, dados ou historico)
+        run: |
+          for r in ${{ github.event.inputs.ramos }}; do
+            case "$r" in main|dados|historico) echo "pulei $r (protegido)"; continue;; esac
+            git push origin --delete "$r" && echo "apagado: $r" || echo "não achei: $r"
+          done
