@@ -238,7 +238,13 @@ if __name__ == '__main__':
     try:
         main()
     except Exception as e:
+        import traceback
         print(f'Contratos.gov.br: falhou ({e}); mantendo os arquivos anteriores', flush=True)
+        try:
+            with open(os.path.join(OUT, 'pncp_diagnostico.txt'), 'w', encoding='utf-8') as fh:
+                fh.write('FALHOU: ' + traceback.format_exc() + '\n' + '\n'.join(DIAG[:400]))
+        except Exception:
+            pass
         if ANT:
             for k in ARQ:
                 q = os.path.join(ANT, f'contratos_api_{k}.csv')
