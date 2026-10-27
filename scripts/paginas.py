@@ -420,6 +420,7 @@ def ted(pasta):
             ac_orc.setdefault(x['ptres'].strip(), x['acao'].strip().zfill(4) if x['acao'].strip().isdigit() else x['acao'].strip())
     ncT = collections.defaultdict(list)
     semTED, acoesSDR = [], set()   # NCs que outros órgãos mandaram para a SDR sem nº de TED
+    ncProc = collections.defaultdict(list)   # NCs da SDR sem nº de TED, pelo nº do processo (só dígitos)
     # o relatório de NC repete o mesmo item da nota uma vez para cada "Ação Governo" ligada ao PTRES (ex.: 2022NC800053 em 20ZV e 8593),
     # o que dobrava o valor descentralizado. Fica uma linha por item: a ação do PTRES na base de orçamento, senão a mais vista nesse PTRES
     nc_lin = ler(tp, 'ted_tesouro_nc.csv')
@@ -448,6 +449,9 @@ def ted(pasta):
             semTED.append(x)
         if x['ug_emit'] in UGS_SDR:
             acoesSDR.add(x['acao'])
+        if not x['ted'] and x['ug_emit'] in UGS_SDR:   # NC da SDR sem nº de TED (dispensa de TED): liga pelo processo escrito na observação
+            for pr in re.findall(r'\d{5}\.?\d{6}/?\d{4}-?\d{2}', x['obs'] or ''):
+                ncProc[re.sub(r'\D', '', pr)].append([x['nc'], x['data'], x['ug_emit'], x['ug_fav'], f(x['valor']), x['ptres'], x['pi'], x['nd'], x['rp'], 'Tesouro', '', x['acao'], x['obs'][:200]])
     pfT = collections.defaultdict(list)
     for x in ler(tp, 'ted_tesouro_pf.csv'):
         pfT[x['ted']].append([x['doc'], x['data'], x['ug_emit'], x['ug_fav'], f(x['valor']), 'Tesouro · ' + (x['tipo'] or ''), x['obs'][:160]])
@@ -678,6 +682,12 @@ def ted(pasta):
                      sp='(só no controle)', st=eq['situ'] or '(sem termo)', fase=fase, sei=G('Processo'), ass='', ini='', fim=eq['fim'], fimApi='', dias=dias,
                      fir=eq['firm'], nc=0.0, op=0.0, pf=0.0, ar=0.0, rp=eq['rp'], emd='', ult='', link='', ns='', ncs=[], pfs=[], cro=[], prox=None, par=[], met=[],
                      org='Só no controle interno', tes=None, dif=[], ncT=0, nca=[], nes=[], neT=[0.0, 0.0, 0.0, 0.0])
+            ncp = ncProc.get(re.sub(r'\D', '', G('Processo')), []) if G('Processo') else []
+            if ncp:   # dispensa de TED: as NCs que citam o processo na observação
+                o['ncs'], o['ncT'], o['nc'] = ncp[:40], len(ncp), round(sum(x[4] for x in ncp), 2)
+                ac = sorted({x[11] for x in ncp if x[11]})
+                if ac:
+                    o['acao'] = ' | '.join(ac)
             linhas.append(o)
             n_so += 1
         if o is None:
