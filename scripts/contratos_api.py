@@ -161,6 +161,32 @@ def reaproveitar():
     return True
 
 
+def ligar_editais(pag):
+    """Edital (contratação) no PNCP de cada contrato: link do contrato no PNCP -> numeroControlePNCP -> id da contratação.
+    pag: linhas no formato do arquivo contratos_api_pag (índice 8 = link PNCP, 9 = id da contratação, 10 = link do edital)."""
+    def ctrl(link):
+        mm = re.search(r'/app/contratos/(\d{14})/(\d{4})/0*(\d+)', link or '')
+        return f'{mm.group(1)}-2-{int(mm.group(3)):06d}/{mm.group(2)}' if mm else ''
+    ctrls = {ctrl(r[8]) for r in pag if r[8]}
+    anos = {int(c[-4:]) for c in ctrls if c} | {time.localtime().tm_year}
+    try:
+        mp = compras_pncp(anos)
+    except Exception as e:
+        print(f'PNCP: falhou ({e})', flush=True); mp = {}
+    plano_b = 0
+    for r in pag:
+        idc = mp.get(ctrl(r[8]), '') or r[9]
+        if not idc and r[8]:
+            idc = compra_do_contrato(r[8]); plano_b += 1 if idc else 0
+        r[9], r[10] = idc, link_edital(idc)
+    print(f'PNCP: {len(mp)} contratos do MAPA lidos · {plano_b} achado(s) contrato por contrato · {sum(1 for r in pag if r[9])} com edital ligado', flush=True)
+    try:
+        with open(os.path.join(OUT, 'pncp_diagnostico.txt'), 'a', encoding='utf-8') as fh:
+            fh.write('\n'.join(DIAG[:400]) or 'PNCP: sem erros')
+    except Exception:
+        pass
+
+
 def main():
     if reaproveitar():
         return
@@ -206,29 +232,7 @@ def main():
         pg = d.get('pagina') or {}
         if pg:
             L['pag'].append(ch + [pg.get('mo'), pg.get('postos'), pg.get('vagas'), pg.get('perc'), pg.get('ncontr'), pg.get('pncp'), '', ''])
-    # edital (contratação) no PNCP: link do contrato no PNCP -> numeroControlePNCP -> id da contratação
-    def ctrl(link):
-        mm = re.search(r'/app/contratos/(\d{14})/(\d{4})/0*(\d+)', link or '')
-        return f'{mm.group(1)}-2-{int(mm.group(3)):06d}/{mm.group(2)}' if mm else ''
-    ctrls = {ctrl(r[8]) for r in L['pag'] if r[8]}
-    anos = {int(c[-4:]) for c in ctrls if c} | {time.localtime().tm_year}
-    try:
-        mp = compras_pncp(anos)
-    except Exception as e:
-        print(f'PNCP: falhou ({e})', flush=True); mp = {}
-    plano_b = 0
-    for r in L['pag']:
-        idc = mp.get(ctrl(r[8]), '')
-        if not idc and r[8]:
-            idc = compra_do_contrato(r[8]); plano_b += 1 if idc else 0
-        r[9], r[10] = idc, link_edital(idc)
-    print(f'PNCP: {plano_b} edital(is) achado(s) consultando contrato por contrato', flush=True)
-    try:
-        with open(os.path.join(os.path.dirname(nome('pag')), 'pncp_diagnostico.txt'), 'w', encoding='utf-8') as fh:
-            fh.write('\n'.join(DIAG[:400]) or 'sem erros')
-    except Exception:
-        pass
-    print(f'PNCP: {len(mp)} contratos do MAPA lidos · {sum(1 for r in L["pag"] if r[9])} com edital ligado', flush=True)
+    ligar_editais(L['pag'])
     for k in ARQ:
         gravar(k, L[k])
     print('Contratos.gov.br: ' + ' · '.join(f'{k} {len(v)}' for k, v in L.items()) + f' · {time.time()-t0:.0f}s', flush=True)
@@ -250,3 +254,13 @@ if __name__ == '__main__':
                 q = os.path.join(ANT, f'contratos_api_{k}.csv')
                 if os.path.exists(q):
                     shutil.copy(q, nome(k))
+            try:   # mesmo sem o Contratos.gov.br, liga os editais do PNCP no arquivo anterior
+                with open(nome('pag'), encoding='utf-8') as fh:
+                    rows = list(csv.reader(fh))
+                if rows and len(rows[0]) >= 11:
+                    corpo = [r + [''] * (11 - len(r)) for r in rows[1:]]
+                    ligar_editais(corpo)
+                    with open(nome('pag'), 'w', encoding='utf-8', newline='') as fh:
+                        w = csv.writer(fh); w.writerow(rows[0]); w.writerows(corpo)
+            except Exception as e2:
+                print(f'PNCP: falhou no arquivo anterior ({e2})', flush=True)
