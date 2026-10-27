@@ -65,6 +65,10 @@ jobs:
         continue-on-error: true
         run: python scripts/relatorio.py saida
 
+      - name: Banco de perguntas do assistente (dados com gabarito + base de 420 + perguntas reais)
+        continue-on-error: true
+        run: python scripts/assistente_banco.py saida
+
       - name: Gerar as páginas do painel (Propostas, Empenho, Programas, Movimentação, Obras, Prestação de contas)
         run: python scripts/paginas.py saida
 
