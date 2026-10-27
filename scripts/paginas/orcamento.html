@@ -3,7 +3,7 @@
 <style>
 .cred-k{cursor:pointer;transition:box-shadow .12s}.cred-k:hover{box-shadow:0 6px 18px rgba(183,134,11,.35)}
 .grp{font-size:12px;font-weight:700;color:#1f4e79;text-transform:uppercase;letter-spacing:.6px;margin:2px 0 6px 2px}
-.kp.k4{grid-template-columns:repeat(4,1fr)}@media(max-width:900px){.kp.k4{grid-template-columns:1fr 1fr}}
+.kp.k4{grid-template-columns:repeat(4,1fr)}@media(max-width:900px){.kp.k4{grid-template-columns:1fr 1fr}}.kp.k5{grid-template-columns:repeat(5,1fr)}@media(max-width:1100px){.kp.k5{grid-template-columns:repeat(3,1fr)}}@media(max-width:700px){.kp.k5{grid-template-columns:1fr 1fr}}
 .k.amar b{color:#b7860b}.k.verde b{color:#2e8a57}.k.red b{color:#c0392b}
 .hb{grid-template-columns:minmax(150px,40%) 1fr 78px 44px}.hb .hbr{white-space:normal;line-height:1.2;font-size:12.5px}
 .ot{width:100%;border-collapse:collapse;font-size:12.5px}.ot th{background:#1f4e79;color:#fff;padding:7px 8px;text-align:right;font-weight:600;white-space:nowrap}.ot th:first-child{text-align:left}
@@ -85,10 +85,11 @@ function render(){
     ${kpi('Créditos e cortes no ano', ft(remanej), 'suplementação '+ft(T.sup)+' · cancelado/remanejado '+ft(T.canc), remanej<0?'red':'verde')}
     ${kpi('Dotação atual', ft(T.atu), pct(T.atu,T.ini)+' da Lei')}
     ${kpi('Bloqueado (crédito indisponível)', ft(T.indisp), pct(T.indisp,T.atu)+' da dotação atual', T.indisp>1?'red':'')}
-  </div><div class="grp">Execução</div><div class="kp k4">
+  </div><div class="grp">Execução</div><div class="kp k5">
     ${kpi('Provisionado às UGs', ft(T.provRec), T.atu ? pct(T.provRec,T.atu)+' da dotação atual' : 'recebido por provisão · a dotação fica na setorial (130101)')}
     ${kpi('Empenhado', ft(T.emp), T.atu ? pct(T.emp,T.atu)+' da dotação atual' : pct(T.emp,T.provRec)+' do provisionado', 'verde')}
-    ${kpi('Pago', ft(T.pago), 'liquidado '+ft(T.liq)+' · '+pct(T.pago,T.emp)+' do empenhado')}
+    ${kpi('Liquidado', ft(T.liq), pct(T.liq,T.emp)+' do empenhado · a pagar '+ft(T.liq-T.pago))}
+    ${kpi('Pago', ft(T.pago), pct(T.pago,T.liq)+' do liquidado · '+pct(T.pago,T.emp)+' do empenhado')}
     ${(() => { const dS = soma(L.filter(o => o.ug==='130101'),'disp'), dU = T.disp - dS;
       return kpi('Crédito disponível', ft(T.disp), 'na setorial (ainda não provisionado) '+ft(dS)+' · nas UGs (provisionado, sem empenho) '+ft(dU)+'<br><b style="display:inline;font-size:12px;color:#1f4e79">'+(window.__cred?'▲ fechar o detalhe':'▼ clique para ver onde está')+'</b>', (T.disp>1?'amar ':'')+'cred-k'); })()}
   </div>${window.__cred ? credDetalhe(L) : ''}<div class="g2">
