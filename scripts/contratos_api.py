@@ -21,7 +21,8 @@ ARQ = {
     'arq': ['ID contrato (API)', 'UG contrato', 'Nº contrato', 'Tipo', 'Descrição', 'Link PDF', 'Link SEI', 'Origem'],
     'itn': ['ID contrato (API)', 'UG contrato', 'Nº contrato', 'Item / posto', 'Tipo', 'Quantidade', 'Valor unitário', 'Valor total', 'Nº item da compra'],
     'cro': ['ID contrato (API)', 'UG contrato', 'Nº contrato', 'Mês ref', 'Ano ref', 'Vencimento', 'Valor', 'Tipo'],
-    'pag': ['ID contrato (API)', 'UG contrato', 'Nº contrato', 'Mão de obra exclusiva', 'Total postos (decreto)', 'Total vagas reservadas', 'Percentual reserva vagas', 'Nº contratação', 'Link PNCP', 'Id contratação PNCP', 'Link edital PNCP'],
+    'pag': ['ID contrato (API)', 'UG contrato', 'Nº contrato', 'Mão de obra exclusiva', 'Total postos (decreto)', 'Total vagas reservadas', 'Percentual reserva vagas', 'Nº contratação', 'Link PNCP', 'Id contratação PNCP', 'Link edital PNCP',
+            'Página lida em', 'Fim vigência na leitura', 'Valor global na leitura', 'Termos na leitura', 'Alteração depois da leitura'],
 }
 nome = lambda k: os.path.join(OUT, f'contratos_api_{k}.csv')
 
@@ -172,9 +173,44 @@ for _c in [os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'confi
         if _c and os.path.exists(_c):
             _l = list(csv.reader(open(_c, encoding='utf-8')))
             if _l and 'Link edital PNCP' in _l[0]:
-                PAG_ANT.update({r[0]: r for r in _l[1:] if r and len(r) == len(_l[0])})
+                _res = 'reserva' in os.path.basename(_c)
+                for r in _l[1:]:
+                    if not r or len(r) != len(_l[0]):
+                        continue
+                    r = (r + [''] * 16)[:16]
+                    if _res and not r[11]:
+                        r[11] = '27/10/2026'   # dia em que a cópia de reserva foi lida
+                    PAG_ANT[r[0]] = r
     except Exception:
         pass
+
+
+def iso_br(s):
+    m = re.match(r'(\d{4})-(\d{2})-(\d{2})', str(s or ''))
+    return f'{m.group(3)}/{m.group(2)}/{m.group(1)}' if m else str(s or '')
+
+
+def dt_api(s):
+    m = re.match(r'(\d{4})-(\d{2})-(\d{2})', str(s or ''))
+    return (int(m.group(1)), int(m.group(2)), int(m.group(3))) if m else None
+
+
+def dt_br(s):
+    m = re.match(r'(\d{2})/(\d{2})/(\d{4})', str(s or ''))
+    return (int(m.group(3)), int(m.group(2)), int(m.group(1))) if m else (9999, 0, 0)
+
+
+# contratos e termos da rodada anterior: a "foto" de quando a página foi lida pela última vez
+CTR_ANT, HIS_ANT = {}, {}
+try:
+    if ANT and os.path.exists(os.path.join(ANT, 'contratos_api_ctr.csv')):
+        for r in csv.DictReader(open(os.path.join(ANT, 'contratos_api_ctr.csv'), encoding='utf-8')):
+            CTR_ANT[r['ID contrato (API)']] = [r.get('Fim vigência', ''), r.get('Valor global', '')]
+    if ANT and os.path.exists(os.path.join(ANT, 'contratos_api_his.csv')):
+        for r in csv.DictReader(open(os.path.join(ANT, 'contratos_api_his.csv'), encoding='utf-8')):
+            HIS_ANT[r['ID contrato (API)']] = HIS_ANT.get(r['ID contrato (API)'], 0) + 1
+except Exception:
+    pass
 
 
 def ligar_editais(pag):
@@ -246,10 +282,29 @@ def main():
         for x in d['cronograma'] if isinstance(d['cronograma'], list) else []:
             L['cro'].append(ch + [x.get('mesref'), x.get('anoref'), x.get('vencimento'), br(num(x.get('valor'))), x.get('tipo')])
         pg = d.get('pagina') or {}
+        his_ = d['historico'] if isinstance(d['historico'], list) else []
+        fimA, vgA = c.get('vigencia_fim') or '', br(num(c.get('valor_global')))
         if pg:
-            L['pag'].append(ch + [pg.get('mo'), pg.get('postos'), pg.get('vagas'), pg.get('perc'), pg.get('ncontr'), pg.get('pncp'), '', ''])
+            L['pag'].append(ch + [pg.get('mo'), pg.get('postos'), pg.get('vagas'), pg.get('perc'), pg.get('ncontr'), pg.get('pncp'), '', '',
+                                  HOJE, fimA, vgA, str(len(his_)), ''])
         elif str(ch[0]) in PAG_ANT:   # a página de transparência não abriu hoje: fica a leitura anterior (postos, link do PNCP e edital)
-            L['pag'].append(ch + PAG_ANT[str(ch[0])][3:]); REUSO['pag'] += 1
+            r = list(PAG_ANT[str(ch[0])]); REUSO['pag'] += 1
+            r[12] = r[12] or CTR_ANT.get(str(ch[0]), ['', ''])[0]
+            r[13] = r[13] or CTR_ANT.get(str(ch[0]), ['', ''])[1]
+            r[14] = r[14] or (str(HIS_ANT.get(str(ch[0]), '')) if str(ch[0]) in HIS_ANT else '')
+            mud = []
+            if r[12] and fimA and fimA != r[12]:
+                mud.append(f'vigência {iso_br(r[12])} → {iso_br(fimA)}')
+            if r[13] and vgA != r[13]:
+                mud.append(f'valor global R$ {r[13]} → R$ {vgA}')
+            lida = r[11]
+            novos = [h for h in his_ if lida and dt_api(h.get('data_assinatura')) and dt_api(h.get('data_assinatura')) > dt_br(lida)]
+            if r[14].isdigit() and len(his_) > int(r[14]) and not novos:
+                novos = his_[int(r[14]):]
+            for h in novos[:3]:
+                mud.append(f"{h.get('tipo') or 'termo'} {h.get('numero') or ''} assinado em {iso_br(h.get('data_assinatura'))}".replace('  ', ' '))
+            r[15] = '; '.join(mud)
+            L['pag'].append(ch + r[3:])
     if REUSO['pag']:
         print(f"Contratos.gov.br: página de {REUSO['pag']} contrato(s) não abriu hoje · mantida a leitura anterior", flush=True)
     ligar_editais(L['pag'])

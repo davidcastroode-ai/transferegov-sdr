@@ -3697,15 +3697,20 @@ function fichaApiCtr(c, b, pagoAno, mesF, nesPainel, aForcado, partes){
     <b style="font-size:14px;color:#1f4e79">📄 Documentos do contrato</b><span style="font-size:12px;color:#5f6f66"> · clique para abrir em nova aba</span><span style="float:right">${pncp ? `<a class="lnk" style="font-weight:700" href="${esc(pncp)}" target="_blank" rel="noopener">Contrato no PNCP ↗</a>` : ''}${edital ? ` · <a class="lnk" style="font-weight:700" href="${esc(edital)}" target="_blank" rel="noopener" title="Id contratação PNCP ${esc(idEdital)}">Edital (contratação) ↗</a>` : ''}</span>
     <table class="f-tab" style="margin-top:6px"><thead><tr><th>Documento</th><th>Tipo</th><th>Abrir</th></tr></thead><tbody>
     ${a.arq.slice().sort((x,y) => ordDoc(x) - ordDoc(y)).map(x => `<tr><td>${esc(x.desc || x.tipo)}</td><td>${esc(x.tipo)}</td><td style="white-space:nowrap">${x.pdf ? `<a class="lnk" href="${esc(x.pdf)}" target="_blank" rel="noopener">📄 PDF ↗</a>` : ''}${x.sei ? ` · <a class="lnk" href="${esc(x.sei)}" target="_blank" rel="noopener">SEI ↗</a>` : ''}</td></tr>`).join('')}</tbody></table></div>` : '';
+  // página de transparência reaproveitada de outro dia: avisa quando a API mostra mudança depois da leitura (postos, PNCP e edital podem estar velhos)
+  const lidaPg = pg['Página lida em'] || '', altPg = pg['Alteração depois da leitura'] || '', hojeBR = new Date().toLocaleDateString('pt-BR');
+  const avisoPg = altPg ? `<div style="margin:12px 12px 4px;border-left:5px solid #c62828;background:#fdecea;border-radius:0 10px 10px 0;padding:8px 12px;font-size:13px"><b style="color:#c62828">⚠ Página desatualizada · houve alteração depois de ${esc(lidaPg || 'a última leitura')}</b><br>${esc(altPg)}.<br><span style="color:#5f6f66">A página de transparência do Contratos.gov.br não abriu desde ${esc(lidaPg || 'a última leitura')}: postos, mão de obra exclusiva, PNCP e edital são dessa data.</span></div>`
+    : lidaPg && lidaPg !== hojeBR ? `<p class="dica" style="text-align:left;margin:8px 12px 0;color:#7b5b00">Postos, PNCP e edital lidos em ${esc(lidaPg)} (a página do Contratos.gov.br não abriu depois); a API não mostra alteração desde então.</p>` : '';
   const conf = b ? confCtr(b) : null;
   const falhou = API_CTR.faltou && API_CTR.faltou.length ? `<p class="dica" style="text-align:left;color:#a5531a;margin:8px 0 0">⚠ Não carregou desta vez: ${esc(API_CTR.faltou.map(k => ({arq:'documentos', itn:'postos/itens', pag:'links do PNCP'})[k]).join(', '))}. Recarregue a página (Ctrl+F5) para tentar de novo.</p>` : '';
-  if(partes) return {a, resp, postos, docs, tA, tF, tH, conf, venc, indet, pagoAc, vg, pncp, edital, idEdital, semClass, falhou, usaCro, ehAnual};
+  if(partes) return {a, resp, avisoPg, postos, docs, tA, tF, tH, conf, venc, indet, pagoAc, vg, pncp, edital, idEdital, semClass, falhou, usaCro, ehAnual};
   return `<section class="f-sec"><h3>Contratos.gov.br · complemento${conf && conf.n ? ` <span style="color:#c62828;font-size:12px">· ${esc(conf.txt)}</span>` : ''}</h3><div class="f-dl">
       <div><span>Situação na API</span><b>${esc(a.sit)}${venc ? ' <span style="color:#c62828">· vigência vencida em '+dataCtrBR(a.fim)+' (sem pagamento esperado)</span>' : ''}</b></div><div><span>Vigência na API</span><b>${dataCtrBR(a.ini)} a ${indet ? 'indeterminada' : dataCtrBR(a.fim)}</b></div>
       <div><span>Valor inicial → global (com aditivos)</span><b>${R(a.vi)} → ${R(a.vg)}</b></div><div><span>Pago acumulado · saldo</span><b>${R(pagoAc)} · ${indet ? 'vigência indeterminada' : R(vg - pagoAc)}</b></div>
       ${semClass.length ? `<div class="largo"><span>NEs do contrato na API sem esta classificação no EXE/RAP</span><b style="color:#a5531a">${esc(semClass.map(e => e.ne).join(', '))}</b></div>` : ''}
     </div>
     ${resp}
+    ${avisoPg}
     ${postos}
     ${docs}
     <div style="padding:6px 12px 10px"><h4 style="margin:8px 0 4px">Execução por ano${mesF ? ' (escolha "Ano todo" no filtro de mês para ver o pago do ano)' : ''} · previsto ${usaCro ? 'pelo cronograma do Contratos.gov.br' : ehAnual ? 'pelo valor anual (12 meses) em cada ano de vigência' : 'pelos dias de vigência'}</h4>${tA}
@@ -4117,7 +4122,7 @@ function fichaHTML0(c, escopo, mesF){
         ${d('Processo', procs.length ? procs.join('\n') : proc)}${d('Nota(s) de empenho', linhas.map(x => x.ne+' ('+x.orig+')').join(', '))}
         ${d('Objeto', objeto || (tipos.length ? 'Sem contrato na Base Contratos · despesa classificada como '+tipos.join(' / ') : ''), 1)}
       </div></section>
-      <div>${P ? `<section class="f-sec"><h3>Gestor e fiscais</h3>${P.resp}</section>${P.docs ? `<section class="f-sec"><h3>Documentos do contrato</h3>${P.docs}</section>` : ''}` : (typeof AP === 'string' ? AP : '')}</div>
+      <div>${P ? `${P.avisoPg || ''}<section class="f-sec"><h3>Gestor e fiscais</h3>${P.resp}</section>${P.docs ? `<section class="f-sec"><h3>Documentos do contrato</h3>${P.docs}</section>` : ''}` : (typeof AP === 'string' ? AP : '')}</div>
     </div>
     ${P && P.postos ? `<section class="f-sec"><h3>${/Postos/.test(P.postos) ? 'Postos de trabalho' : 'Itens do contrato'}</h3>${P.postos}</section>` : ''}
     ${P ? `<div class="f-2col"><section class="f-sec"><h3>Execução por ano · previsto ${P.usaCro ? 'pelo cronograma do Contratos.gov.br' : P.ehAnual ? 'pelo valor anual' : 'pelos dias de vigência'}</h3><div style="padding:6px 12px 10px">${P.tA}</div></section>
