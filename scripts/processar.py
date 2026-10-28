@@ -496,6 +496,39 @@ def main(saida):
                                            r['ug_emitente'], r['situacao_instrumento'], r['link_proposta'],
                                            '(atualizar)' if AC420 & set(acoes) else 'Outras UGs'])))
     gravar(saida, 'planilha_propostas.csv', COLS_PROP, plan_p)
+    # o Google (gviz) apaga as células do tipo minoritário de cada coluna (ex.: nº de instrumento "7AAHBG" numa coluna de números);
+    # o painel lê as abas pelo gviz e completa essas células por este arquivo, pela chave da proposta
+    def tipo_cel(v):
+        v = str(v or '').strip()
+        if not v:
+            return None
+        if re.fullmatch(r'-?\d+([.,]\d+)?', v):
+            return 'n'
+        if re.fullmatch(r'\d{2}/\d{2}/\d{4}', v):
+            return 'd'
+        return 't'
+    def minoritarias(linhas, cols, chave):
+        out = {}
+        for c in cols:
+            if c.startswith('Link') or c == chave:
+                continue
+            cont = {}
+            for r in linhas:
+                k = tipo_cel(r.get(c))
+                if k:
+                    cont[k] = cont.get(k, 0) + 1
+            if len(cont) < 2:
+                continue
+            maior = max(cont, key=cont.get)
+            for r in linhas:
+                k = tipo_cel(r.get(c))
+                if k and k != maior and r.get(chave):
+                    out.setdefault(r[chave], {})[c] = r[c]
+        return out
+    fix = {'parc': minoritarias(plan, COLS_PLAN, 'Nº Proposta'), 'prop': minoritarias(plan_p, COLS_PROP, 'Nº Proposta')}
+    with gzip.open(os.path.join(saida, 'planilha_celulas.json.gz'), 'wt', encoding='utf-8', compresslevel=9) as fh:
+        json.dump(fix, fh, ensure_ascii=False, separators=(',', ':'))
+    log(f"gravou planilha_celulas.json.gz · parcerias {len(fix['parc'])} linhas · propostas {len(fix['prop'])} linhas")
 
     # 8. tabelas de detalhe (colunas originais do Transferegov)
     gravar(saida, 'empenhos.csv', cab_emp or ['NR_CONVENIO'], empenhos)

@@ -2000,6 +2000,28 @@ async function urlParcSemLinks(u, signal){
     if(!keep.length || keep.length === H.filter(h => String(h).trim()).length) return u;
     return u+'&tq='+encodeURIComponent('select '+keep.map(([, i]) => letraCol(i)).join(','));
   }catch(e){ if(e && e.name === 'AbortError') throw e; return u; } }
+// o Google (gviz) apaga a célula quando o tipo dela é minoria na coluna (ex.: nº de instrumento "7AAHBG" no meio de números):
+// o robô grava essas células (planilha_celulas.json.gz) e o painel completa pela chave da proposta antes de ler a aba
+let _celulas = null;
+const CELULAS_FIX = {}; window.CELULAS_FIX = CELULAS_FIX;
+function planCelulas(){ return _celulas || (_celulas = textoGz('https://raw.githubusercontent.com/davidcastroode-ai/transferegov-sdr/dados/planilha_celulas.json.gz').then(t => t ? JSON.parse(t) : null).catch(() => null)); }
+async function completarCelulas(chave, texto){
+  if(!['parc','prop','conv'].includes(chave) || typeof texto !== 'string' || !/\/gviz\//.test(FONTE_USADA[chave]||'')) return texto;
+  const F = await planCelulas(); if(!F) return texto;
+  const M = new Map(), junta = o => Object.entries(o||{}).forEach(([k, v]) => { const c = chaveProp(k); if(c) M.set(c, {...v, ...(M.get(c)||{})}); });
+  junta(chave === 'prop' ? F.prop : F.parc); junta(chave === 'prop' ? F.parc : F.prop);
+  if(!M.size) return texto;
+  const rows = parseCSV(texto);
+  const hi = rows.slice(0, 15).findIndex(r => r.some(h => /^N\S*\s*PROPOSTA$/.test(normAccent(h).trim())));
+  if(hi < 0) return rows;
+  const H = rows[hi].map(h => normAccent(h).trim()), ip = H.findIndex(h => /^N\S*\s*PROPOSTA$/.test(h));
+  const ixDe = {}; let n = 0;
+  for(let i = hi+1; i < rows.length; i++){ const r = rows[i], fx = M.get(chaveProp(r[ip])); if(!fx) continue;
+    for(const [c, v] of Object.entries(fx)){ const j = ixDe[c] ?? (ixDe[c] = H.indexOf(normAccent(c).trim())); if(j < 0) continue;
+      if(!String(r[j] ?? '').trim()){ while(r.length <= j) r.push(''); r[j] = v; n++; } } }
+  CELULAS_FIX[chave] = n;
+  return rows;
+}
 let _parcLinks = null;
 function parcLinks(){ return _parcLinks || (_parcLinks = textoGz('https://raw.githubusercontent.com/davidcastroode-ai/transferegov-sdr/dados/parc_links.json.gz').then(t => t ? JSON.parse(t) : null).catch(() => null)); }
 async function completarLinksParc(P){
@@ -2029,6 +2051,7 @@ const MES_NUM = {JANEIRO:1,FEVEREIRO:2,MARCO:3,ABRIL:4,MAIO:5,JUNHO:6,JULHO:7,AG
 // =====================================================================
 function normAccent(s){ return (s||'').toString().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().replace(/\s+/g,' ').trim(); }
 function parseCSV(text){
+  if(Array.isArray(text)) return text;   // já veio em linhas (completarCelulas)
   const rows=[]; let row=[], field='', q=false;
   for(let i=0;i<text.length;i++){
     const c=text[i], n=text[i+1];
@@ -2308,7 +2331,7 @@ function dados(chave){
 }
 async function dados0(chave){
   if(DADOS[chave]) return DADOS[chave];
-  const texto = await baixar(chave);
+  const texto = await completarCelulas(chave, await baixar(chave));
   DADOS[chave] = LEITORES[chave](texto);
   if(chave==='parc'){ try{ await completarLinksParc(DADOS.parc); }catch(e){} }
   if(chave==='siop' && ORC_TG_LIGADO){ try{ await orcamentoDoTesouro(DADOS.siop); }catch(e){ console.warn('orçamento do Tesouro:', e); DADOS.siop.erroTG = e.message; } }
@@ -4656,6 +4679,7 @@ async function abrirFichaRepasse(o, origem){
 }
 window.abrirFichaRepasse = abrirFichaRepasse;
 function abrirFichaInst(num, origem){
+  if(!String(num||'').trim()) return;   // sem nº: não abre a ficha de outro instrumento
   const fonte = VIEW && VIEW.id==='conv' ? 'conv' : 'parc';
   const d = DADOS[fonte] && DADOS[fonte].linhas.find(x => x.num===num); if(!d) return;
   const fundo = document.getElementById('fichaFundo'), el = document.getElementById('ficha');
@@ -5299,7 +5323,7 @@ async function preencherLigacaoProp(d){
       return `<div class="lg-caixa"><div class="lg-linha"><b class="lg-num">${esc(x.mod ? x.mod.charAt(0)+x.mod.slice(1).toLowerCase() : 'Instrumento')} ${esc(x.num)}</b><span>${x.assin?'assinado em '+fmtData(x.assin)+' · ':''}vigência até ${fmtData(x.fim)} · UG ${esc(x.ug)}</span></div>
         <div class="lg-vals"><div><small>Repasse</small><b>${vLg(x.repasse)}</b></div><div><small>Desembolsado</small><b>${vLg(x.desemb)}</b></div><div><small>Situação</small><b>${esc(x.situ)}</b></div></div>
         ${semDes ? `<p class="lg-alerta">⚠ Assinado há ${meses} meses e ainda sem nenhum desembolso</p>` : ''}
-        <p class="lg-acao"><button type="button" class="lg-btn" data-fichainst="${esc(x.num)}">Abrir a ficha do instrumento ›</button>${x.link ? ` <a class="lg-btn lg-ext" href="${esc(x.link)}" target="_blank" rel="noopener">Abrir no Transferegov ↗</a>` : ''}</p></div>`; }).join('')
+        <p class="lg-acao">${String(x.num||'').trim() ? `<button type="button" class="lg-btn" data-fichainst="${esc(x.num)}">Abrir a ficha do instrumento ›</button>` : '<span class="lg-nota">Nº do instrumento não veio da planilha: ficha indisponível.</span>'}${x.link ? ` <a class="lg-btn lg-ext" href="${esc(x.link)}" target="_blank" rel="noopener">Abrir no Transferegov ↗</a>` : ''}</p></div>`; }).join('')
       : `<p class="lg-nota">${d.fase==='Celebrada' ? 'A proposta está como celebrada, mas o instrumento ainda não aparece na planilha de Parcerias (confira o Nº Proposta nas duas planilhas).' : 'Ainda não há instrumento: a proposta está '+esc(String(d.fase).toLowerCase())+'.'}</p>`);
   }
   const r0 = await siafiDe(d.num, insts[0] ? insts[0].num : '', insts[0] ? insts[0].cnpj : d.cnpj, insts[0] ? insts[0].emenda : d.emenda, insts[0] ? insts[0].proc : '');
