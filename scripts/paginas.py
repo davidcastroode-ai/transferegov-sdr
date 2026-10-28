@@ -553,11 +553,32 @@ def ted(pasta):
     # ---- empenhos das unidades que receberam o TED (ted/ted_tesouro_ne.csv): liga pela UG favorecida + PTRES das NCs do TED
     dig = lambda v: re.sub(r'\D', '', v or '')
     idx = collections.defaultdict(set)
+    # liga só pelo crédito que ficou: NC estornada (líquido zero naquele PTRES) não liga empenho ao TED
+    # (ex.: 991573 e 991592 tiveram NC no PTRES 247476 estornada; os empenhos ficavam nos dois)
+    piTED, ncIni = collections.defaultdict(set), {}
+    def _dt(s):
+        try:
+            return datetime.datetime.strptime(str(s)[:10], '%d/%m/%Y').date()
+        except ValueError:
+            return None
     for o in linhas:
+        liq_ = collections.defaultdict(float)
+        vis = set()
         for x in (o['ncs'] or []) + ncT.get(ted_tesouro.chave_ted(o['n']) or '', []):
+            if (x[0], x[4], x[5]) in vis:
+                continue
+            vis.add((x[0], x[4], x[5]))
             for pt in str(x[5] or '').split('|'):
                 if pt.strip() and x[3]:
-                    idx[(str(x[3]).strip(), pt.strip())].add(o['id'])
+                    liq_[(str(x[3]).strip(), pt.strip())] += f(x[4]) if not isinstance(x[4], (int, float)) else x[4]
+            if x[6]:
+                piTED[o['id']].add(str(x[6]).strip().upper())
+            d_ = _dt(x[1])
+            if d_ and f(x[4] if not isinstance(x[4], (int, float)) else str(x[4])) > 0 and (o['id'] not in ncIni or d_ < ncIni[o['id']]):
+                ncIni[o['id']] = d_
+        for k, v_ in liq_.items():
+            if v_ > 0.005:
+                idx[k].add(o['id'])
     porId = {o['id']: o for o in linhas}
     for o in linhas:
         o['nes'], o['neT'] = [], [0.0, 0.0, 0.0, 0.0]
@@ -594,6 +615,13 @@ def ted(pasta):
             outrosSei = procs & seiTED.keys()
             return bool(outrosSei) and dig(o['sei']) not in procs
         cand = [o for o in cand if not outro(o)]
+        if len(cand) > 1:   # ainda em mais de um TED: o empenho é do TED que já tinha crédito na data da nota e, se der, do mesmo PI
+            dne = _dt(e['data'])
+            c2 = [o for o in cand if not (dne and ncIni.get(o['id']) and ncIni[o['id']] > dne)]
+            cand = c2 or cand
+            c3 = [o for o in cand if (e.get('pi') or '').strip().upper() in piTED.get(o['id'], set())]
+            if c3 and len(c3) < len(cand):
+                cand = c3
         if not cand:
             n_fora += 1
             continue
@@ -601,7 +629,8 @@ def ted(pasta):
         v = [f(e['emp']), f(e['liq']), f(e['pago']), round(f(e['rpp']) + f(e['rpnp']), 2)]
         n_lig += 1
         for o in cand:
-            o['nes'].append([e['ne'], e['data'], e['fav_nome'] or e['fav'], e['ptres'], e['pi'], e['nd'], v[0], v[1], v[2], v[3], e['desc'][:220], 1 if comp else 0])
+            outros = ' / '.join(sorted({x['n'] or x['cod'] or x['id'] for x in cand if x is not o})) if comp else ''
+            o['nes'].append([e['ne'], e['data'], e['fav_nome'] or e['fav'], e['ptres'], e['pi'], e['nd'], v[0], v[1], v[2], v[3], e['desc'][:220], 1 if comp else 0, outros])
             if not comp:
                 o['neT'] = [round(a_ + b_, 2) for a_, b_ in zip(o['neT'], v)]
     for o in linhas:
