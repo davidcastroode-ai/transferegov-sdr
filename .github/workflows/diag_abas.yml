@@ -1,0 +1,26 @@
+name: Diagnóstico abas do instrumento (Acesso Livre)
+on:
+  workflow_dispatch:
+    inputs:
+      id:
+        description: 'idProposta'
+        default: '2180395'
+permissions:
+  contents: write
+jobs:
+  sondar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - run: python scripts/sondar_abas.py ${{ github.event.inputs.id }} d
+      - name: Publicar na branch diag-abas
+        run: |
+          cd d && git init -q && git checkout -q -b diag-abas
+          git config user.name "robo-transferegov"; git config user.email "robo-transferegov@users.noreply.github.com"
+          git add -A && git commit -q -m diag
+          git push -q -f "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git" diag-abas
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
