@@ -3547,7 +3547,7 @@ function carregarApiCtr(){
     const E = por(T.emp), F = por(T.fat), H = por(T.his), R = por(T.res), A = por(T.arq), IT = por(T.itn), CR = por(T.cro), PG = por(T.pag), ITH = por(T.ith||[]), HOJE0 = new Date(); HOJE0.setHours(0,0,0,0);
     const lista = T.ctr.map(x => { const id = x['ID contrato (API)'];
       const o = {id, ug:x['UG atual'], ugo:x['UG de origem'], ugoN:x['Nome UG origem'], num:x['Nº contrato'], sit:x['Situação'], forn:x['Fornecedor'], cnpj:x['CNPJ/CPF'],
-        ini:dataCtr(x['Início vigência']), fim:dataCtr(x['Fim vigência']), vi:toNum(x['Valor inicial']), vg:toNum(x['Valor global']), link:x['Link transparência'], cat:x['Categoria'], obj:x['Objeto']||'', proc:x['Processo']||'', mod:x['Modalidade']||'',
+        ini:dataCtr(x['Início vigência']), fim:dataCtr(x['Fim vigência']), vi:toNum(x['Valor inicial']), vg:toNum(x['Valor global']), np:+(x['Nº parcelas']||0)||0, vp:toNum(x['Valor parcela']), link:x['Link transparência'], cat:x['Categoria'], obj:x['Objeto']||'', proc:x['Processo']||'', mod:x['Modalidade']||'',
         nes:(E.get(id)||[]).map(e => ({ug:e['UG da NE'], ne:e['Nota de empenho']})),
         fat:(F.get(id)||[]).map(f => ({n:f['Nº fatura'], em:dataCtr(f['Emissão']), venc:dataCtr(f['Vencimento']), v:toNum(f['Valor (− glosa)']), sit:f['Situação'], liq:dataCtr(f['Data liquidação']), np:f['NP / documento SIAFI']})),
         his:(H.get(id)||[]).map(h => ({tipo:h['Tipo do termo'], n:h['Nº do termo'], ass:dataCtr(h['Data assinatura']), fim:dataCtr(h['Fim vigência']), v:toNum(h['Valor global (novo)']), obs:h['Observação'],
@@ -3709,7 +3709,9 @@ function fichaApiCtr(c, b, pagoAno, mesF, nesPainel, aForcado, partes){
   if(partes) return {a, resp, avisoPg, postos, docs, tA, tF, tH, conf, venc, indet, pagoAc, vg, pncp, edital, idEdital, semClass, falhou, usaCro, ehAnual};
   return `<section class="f-sec"><h3>Contratos.gov.br · complemento${conf && conf.n ? ` <span style="color:#c62828;font-size:12px">· ${esc(conf.txt)}</span>` : ''}</h3><div class="f-dl">
       <div><span>Situação na API</span><b>${esc(a.sit)}${venc ? ' <span style="color:#c62828">· vigência vencida em '+dataCtrBR(a.fim)+' (sem pagamento esperado)</span>' : ''}</b></div><div><span>Vigência na API</span><b>${dataCtrBR(a.ini)} a ${indet ? 'indeterminada' : dataCtrBR(a.fim)}</b></div>
-      <div><span>Valor inicial → global (com aditivos)</span><b>${R(a.vi)} → ${R(a.vg)}</b></div><div><span>Pago acumulado · saldo</span><b>${R(pagoAc)} · ${indet ? 'vigência indeterminada' : R(vg - pagoAc)}</b></div>
+      <div><span>Valor inicial → global (com aditivos)</span><b>${R(a.vi)} → ${R(a.vg)}</b></div>${(() => { const cv = calcValoresCtr(a); return cv.compra ? `<div><span>Compra · teto ainda não comprometido</span><b>${R(Math.max(0, a.vg - (execNEsCtr(a).t.emp + execNEsCtr(a).t.rapPago + execNEsCtr(a).t.rapAberto)))}</b></div>`
+        : `<div><span>Valor mensal · saldo pelo tempo</span><b>${R(cv.mensal)} · ${cv.saldoTempo === null ? 'vigência indeterminada' : R(cv.saldoTempo)}</b></div>`; })()}
+      ${calcValoresCtr(a).conf.length ? `<div class="largo"><span>Conferir no Contratos.gov.br</span><b style="color:#a5531a;font-weight:600">${esc(calcValoresCtr(a).conf.join(' · '))}</b></div>` : ''}<div><span>Pago acumulado · saldo</span><b>${R(pagoAc)} · ${indet ? 'vigência indeterminada' : R(vg - pagoAc)}</b></div>
       ${semClass.length ? `<div class="largo"><span>NEs do contrato na API sem esta classificação no EXE/RAP</span><b style="color:#a5531a">${esc(semClass.map(e => e.ne).join(', '))}</b></div>` : ''}
     </div>
     ${resp}
@@ -3774,21 +3776,64 @@ function ufsBaseCtr(){
   return m;
 }
 // previsto para 2026: cronograma do Contratos.gov.br; senão o valor global distribuído pelos dias de vigência em 2026 (valor anual quando o global é de 12 meses)
-function previsto2026(o){
-  // cronograma só quando ele fecha com o valor global (há cronogramas duplicados/cumulativos no Contratos.gov.br)
-  const croT = (o.cro||[]).reduce((s,c) => s + (c.v||0), 0), cro = (o.cro||[]).filter(c => c.a === 2026);
-  const longo = o.ini && o.fim && (o.fim - o.ini)/864e5 > 400;
-  if(cro.length && o.vg && Math.abs(croT - o.vg) <= o.vg*0.1 && !(longo && (o.cro||[]).length < 2)) return Math.min(o.vg, cro.reduce((s,c) => s + (c.v||0), 0));
-  if(!o.ini || !o.fim || o.fim.getFullYear() >= 2090 || !o.vg) return 0;
-  const i26 = new Date(2026,0,1), f26 = new Date(2026,11,31), ini = o.ini > i26 ? o.ini : i26, fim = o.fim < f26 ? o.fim : f26;
-  const dias = (fim - ini)/864e5 + 1; if(dias <= 0) return 0;
-  const total = (o.fim - o.ini)/864e5 + 1, somaItens = (o.itn||[]).reduce((s,x) => s + (x.vt||0), 0);
-  // valor de 12 meses com vigência longa: só em contrato de mão de obra exclusiva (ex.: 00026/2026), para não anualizar contratos plurianuais
-  const moEx = o.pag && String(o.pag['Mão de obra exclusiva']||'').trim()==='1';
-  const qI = (o.itn||[]).reduce((s,x) => s + (x.q||0), 0), postosOk = moEx && ((qI > 0 && qI <= 200 && Number.isInteger(qI)) || (o.pag && toNum(o.pag['Total postos (decreto)']) > 0));
-  const anual = postosOk && total > 400 && somaItens && Math.abs(somaItens - o.vg) <= o.vg*0.01;
-  return anual ? o.vg * Math.min(1, dias/365) : o.vg * Math.min(1, dias/total);
+// ===== valores do contrato (regras aprovadas em 28/10/2026) =====
+// · serviço contínuo / mão de obra: previsto 2026 = valor mensal × meses de 2026 dentro da vigência
+// · compra (entrega de bens, SRP): previsto 2026 = o que está empenhado; o valor global é só o teto
+// · valor mensal: parcela do Contratos.gov.br quando parcela × nº de parcelas = valor global; senão o cronograma; senão valor global ÷ meses
+//   (em contrato prorrogado ano a ano o valor global costuma ser só o do período de 12 meses: a parcela resolve isso)
+// · cada contrato leva a lista do que não fechou (o.calc.conf) para a ficha avisar em vez de mostrar número errado
+function calcValoresCtr(o){
+  if(o.calc) return o.calc;
+  const hoje = new Date(); hoje.setHours(0,0,0,0); const ano = hoje.getFullYear();
+  const indet = !!(o.fim && o.fim.getFullYear() >= 2090), M = 30.4375 * 864e5;
+  const meses = (a, b) => a && b && b > a ? (b - a) / M : 0;
+  const cat = String(o.cat || ''), conf = [];
+  const np = +o.np || 0, vp = o.vp || 0;
+  const compra = /compra/i.test(cat) || (!/servi|m[aã]o de obra|loca[cç]/i.test(cat) && !(np > 1));
+  if(/definir/i.test(cat)) conf.push('categoria "A definir" no Contratos.gov.br: tratado como '+(compra ? 'compra' : 'serviço contínuo'));
+  // período atual: início do último termo de vigência (ou do contrato) já começado
+  let iniP = o.ini;
+  (o.his || []).forEach(h => { if(h.iniV && h.iniV <= hoje && (!iniP || h.iniV > iniP) && (/^contrato$/i.test(h.tipo) || /VIG[EÊ]NCIA/i.test(h.qual || '') || /prorrog/i.test(h.obs || ''))) iniP = h.iniV; });
+  const mT = meses(o.ini, o.fim), mP = meses(iniP, o.fim);
+  // valor mensal
+  let mensal = 0, base = '';
+  const croT = (o.cro || []).reduce((s, c) => s + (c.v || 0), 0);
+  const parcelaOk = np > 0 && vp > 0 && Math.abs(np * vp - o.vg) <= Math.max(1, o.vg * 0.02);
+  if(np > 0 && vp > 0 && !parcelaOk) conf.push(np+' parcela(s) × '+fmtBRL(vp)+' = '+fmtBRL(np * vp)+', diferente do valor global '+fmtBRL(o.vg)+': parcela não usada');
+  const prorrogado = (o.his || []).some(h => /VIG[EÊ]NCIA/i.test(h.qual || '') || /prorrog/i.test(h.obs || ''));
+  // valor global do período atual (prorrogado ano a ano) ou da vigência toda: a parcela desempata quando o nº de parcelas bate com os meses do período
+  const periodo = !indet && mT > 13 && mP > 0 && mP <= 13.5 && prorrogado && (!parcelaOk || Math.abs(np - mP) <= 1.5);
+  const cobre = periodo ? mP : mT;
+  // associações que mostram o valor mensal de fato: o texto do contrato ("valor mensal … R$ x") e os itens cobrados por 12 meses
+  const txtM = [o.obj].concat((o.his || []).slice().sort((x, y) => (y.ass || 0) - (x.ass || 0)).map(h => h.obs)).map(s => String(s || '').toUpperCase().match(/VALOR\s+MENSAL.{0,60}?R\$\s*([\d.]+,\d{2})/)).find(Boolean);
+  const mTxt = txtM ? toNum(txtM[1]) : 0;
+  const ultT = (() => { const L = o.ith || []; if(!L.length) return null; const d = Math.max(...L.map(x => +(x.dt || 0))); return L.filter(x => +(x.dt || 0) === d); })();
+  const anualItens = ultT && ultT.length && ultT.every(x => String(x.per) === '12') && Math.abs(ultT.reduce((s, x) => s + (x.vt || 0), 0) - o.vg) <= Math.max(1, o.vg * 0.02);
+  if(mTxt > 0 && (!o.vg || mTxt <= o.vg * 1.01)){ mensal = mTxt; base = 'valor mensal escrito no contrato'+(Math.abs(mTxt * 12 - o.vg) <= o.vg * 0.02 ? ' (valor global = 12 meses)' : '');
+    if(!indet && mT > 13 && Math.abs(mTxt * 12 - o.vg) <= o.vg * 0.02) conf.push('o valor global do Contratos.gov.br ('+fmtBRL(o.vg)+') é de 12 meses; pela vigência de '+Math.round(mT)+' meses o contrato vale cerca de '+fmtBRL(mTxt * mT)); }
+  else if(anualItens && !indet && mT > 13){ mensal = o.vg / 12; base = 'itens cobrados por 12 meses: valor global anual ÷ 12'; }
+  else if(!indet && cobre > 0){ mensal = o.vg / cobre; base = periodo ? 'valor global do período atual ('+dataCtrBR(iniP)+' a '+dataCtrBR(o.fim)+') ÷ '+Math.round(cobre)+' meses' : 'valor global ÷ '+Math.round(cobre)+' meses de vigência'; }
+  else if(indet && parcelaOk && np > 1){ mensal = o.vg / np; base = 'vigência indeterminada: valor global ÷ '+np+' parcelas'; }
+  if(periodo && !parcelaOk) conf.push('valor global tomado como do período atual ('+dataCtrBR(iniP)+' a '+dataCtrBR(o.fim)+'): contrato prorrogado e sem parcela que confirme');
+  if(croT && o.vg && Math.abs(croT - o.vg) > o.vg * 0.1) conf.push('cronograma soma '+fmtBRL(croT)+' para valor global de '+fmtBRL(o.vg)+' (cronograma duplicado ou desatualizado: não usado)');
+  // previsto 2026
+  let prev = 0, comoPrev = '';
+  if(compra){ comoPrev = 'compra: o previsto é o empenhado (o valor global é o teto)'; }
+  else if(!o.ativo){ comoPrev = 'contrato inativo'; }
+  else {
+    const cro = (o.cro || []).filter(c => c.a === ano), croOk = croT && Math.abs(croT - o.vg) <= o.vg * 0.1 && (o.cro || []).length >= Math.max(2, Math.floor(mT * 0.8));   // só cronograma mês a mês (há cronogramas com o valor todo num mês só)
+    if(cro.length && croOk){ prev = cro.reduce((s, c) => s + (c.v || 0), 0); comoPrev = 'cronograma do Contratos.gov.br'; }
+    else {
+      const i = new Date(ano, 0, 1), f = new Date(ano, 11, 31, 23, 59), a = o.ini > i ? o.ini : i, b = indet || !o.fim ? f : (o.fim < f ? o.fim : f);
+      prev = mensal * meses(a, b); comoPrev = 'valor mensal × meses de '+ano+' na vigência ('+base+')';
+    }
+  }
+  // saldo pelo tempo: quanto ainda deve ser pago até o fim (serviço) · teto ainda não comprometido (compra, calculado com o empenho)
+  const mRest = indet ? null : meses(hoje > (o.ini || hoje) ? hoje : o.ini, o.fim);
+  const saldoTempo = compra || indet ? null : Math.max(0, mensal * mRest);
+  return o.calc = {compra, mensal, base, iniP, mT, mP, mRest, prev, comoPrev, saldoTempo, conf, indet};
 }
+function previsto2026(o){ return calcValoresCtr(o).prev; }
 const ACOES_CTRSDR = [
   ['renovar','Renovar / prorrogar','vencem em até 120 dias','#c75a00','#fdf0e1'],
   ['vencido','Vencidos ainda ativos','encerrar no Contratos.gov.br','#b3261e','#fdecea'],
@@ -3811,7 +3856,9 @@ function linhasCtrSdr(){
     const r0 = {}; anotarRespCtr(r0, o);
     const ceplac = o.ug === '130010';
     const uf = ceplac ? (ufBase.get(String(o.id)) || ufTexto(String(o.ugoN||'').slice(-3)) || 'DF') : 'DF';
-    const prev = o.ativo ? previsto2026(o) : 0, cob = ex.emp + ex.rapPago + ex.rapAberto, falta = Math.max(0, prev - cob);
+    const cv = calcValoresCtr(o), cob = ex.emp + ex.rapPago + ex.rapAberto;
+    const prev = !o.ativo ? 0 : cv.compra ? cob : cv.prev, falta = cv.compra ? 0 : Math.max(0, prev - cob);
+    const saldo = cv.compra ? Math.max(0, o.vg - cob) : cv.saldoTempo;
     const acoes = [];
     if(o.ativo){
       if(!indet && dias!==null && dias >= 0 && dias <= 120) acoes.push('renovar');
@@ -3823,7 +3870,7 @@ function linhasCtrSdr(){
     const mesVenc = o.ativo && !indet && o.fim ? o.fim.getFullYear()+'-'+String(o.fim.getMonth()+1).padStart(2,'0') : '';
     return {...r0, ano: mA ? mA[2] : '', ordCtr: mA ? (+mA[2])*100000 + (+mA[1]) : 0, id:o.id, num:o.num, ugc:o.ug, ug:NOME_UG_CTRSDR[o.ug] || o.ug, ugo:o.ugo+(o.ugoN?' · '+o.ugoN:''), forn:o.forn, cat:o.cat||'—', sit:o.ativo ? 'Ativo' : 'Inativo', faixa,
       ini:dataCtrBR(o.ini), fim:indet ? 'Indeterminado' : dataCtrBR(o.fim), dias:indet ? null : dias, vg:o.vg, postos, emp:ex.emp, pago:ex.pago + ex.rapPago, rapAberto:ex.rapAberto,
-      prev, falta: acoes.includes('empenho') ? falta : 0, uf, ufSede: !ceplac, mesVenc, acoes, acaoTxt: acoes.map(k => ACOES_CTRSDR.find(a => a[0]===k)[1]).join(' · '),
+      prev, falta: acoes.includes('empenho') ? falta : 0, saldo, compra: cv.compra, mensal: cv.mensal, conf: cv.conf, uf, ufSede: !ceplac, mesVenc, acoes, acaoTxt: acoes.map(k => ACOES_CTRSDR.find(a => a[0]===k)[1]).join(' · '),
       nTes:ex.nTes, nNE:o.nes.length, fiscal:o.fiscal ? 'Sim' : 'Não', gestor:temGestor ? 'Sim' : 'Não', fatVenc:o.fatVenc.length,
       resp:o.resAt.map(r => r.f+': '+r.nome).join(' · '), _o:o};
   });
@@ -3941,7 +3988,7 @@ const VIEW_CTRSDR = {
     // cartões
     const k4 = `<div class="cs-k4">
       <div class="cs-k dest"><span>Contratos ativos</span><b>${nI2(at.length)}</b><small>contratado <b style="font-size:15px;display:inline">${fmtC(s(at,'vg'))}</b> · ${rows.length - at.length} inativo(s)</small><div class="cs-ugs">${porUGn.map(([u,n]) => `<em>${CURTO_UG_CTRSDR[u]} ${n}</em>`).join('')}</div></div>
-      <div class="cs-k"><span>Previsto para 2026</span><b data-tip="${esc(fmtBRL(prev))}">${fmtC(prev)}</b><small>cronograma ou valor global pelos dias de vigência em 2026</small></div>
+      <div class="cs-k"><span>Previsto para 2026</span><b data-tip="${esc(fmtBRL(prev))}">${fmtC(prev)}</b><small>serviços: valor mensal × meses de 2026 · compras: o empenhado</small></div>
       <div class="cs-k"><span>Empenhado 2026</span><b data-tip="${esc(fmtBRL(emp))}">${fmtC(emp)}</b><div class="cs-bar"><i style="width:${Math.min(100,pct(emp+rapA,prev||1))}%;background:#1f4e79"></i></div><small>${carregando ? 'carregando o EXE/RAP…' : `+ RAP em aberto ${fmtC(rapA)} · cobre ${pct(emp+rapA, prev)}% do previsto`}</small></div>
       <div class="cs-k"><span>Pago 2026 (EXE + RAP)</span><b data-tip="${esc(fmtBRL(pago))}">${fmtC(pago)}</b><div class="cs-bar"><i style="width:${Math.min(100,pct(pago,prev||1))}%;background:#2e8a4f"></i></div><small>${carregando ? 'carregando o EXE/RAP…' : `${pct(pago,prev)}% do previsto 2026 · falta ${fmtC(Math.max(0,prev-pago))}`}</small></div>
     </div>`;
@@ -10848,7 +10895,7 @@ function rcSugestoes(q){
     box.hidden = false; }).catch(e => { box.innerHTML = `<div class="ri-sv">${esc(e.message)}</div>`; box.hidden = false; });
 }
 async function rcAbrir(id){
-  RC.id = String(id); RC.o = null; RC.l = null; RC.tes = null; RC.hist = null; RC.erro = ''; RC.aba = 'resumo';
+  RC.id = String(id); RC.o = null; RC.l = null; RC.tes = null; RC.hist = null; RC.portal = null; RC.erro = ''; RC.aba = 'resumo';
   const box = document.getElementById('rcSug'); if(box) box.hidden = true;
   desenharRelCtr();
   try{
@@ -10856,9 +10903,11 @@ async function rcAbrir(id){
     if(!x) throw new Error('Contrato '+RC.id+' não encontrado no Contratos.gov.br.');
     RC.o = x.o; const inp = document.getElementById('rcBusca'); if(inp) inp.value = RC.o.num;
     const w = await garantirAntigo(); try{ RC.l = (w.linhasCtrSdr() || []).find(d => String(d.id) === RC.id) || null; }catch(e){}
+    try{ w.calcValoresCtr(RC.o); }catch(e){}
     desenharRelCtr();
     try{ const T = await ctrExecTes([RC.o], null); RC.tes = T && T[0]; }catch(e){ RC.tes = {erro: e.message}; }
     try{ RC.hist = await window.__tesNEsHist(RC.o.nes); }catch(e){ RC.hist = {erro: e.message}; }
+    try{ RC.portal = await histDados(RC.o.nes); }catch(e){ RC.portal = {erro: e.message}; }
   }catch(e){ RC.erro = e.message; }
   desenharRelCtr();
 }
@@ -10866,8 +10915,8 @@ async function rcAbrir(id){
 function rcCalc(){
   const o = RC.o, l = RC.l || {}, t = RC.tes && !RC.tes.erro ? RC.tes : null, hoje = new Date(); hoje.setHours(0,0,0,0);
   const indet = o.fim && o.fim.getFullYear() >= 2090, dias = o.fim && !indet ? Math.round((o.fim - hoje)/864e5) : null;
-  const prev = l.prev || 0, emp = t ? t.emp : (l.emp||0), pagoE = t ? t.pagoE : 0, pagoR = t ? t.pagoR : 0, rapAb = t ? t.rapAb : (l.rapAberto||0);
-  const cob = emp + pagoR + rapAb, falta = o.ativo && prev > 0 ? Math.max(0, prev - cob) : 0;
+  const cv0 = o.calc || {}, emp = t ? t.emp : (l.emp||0), pagoE = t ? t.pagoE : 0, pagoR = t ? t.pagoR : 0, rapAb = t ? t.rapAb : (l.rapAberto||0);
+  const cob = emp + pagoR + rapAb, prev = !o.ativo ? 0 : cv0.compra ? cob : (cv0.prev || l.prev || 0), falta = o.ativo && !cv0.compra && prev > 0 ? Math.max(0, prev - cob) : 0;
   const his = (o.his||[]).slice().sort((a,b) => (a.ass||0) - (b.ass||0));
   const al = [];   // [classe, título, texto]
   if(o.ativo && dias !== null && dias < 0) al.push(['c', 'Vigência vencida há '+(-dias)+' dias', 'O contrato segue ativo no Contratos.gov.br: encerrar ou registrar a prorrogação.']);
@@ -10879,7 +10928,19 @@ function rcCalc(){
   const pg = o.pag || {}; if(pg['Alteração depois da leitura']) al.push(['c', 'Página do Contratos.gov.br desatualizada', 'Lida em '+pg['Página lida em']+'; depois houve: '+pg['Alteração depois da leitura']+'. Postos, PNCP e edital podem estar desatualizados.']);
   if(!o.nes.length) al.push(['n', 'Sem nota de empenho ligada', 'O Contratos.gov.br não tem empenho cadastrado neste contrato: a execução no Tesouro não aparece.']);
   const prox = al.find(a => a[0] === 'c') ? al.find(a => a[0] === 'c')[2] : al.length ? al[0][2] : o.ativo ? 'Nenhuma providência automática: acompanhar faturas e pagamentos do mês.' : 'Contrato inativo: sem providência de execução.';
-  return {o, l, t, hoje, indet, dias, prev, emp, pagoE, pagoR, rapAb, cob, falta, his, al, prox, ug: UG_CTR_NOME[o.ug] || o.ug};
+  // saldo do contrato (regras de 28/10/2026): serviço → saldo pelo tempo e saldo pelo pago no período atual · compra → teto ainda não comprometido
+  const cv = o.calc || {}, S = {compra: !!cv.compra, mensal: cv.mensal || 0, base: cv.base || '', iniP: cv.iniP, conf: cv.conf || [], indet};
+  if(S.compra){ S.teto = o.vg; S.naoComp = Math.max(0, o.vg - cob); }
+  else if(!indet && o.fim){
+    S.mesesP = cv.mP && cv.mP > 0 && /período atual/.test(S.base) ? cv.mP : cv.mT; S.valorP = S.mensal * S.mesesP; S.saldoTempo = cv.saldoTempo;
+    // pago no período: Portal (2014–2025, por data do documento) + Tesouro 2026
+    const P = RC.portal && !RC.portal.erro ? RC.portal : null, ini = S.iniP || o.ini;
+    if(P && t){ let s = 0; P.anos.forEach(y => y.docs.forEach(d => { const dt = riData(d[0]); if(dt && ini && dt >= ini) s += d[4] || 0; })); S.pagoP = s + (t.pagoE || 0) + (t.pagoR || 0); S.saldoPago = Math.max(0, S.valorP - S.pagoP);
+      const dif = S.saldoPago - S.saldoTempo; if(S.valorP > 0 && Math.abs(dif) > S.valorP * 0.15) S.ritmo = dif > 0 ? 'abaixo' : 'acima'; }
+  }
+  if(S.ritmo === 'abaixo') al.push(['a', 'Pagamento abaixo do ritmo do contrato', 'Pelo tempo faltariam '+riR(S.saldoTempo)+'; pelo que foi pago faltam '+riR(S.saldoPago)+'. Verificar faturas não pagas, glosas ou execução menor que a contratada.']);
+  if(S.ritmo === 'acima') al.push(['a', 'Pagamento acima do ritmo do contrato', 'Pelo tempo faltariam '+riR(S.saldoTempo)+'; pelo que foi pago faltam só '+riR(S.saldoPago)+'. Verificar se o valor do contrato cobre até o fim da vigência.']);
+  return {o, l, t, hoje, indet, dias, prev, emp, pagoE, pagoR, rapAb, cob, falta, his, al, prox, S, ug: UG_CTR_NOME[o.ug] || o.ug};
 }
 function rcCab(C, sub){
   const o = C.o, nA = C.al.filter(a => a[0] !== 'n').length;
@@ -10901,6 +10962,20 @@ function rcLinhaTempo(C){
   const pct = L.length > 1 ? Math.round(L.findIndex(e => e[2] === 2) / (L.length-1) * 100) : 0;
   return `<div class="ri-tl" style="--p:${pct}%">${L.map(e => `<div class="${e[2] === 2 ? 'h' : e[2] ? '' : 'p'}"><i></i><b>${esc(e[1])}</b><span>${riDt(e[0])}</span></div>`).join('')}</div>`;
 }
+function rcSaldo(C){
+  const S = C.S, o = C.o;
+  if(S.compra) return `${riSec('Saldo do contrato · compra')}<table class="ri-t ri-kv"><tr><td>Valor global (teto da compra)</td><td>${riR(S.teto)}</td></tr><tr><td>Empenhado + RAP</td><td>${riR(C.cob)}</td></tr>
+    <tr><td>Teto ainda não comprometido</td><td><b>${riR(S.naoComp)}</b></td></tr></table><p class="ri-nota">Em compra só vira despesa o que é empenhado: o previsto de ${new Date().getFullYear()} é o empenhado, e o resto do valor global é teto.</p>${rcConf(S)}`;
+  if(S.indet || !o.fim) return `${riSec('Saldo do contrato')}<p class="ri-nota">Vigência indeterminada: sem saldo pelo tempo.${S.mensal ? ' Valor mensal de referência: '+riR(S.mensal)+'.' : ''}</p>${rcConf(S)}`;
+  return `${riSec('Saldo do contrato · período '+riDt(S.iniP || o.ini)+' a '+riDt(o.fim))}<table class="ri-t ri-kv">
+    <tr><td>Valor mensal de referência</td><td>${riR(S.mensal)} <small>(${esc(S.base)})</small></td></tr>
+    <tr><td>Valor do período</td><td>${riR(S.valorP)} <small>(${Math.round(S.mesesP)} meses)</small></td></tr>
+    <tr><td>Saldo pelo tempo</td><td><b>${riR(S.saldoTempo)}</b> <small>· ${Math.round((C.o.calc||{}).mRest||0)} meses até o fim · o que ainda deve ser pago</small></td></tr>
+    <tr><td>Pago no período</td><td>${S.pagoP !== undefined ? riR(S.pagoP)+' <small>(Portal da Transparência até 2025 + Tesouro de '+new Date().getFullYear()+')</small>' : '<small>lendo o Tesouro e o histórico…</small>'}</td></tr>
+    <tr><td>Saldo pelo pago</td><td>${S.saldoPago !== undefined ? '<b>'+riR(S.saldoPago)+'</b> <small>· valor do período − pago no período</small>' : '—'}</td></tr>
+    ${S.ritmo ? `<tr><td>Ritmo</td><td style="color:#b8650a"><b>${S.ritmo === 'abaixo' ? 'pagamento abaixo do previsto pelo tempo' : 'pagamento acima do previsto pelo tempo'}</b></td></tr>` : S.saldoPago !== undefined ? '<tr><td>Ritmo</td><td style="color:#2e8a57">✓ pagamento no ritmo do contrato</td></tr>' : ''}</table>${rcConf(S)}`;
+}
+const rcConf = S => S.conf && S.conf.length ? `<div class="ri-al n"><b>Conferir no Contratos.gov.br</b>${S.conf.map(esc).join('<br>')}</div>` : '';
 function rcPagResumo(C){
   const o = C.o, k = (t, v, s, c, extra) => `<div style="${c ? '--c:'+c : ''}"><small>${t}</small><b>${v}</b>${extra||''}<em>${s||''}</em></div>`, pg = o.pag || {};
   const mo = String(pg['Mão de obra exclusiva']||'').trim() === '1', postos = (o.itn||[]).reduce((s,x) => s+(x.q||0), 0);
@@ -10921,7 +10996,7 @@ function rcPagResumo(C){
     <tr><td>${mo ? 'Postos (mão de obra exclusiva)' : 'Itens'}</td><td>${(o.itn||[]).length ? (o.itn||[]).map(x => `${esc(x.desc||x.tipo||'item')}: ${Number(x.q||0).toLocaleString('pt-BR')}`).join(' · ') : '—'}${mo && pg['Total postos (decreto)'] ? ' · total pelo decreto: '+esc(pg['Total postos (decreto)']) : ''}</td></tr>
     <tr><td>Links</td><td>${o.link ? `<a href="${esc(o.link)}" target="_blank" rel="noopener">Contratos.gov.br ↗</a>` : ''}${pg['Link PNCP'] ? ` · <a href="${esc(pg['Link PNCP'])}" target="_blank" rel="noopener">Contrato no PNCP ↗</a>` : ''}${pg['Link edital PNCP'] ? ` · <a href="${esc(pg['Link edital PNCP'])}" target="_blank" rel="noopener">Edital no PNCP ↗</a>` : ''}</td></tr></table>
     ${riSec('2 · Gestão do contrato')}${o.resAt.length ? `<table class="ri-t"><tr><th>Função</th><th>Nome</th><th>Portaria</th></tr>${o.resAt.map(r => `<tr><td>${esc(r.f)}</td><td>${esc(r.nome)}</td><td>${esc(r.port||'—')}</td></tr>`).join('')}</table>` : '<p class="ri-nota">Nenhum gestor ou fiscal ativo cadastrado.</p>'}</div>
-  <div>${riSec('3 · Situação e alertas')}${C.al.map(a => `<div class="ri-al ${a[0]}"><b>${esc(a[1])}</b>${esc(a[2])}</div>`).join('') || '<div class="ri-al ok"><b>Nenhum alerta automático</b>Isso não garante ausência de pendência no processo.</div>'}
+  <div>${rcSaldo(C)}${riSec('3 · Situação e alertas')}${C.al.map(a => `<div class="ri-al ${a[0]}"><b>${esc(a[1])}</b>${esc(a[2])}</div>`).join('') || '<div class="ri-al ok"><b>Nenhum alerta automático</b>Isso não garante ausência de pendência no processo.</div>'}
     <div class="ri-al i"><b>Próxima providência sugerida</b>${esc(C.prox)}</div>
     ${riSec('4 · Resumo das alterações')}<table class="ri-t ri-kv"><tr><td>Termos aditivos</td><td>${C.his.filter(h => /aditivo/i.test(h.tipo)).length}</td></tr><tr><td>Apostilamentos</td><td>${C.his.filter(h => /apostil/i.test(h.tipo)).length}</td></tr>
     <tr><td>Último termo</td><td>${(() => { const h = C.his.filter(h => !/^contrato$|empenho/i.test(h.tipo)).slice(-1)[0]; return h ? esc(h.tipo+' '+h.n)+' · '+riDt(h.ass)+(h.qual ? ' · '+esc(h.qual) : '') : '—'; })()}</td></tr>
@@ -10951,6 +11026,7 @@ function rcPagFin(C){
   const k = (t, v, s, c) => `<div style="${c ? '--c:'+c : ''}"><small>${t}</small><b>${v}</b><em>${s||''}</em></div>`;
   return `${rcCab(C, 'execução financeira')}
   <div class="ri-k">${k('Empenhado 2026', riR(C.emp), 'notas do exercício')}${k('Liquidado 2026', riR(tot.liq), '')}${k('Pago 2026 (EXE)', riR(C.pagoE), '', '#e07b12')}${k('Pago de RAP', riR(C.pagoR), 'empenhos de anos anteriores', '#e07b12')}${k('RAP em aberto', riR(C.rapAb), '', '#1f4e79')}${k('Previsto 2026', riR(C.prev), C.prev ? riP(C.pagoE + C.pagoR, C.prev)+' pago' : '')}</div>
+  <div class="ri-g2"><div>${rcSaldo(C)}</div><div></div></div>
   ${riSec('Pagamentos mês a mês · previsto × pago')}${M && M.length ? `<table class="ri-t"><tr><th>Mês</th><th class="n">Previsto</th><th class="n">Pago EXE</th><th class="n">Pago RAP</th><th class="n">Pago no mês</th><th class="n">Acumulado</th><th>Situação</th></tr>
     ${M.map(m => { const p = prevMes(m.r), tt = m.pE + m.pR; return `<tr><td>${nm(m.r)}</td><td class="n">${riR(p)}</td><td class="n">${riR(m.pE)}</td><td class="n">${riR(m.pR)}</td><td class="n"><b>${riR(tt)}</b></td><td class="n">${riR(m.pagoAcE + m.pagoAcR)}</td><td>${tt < 0.005 && p > 0 ? '<span style="color:#b3261e">sem pagamento no mês</span>' : tt + 0.5 < p*0.8 ? '<span style="color:#b8650a">abaixo do previsto</span>' : '✓'}</td></tr>`; }).join('')}</table>
     <p class="ri-nota">Previsto do mês: cronograma do Contratos.gov.br; sem cronograma, o previsto de 2026 ÷ 12. Pago = posição do Tesouro do mês menos a do mês anterior.</p>`
