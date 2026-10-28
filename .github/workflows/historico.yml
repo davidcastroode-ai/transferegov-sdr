@@ -8,7 +8,7 @@ on:
         default: '[2014,2015,2016,2017,2018,2019,2020,2021,2022,2023,2024,2025]'
         required: true
       modo:
-        description: 'completo = baixa tudo · falhas = refaz só os dias que falharam'
+        description: 'completo = baixa tudo · falhas = refaz só os dias que falharam · indice = só refaz o índice das fichas'
         default: 'completo'
         required: true
 
@@ -17,6 +17,7 @@ permissions:
 
 jobs:
   ano:
+    if: github.event.inputs.modo != 'indice'
     runs-on: ubuntu-latest
     timeout-minutes: 300
     strategy:
@@ -57,7 +58,11 @@ jobs:
     if: always()
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v5
+        with:
+          path: codigo
       - uses: actions/download-artifact@v4
+        if: github.event.inputs.modo != 'indice'
         with:
           path: novos
       - name: Publicar na branch "historico" (guarda os anos já carregados)
@@ -67,7 +72,9 @@ jobs:
           git config user.email "robo-transferegov@users.noreply.github.com"
           URL="https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git"
           if git fetch -q "$URL" historico 2>/dev/null; then git checkout -q -b historico FETCH_HEAD; else git checkout -q -b historico; fi
-          for d in ../novos/hist-*; do a="${d##*-}"; mkdir -p "$a"; cp -r "$d"/. "$a"/; done
+          for d in ../novos/hist-*; do [ -d "$d" ] || continue; a="${d##*-}"; mkdir -p "$a"; cp -r "$d"/. "$a"/; done
+          # índice por nota de empenho para o histórico nas fichas do painel (só o pago)
+          python3 ../codigo/scripts/historico_indice.py . indice
           ls -R | head -80
           git add -A
           git commit -q -m "Carga histórica Portal · $(date -u -d '-3 hours' '+%d/%m/%Y %H:%M')" || true
