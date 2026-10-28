@@ -3540,17 +3540,20 @@ function carregarApiCtr(){
       const rows = parseCSV(await r.text()); const h = (rows.shift()||[]).map(x => String(x||'').trim());
       T[k] = rows.filter(x => x.some(v => String(v||'').trim())).map(x => { const o = {}; h.forEach((c,i) => o[c] = String(x[i]??'').trim()); return o; });
     }));
-    await Promise.all(['arq','itn','cro','pag'].map(async k => { try{ const ra = await robo('contratos_api_'+k+'.csv'); FONTE[k] = ra ? 'robô' : 'não carregou';
+    await Promise.all(['arq','itn','cro','pag','ith'].map(async k => { try{ const ra = await robo('contratos_api_'+k+'.csv'); FONTE[k] = ra ? 'robô' : 'não carregou';
       if(ra && ra.ok){ const rows = parseCSV(await ra.text()); const h = (rows.shift()||[]).map(x => String(x||'').trim());
         T[k] = rows.filter(x => x.some(v => String(v||'').trim())).map(x => { const o = {}; h.forEach((c,i) => o[c] = String(x[i]??'').trim()); return o; }); } }catch(e){} T[k] = T[k] || []; }));
     const por = l => { const m = new Map(); l.forEach(x => { const id = x['ID contrato (API)']; if(!m.has(id)) m.set(id, []); m.get(id).push(x); }); return m; };
-    const E = por(T.emp), F = por(T.fat), H = por(T.his), R = por(T.res), A = por(T.arq), IT = por(T.itn), CR = por(T.cro), PG = por(T.pag), HOJE0 = new Date(); HOJE0.setHours(0,0,0,0);
+    const E = por(T.emp), F = por(T.fat), H = por(T.his), R = por(T.res), A = por(T.arq), IT = por(T.itn), CR = por(T.cro), PG = por(T.pag), ITH = por(T.ith||[]), HOJE0 = new Date(); HOJE0.setHours(0,0,0,0);
     const lista = T.ctr.map(x => { const id = x['ID contrato (API)'];
       const o = {id, ug:x['UG atual'], ugo:x['UG de origem'], ugoN:x['Nome UG origem'], num:x['Nº contrato'], sit:x['Situação'], forn:x['Fornecedor'], cnpj:x['CNPJ/CPF'],
         ini:dataCtr(x['Início vigência']), fim:dataCtr(x['Fim vigência']), vi:toNum(x['Valor inicial']), vg:toNum(x['Valor global']), link:x['Link transparência'], cat:x['Categoria'], obj:x['Objeto']||'', proc:x['Processo']||'', mod:x['Modalidade']||'',
         nes:(E.get(id)||[]).map(e => ({ug:e['UG da NE'], ne:e['Nota de empenho']})),
         fat:(F.get(id)||[]).map(f => ({n:f['Nº fatura'], em:dataCtr(f['Emissão']), venc:dataCtr(f['Vencimento']), v:toNum(f['Valor (− glosa)']), sit:f['Situação'], liq:dataCtr(f['Data liquidação']), np:f['NP / documento SIAFI']})),
-        his:(H.get(id)||[]).map(h => ({tipo:h['Tipo do termo'], n:h['Nº do termo'], ass:dataCtr(h['Data assinatura']), fim:dataCtr(h['Fim vigência']), v:toNum(h['Valor global (novo)']), obs:h['Observação']})),
+        his:(H.get(id)||[]).map(h => ({tipo:h['Tipo do termo'], n:h['Nº do termo'], ass:dataCtr(h['Data assinatura']), fim:dataCtr(h['Fim vigência']), v:toNum(h['Valor global (novo)']), obs:h['Observação'],
+          idT:h['ID termo']||'', qual:h['Qualificação']||'', pub:dataCtr(h['Data publicação']), iniV:dataCtr(h['Início vigência']), vg:h['Valor global'] ? toNum(h['Valor global']) : null,
+          np:h['Nº parcelas']||'', vp:h['Valor parcela'] ? toNum(h['Valor parcela']) : null, iniNV:dataCtr(h['Início novo valor']), retro:h['Retroativo']||'', vRetro:toNum(h['Valor retroativo'])})),
+        ith:(ITH.get(id)||[]).map(r => ({item:r['ID item'], desc:r['Item'], tipo:r['Tipo'], idT:r['ID termo'], tipoT:r['Tipo do termo'], dt:dataCtr(r['Data termo']), q:toNum(r['Quantidade']), per:r['Periodicidade'], vu:toNum(r['Valor unitário']), vt:toNum(r['Valor total'])})),
         res:(R.get(id)||[]).map(r => ({f:r['Função'], nome:r['Nome'], port:r['Portaria'], sit:r['Situação']})),
         arq:(A.get(id)||[]).map(r => ({tipo:r['Tipo'], desc:r['Descrição'], pdf:r['Link PDF'], sei:r['Link SEI']})),
         itn:(IT.get(id)||[]).map(r => ({desc:r['Item / posto'], tipo:r['Tipo'], q:toNum(r['Quantidade']), vu:toNum(r['Valor unitário']), vt:toNum(r['Valor total'])})),
@@ -4089,7 +4092,8 @@ function fichaHTML0(c, escopo, mesF){
   const objeto = (b && b.objeto) || (A && A.obj) || '';
   return `
   <div class="f-cab">
-    <div class="f-acoes"><button type="button" onclick="imprimirFicha()">📄 Extração em PDF</button><button type="button" data-fechaficha aria-label="Fechar">✕</button></div>
+    <div class="f-acoes">${(() => { try{ const a = FICHA_API || (API_CTR && !API_CTR.erro ? apiDoContrato(DADOS.base ? DADOS.base.linhas.find(x => x.num===c) : null, c) : null);
+      return a && window.parent!==window && parent.__abrirRelCtr ? `<button type="button" onclick="document.getElementById('fichaFundo').hidden=true;document.body.classList.remove('ficha-aberta');parent.__abrirRelCtr('${esc(String(a.id))}')">📄 Relatório do contrato</button>` : ''; }catch(e){ return ''; } })()}<button type="button" onclick="imprimirFicha()">📄 Extração em PDF</button><button type="button" data-fechaficha aria-label="Fechar">✕</button></div>
     <small>Ficha do contrato · Contratos.gov.br + Tesouro (${escopo==='EXE' ? 'EXE' : escopo==='RAP' ? 'RAP' : 'EXE/RAP'} ${Math.floor((rE||rR)/100) || new Date().getFullYear()})${b ? ' + Base Contratos' : ''}</small>
     <h2>${esc(c)}</h2>
     <div class="f-fav">Fornecedor: <b>${esc(forn)}</b>${cnpj ? ' · '+esc(cnpj) : ''}</div>
@@ -9398,7 +9402,7 @@ function telaExtra(tela){
   ['v-antigo','v-visao','v-menu','v-painel'].forEach(id => { const x = document.getElementById(id); if(x) x.hidden = true; });
   document.body.style.overflow = ''; document.body.dataset.tema = '';
   el.hidden = false; el.dataset.tela = tela; window.scrollTo(0,0); marcarHash(tela);
-  if(tela === 'indic') desenharIndic(); else if(tela === 'assist') desenharAssist(); else if(tela === 'relinst') desenharRelInst(); else desenharMetodo();
+  if(tela === 'indic') desenharIndic(); else if(tela === 'assist') desenharAssist(); else if(tela === 'relinst') desenharRelInst(); else if(tela === 'relctr') desenharRelCtr(); else desenharMetodo();
 }
 (function(){ const st = document.createElement('style'); st.textContent = `
 .vx{padding:18px 24px 40px;background:#e9efe9;min-height:100vh;font-family:Barlow,'Segoe UI',Arial,sans-serif;color:#1d2b24}
@@ -10817,6 +10821,237 @@ function desenharRelInst(){
   else corpo = `<div class="ri-abas">${[['resumo','1 · Resumo do instrumento'],['fisica','2 · Execução física'],['financeira','3 · Execução financeira'],['convenente','4 · Execução do convenente'],['pc','5 · Prestação de contas'],['hist','6 · Histórico']].map(([k, t]) => { const n = k === 'convenente' ? riCalc(RI.d).conv.pend.length : 0; return `<button type="button" data-riaba="${k}" class="${RI.aba === k ? 'on' : ''}">${t}${n ? ` <span class="ri-nb">${n}</span>` : ''}</button>`; }).join('')}</div><div class="ri-doc">${riDoc(RI.aba)}</div>`;
   el.innerHTML = topo + busca + corpo;
 }
+// =====================================================================
+// RELATÓRIO DO CONTRATO (Contratos.gov.br + Tesouro do painel + Portal da Transparência) · 1º modelo
+// =====================================================================
+const RC = {id:'', aba:'resumo', o:null, l:null, tes:null, hist:null, erro:'', ind:null};
+const UG_CTR_NOME = {'130010':'CEPLAC', '130141':'CGPI/SDR', '130255':'CGMAP/SDR', '135098':'Caixa/MA', '420013':'SDR'};
+const rcN = s => String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toUpperCase().replace(/[^A-Z0-9]+/g,' ').trim();
+const rcDig = s => String(s||'').replace(/\D/g,'');
+async function rcIndice(){
+  if(RC.ind) return RC.ind;
+  const w = await garantirAntigo(); await w.carregarApiCtr(); const A = w.eval('API_CTR');
+  if(!A || A.erro) throw new Error('não foi possível ler os contratos do Contratos.gov.br'+(A && A.erro ? ' ('+A.erro+')' : ''));
+  return RC.ind = A.lista.map(o => ({o, t: rcN([o.num, o.forn, o.cnpj, o.proc, o.ug, UG_CTR_NOME[o.ug]||'', o.obj.slice(0,120)].join(' ')), d: rcDig(o.cnpj)+' '+rcDig(o.proc)+' '+rcDig(o.num)}));
+}
+function rcBuscar(q){
+  const n = rcN(q), d = rcDig(q); if(!n) return [];
+  const pal = n.split(' ').filter(Boolean);
+  return (RC.ind||[]).filter(x => pal.every(p => x.t.includes(p)) || (d.length >= 4 && x.d.includes(d)))
+    .sort((a,b) => (b.o.ativo - a.o.ativo) || ((b.o.fim||0) - (a.o.fim||0))).slice(0, 40);
+}
+function rcSugestoes(q){
+  const box = document.getElementById('rcSug'); if(!box) return;
+  if(!String(q||'').trim()){ box.hidden = true; return; }
+  rcIndice().then(() => { const L = rcBuscar(q);
+    box.innerHTML = L.length ? `<div class="ri-sg">${L.length} contrato(s)</div>` + L.map(x => `<div class="ri-si" data-rcid="${esc(x.o.id)}"><b>${esc(x.o.num)}</b> · ${esc(UG_CTR_NOME[x.o.ug] || x.o.ug)} · ${x.o.ativo ? 'ativo' : 'inativo'}<small>${esc(x.o.forn)} · ${esc(x.o.cnpj)}${x.o.proc ? ' · processo '+esc(x.o.proc) : ''}</small></div>`).join('') : '<div class="ri-sv">Nenhum contrato encontrado.</div>';
+    box.hidden = false; }).catch(e => { box.innerHTML = `<div class="ri-sv">${esc(e.message)}</div>`; box.hidden = false; });
+}
+async function rcAbrir(id){
+  RC.id = String(id); RC.o = null; RC.l = null; RC.tes = null; RC.hist = null; RC.erro = ''; RC.aba = 'resumo';
+  const box = document.getElementById('rcSug'); if(box) box.hidden = true;
+  desenharRelCtr();
+  try{
+    await rcIndice(); const x = RC.ind.find(z => String(z.o.id) === RC.id);
+    if(!x) throw new Error('Contrato '+RC.id+' não encontrado no Contratos.gov.br.');
+    RC.o = x.o; const inp = document.getElementById('rcBusca'); if(inp) inp.value = RC.o.num;
+    const w = await garantirAntigo(); try{ RC.l = (w.linhasCtrSdr() || []).find(d => String(d.id) === RC.id) || null; }catch(e){}
+    desenharRelCtr();
+    try{ const T = await ctrExecTes([RC.o], null); RC.tes = T && T[0]; }catch(e){ RC.tes = {erro: e.message}; }
+    try{ RC.hist = await window.__tesNEsHist(RC.o.nes); }catch(e){ RC.hist = {erro: e.message}; }
+  }catch(e){ RC.erro = e.message; }
+  desenharRelCtr();
+}
+// ---------- cálculos ----------
+function rcCalc(){
+  const o = RC.o, l = RC.l || {}, t = RC.tes && !RC.tes.erro ? RC.tes : null, hoje = new Date(); hoje.setHours(0,0,0,0);
+  const indet = o.fim && o.fim.getFullYear() >= 2090, dias = o.fim && !indet ? Math.round((o.fim - hoje)/864e5) : null;
+  const prev = l.prev || 0, emp = t ? t.emp : (l.emp||0), pagoE = t ? t.pagoE : 0, pagoR = t ? t.pagoR : 0, rapAb = t ? t.rapAb : (l.rapAberto||0);
+  const cob = emp + pagoR + rapAb, falta = o.ativo && prev > 0 ? Math.max(0, prev - cob) : 0;
+  const his = (o.his||[]).slice().sort((a,b) => (a.ass||0) - (b.ass||0));
+  const al = [];   // [classe, título, texto]
+  if(o.ativo && dias !== null && dias < 0) al.push(['c', 'Vigência vencida há '+(-dias)+' dias', 'O contrato segue ativo no Contratos.gov.br: encerrar ou registrar a prorrogação.']);
+  else if(o.ativo && dias !== null && dias <= 120) al.push(['a', 'Vence em '+dias+' dias', 'Fim em '+riDt(o.fim)+'. Iniciar a renovação / prorrogação (prazo de 120 dias).']);
+  if(o.ativo && !o.resAt.some(r => /^gestor$/i.test(r.f))) al.push(['a', 'Sem gestor ativo', 'Designar e cadastrar a portaria no Contratos.gov.br.']);
+  if(o.ativo && !o.fiscal) al.push(['a', 'Sem fiscal ativo', 'Designar e cadastrar a portaria no Contratos.gov.br.']);
+  if(o.fatVenc.length) al.push(['c', o.fatVenc.length+' fatura(s) vencida(s)', 'Somam '+riR(o.fatVenc.reduce((s,f) => s+(f.v||0), 0))+'. Verificar liquidação e pagamento.']);
+  if(falta > Math.max(1000, prev*0.05) && (dias === null || dias > 0)) al.push(['c', 'Empenho não cobre o previsto de 2026', 'Faltam '+riR(falta)+' (previsto '+riR(prev)+' × empenhado + RAP '+riR(cob)+'). Avaliar reforço de empenho.']);
+  const pg = o.pag || {}; if(pg['Alteração depois da leitura']) al.push(['c', 'Página do Contratos.gov.br desatualizada', 'Lida em '+pg['Página lida em']+'; depois houve: '+pg['Alteração depois da leitura']+'. Postos, PNCP e edital podem estar desatualizados.']);
+  if(!o.nes.length) al.push(['n', 'Sem nota de empenho ligada', 'O Contratos.gov.br não tem empenho cadastrado neste contrato: a execução no Tesouro não aparece.']);
+  const prox = al.find(a => a[0] === 'c') ? al.find(a => a[0] === 'c')[2] : al.length ? al[0][2] : o.ativo ? 'Nenhuma providência automática: acompanhar faturas e pagamentos do mês.' : 'Contrato inativo: sem providência de execução.';
+  return {o, l, t, hoje, indet, dias, prev, emp, pagoE, pagoR, rapAb, cob, falta, his, al, prox, ug: UG_CTR_NOME[o.ug] || o.ug};
+}
+function rcCab(C, sub){
+  const o = C.o, nA = C.al.filter(a => a[0] !== 'n').length;
+  return `<div class="ri-cab"><div><h2>Contrato ${esc(o.num)} · ${esc(C.ug)} (${esc(o.ug)})${sub ? ' · '+sub : ''}</h2>
+    <div class="ri-sub">${esc(o.forn)} · ${esc(o.cnpj)}${o.proc ? ' · processo '+esc(o.proc) : ''}${o.ugo && o.ugo !== o.ug ? ' · UG de origem '+esc(o.ugo) : ''}</div></div>
+    <div style="text-align:right"><span class="ri-pill" style="background:${o.ativo ? '#2e8a57' : '#5f6f66'}">${esc(o.sit||'—')}</span>${nA ? `<span class="ri-pill" style="background:${C.al.some(a => a[0]==='c') ? '#b3261e' : '#d08c1a'}">${nA} alerta${nA>1?'s':''}</span>` : ''}
+    <div class="ri-sub">gerado em ${new Date().toLocaleString('pt-BR', {dateStyle:'short', timeStyle:'short'})}</div></div></div>`;
+}
+function rcLinhaTempo(C){
+  const o = C.o, ev = [], ini = C.his.find(h => /^contrato$/i.test(h.tipo));
+  ev.push([ini && ini.ass || o.ini, 'Assinatura', 1]);
+  const termos = C.his.filter(h => !/^contrato$|encerramento|empenho/i.test(h.tipo) && h.ass);
+  termos.slice(-4).forEach(h => ev.push([h.ass, (/apostil/i.test(h.tipo) ? 'Apostila ' : 'Aditivo ')+String(h.n||'').replace(/^0+/,''), 1]));
+  if(termos.length > 4) ev[1][1] += ' (+'+(termos.length-4)+' anteriores)';
+  ev.push([C.hoje, 'Hoje', 2]);
+  if(o.ativo && o.fim && !C.indet){ const r = new Date(o.fim - 120*864e5); if(r > C.hoje) ev.push([r, 'Renovar até', 0]); }
+  if(o.fim && !C.indet) ev.push([o.fim, 'Fim da vigência', o.fim <= C.hoje ? 1 : 0]);
+  const L = ev.filter(e => e[0]).sort((a,b) => a[0]-b[0]);
+  const pct = L.length > 1 ? Math.round(L.findIndex(e => e[2] === 2) / (L.length-1) * 100) : 0;
+  return `<div class="ri-tl" style="--p:${pct}%">${L.map(e => `<div class="${e[2] === 2 ? 'h' : e[2] ? '' : 'p'}"><i></i><b>${esc(e[1])}</b><span>${riDt(e[0])}</span></div>`).join('')}</div>`;
+}
+function rcPagResumo(C){
+  const o = C.o, k = (t, v, s, c, extra) => `<div style="${c ? '--c:'+c : ''}"><small>${t}</small><b>${v}</b>${extra||''}<em>${s||''}</em></div>`, pg = o.pag || {};
+  const mo = String(pg['Mão de obra exclusiva']||'').trim() === '1', postos = (o.itn||[]).reduce((s,x) => s+(x.q||0), 0);
+  return `${rcCab(C)}
+  <div class="ri-k">${k('Valor global', riR(o.vg), o.vi && Math.abs(o.vi - o.vg) > 0.5 ? 'inicial '+riR(o.vi) : 'sem alteração de valor')}
+    ${k('Previsto 2026', riR(C.prev), 'cronograma ou valor pelos dias de 2026')}
+    ${k('Empenhado + RAP', riR(C.cob), C.prev ? riP(C.cob, C.prev)+' do previsto' : '', '#1f4e79', `<div class="ri-bar"><i style="width:${Math.min(100, C.prev ? C.cob/C.prev*100 : 0)}%;background:#1f4e79"></i></div>`)}
+    ${k('Pago 2026 (EXE + RAP)', riR(C.pagoE + C.pagoR), C.prev ? riP(C.pagoE + C.pagoR, C.prev)+' do previsto' : '', '#e07b12')}
+    ${k('Falta empenhar', riR(C.falta), C.falta > 0.005 ? 'reforço de empenho' : C.prev > 0 ? '✓ previsto coberto' : 'sem previsto em 2026', C.falta > 0.005 ? '#b3261e' : '#2e8a57')}
+    ${k('Vigência até', C.indet ? 'indeterminada' : riDt(o.fim), C.dias === null ? '' : C.dias >= 0 ? 'faltam '+C.dias+' dias' : 'vencida há '+(-C.dias)+' dias', C.dias !== null && C.dias < 0 ? '#b3261e' : C.dias !== null && C.dias <= 120 ? '#d08c1a' : '')}</div>
+  ${riSec('Linha do tempo')}${rcLinhaTempo(C)}
+  <div class="ri-g2"><div>${riSec('1 · Identificação')}<table class="ri-t ri-kv">
+    <tr><td>Objeto</td><td>${esc(o.obj||'—')}</td></tr>
+    <tr><td>Categoria · modalidade</td><td>${esc(o.cat||'—')}${o.mod ? ' · '+esc(o.mod) : ''}</td></tr>
+    <tr><td>Fornecedor</td><td>${esc(o.forn)} · ${esc(o.cnpj)}</td></tr>
+    <tr><td>Vigência</td><td>${riDt(o.ini)} a ${C.indet ? 'indeterminada' : riDt(o.fim)}</td></tr>
+    <tr><td>Valor inicial → global</td><td>${riR(o.vi)} → ${riR(o.vg)}</td></tr>
+    <tr><td>${mo ? 'Postos (mão de obra exclusiva)' : 'Itens'}</td><td>${(o.itn||[]).length ? (o.itn||[]).map(x => `${esc(x.desc||x.tipo||'item')}: ${Number(x.q||0).toLocaleString('pt-BR')}`).join(' · ') : '—'}${mo && pg['Total postos (decreto)'] ? ' · total pelo decreto: '+esc(pg['Total postos (decreto)']) : ''}</td></tr>
+    <tr><td>Links</td><td>${o.link ? `<a href="${esc(o.link)}" target="_blank" rel="noopener">Contratos.gov.br ↗</a>` : ''}${pg['Link PNCP'] ? ` · <a href="${esc(pg['Link PNCP'])}" target="_blank" rel="noopener">Contrato no PNCP ↗</a>` : ''}${pg['Link edital PNCP'] ? ` · <a href="${esc(pg['Link edital PNCP'])}" target="_blank" rel="noopener">Edital no PNCP ↗</a>` : ''}</td></tr></table>
+    ${riSec('2 · Gestão do contrato')}${o.resAt.length ? `<table class="ri-t"><tr><th>Função</th><th>Nome</th><th>Portaria</th></tr>${o.resAt.map(r => `<tr><td>${esc(r.f)}</td><td>${esc(r.nome)}</td><td>${esc(r.port||'—')}</td></tr>`).join('')}</table>` : '<p class="ri-nota">Nenhum gestor ou fiscal ativo cadastrado.</p>'}</div>
+  <div>${riSec('3 · Situação e alertas')}${C.al.map(a => `<div class="ri-al ${a[0]}"><b>${esc(a[1])}</b>${esc(a[2])}</div>`).join('') || '<div class="ri-al ok"><b>Nenhum alerta automático</b>Isso não garante ausência de pendência no processo.</div>'}
+    <div class="ri-al i"><b>Próxima providência sugerida</b>${esc(C.prox)}</div>
+    ${riSec('4 · Resumo das alterações')}<table class="ri-t ri-kv"><tr><td>Termos aditivos</td><td>${C.his.filter(h => /aditivo/i.test(h.tipo)).length}</td></tr><tr><td>Apostilamentos</td><td>${C.his.filter(h => /apostil/i.test(h.tipo)).length}</td></tr>
+    <tr><td>Último termo</td><td>${(() => { const h = C.his.filter(h => !/^contrato$|empenho/i.test(h.tipo)).slice(-1)[0]; return h ? esc(h.tipo+' '+h.n)+' · '+riDt(h.ass)+(h.qual ? ' · '+esc(h.qual) : '') : '—'; })()}</td></tr>
+    <tr><td>Faturas</td><td>${(o.fat||[]).length} registradas · ${o.fatVenc.length} vencida(s)</td></tr></table></div></div>`;
+}
+// execução mês a mês: as bases do Tesouro são posições acumuladas; o do mês = posição do mês − a do mês anterior
+function rcMensal(){
+  const H = RC.hist; if(!H || H.erro) return null;
+  const ult = (base, campos) => { const por = {}; (base.linhas||[]).forEach(d => { const r = por[d.rank] || (por[d.rank] = {}); campos.forEach(c => r[c] = (r[c]||0) + (d[c]||0)); }); return por; };
+  const E = ult(H.exe, ['emp','liq','pago']), R = ult(H.rap, ['pago','saldo','inscrito']);
+  const ranks = [...new Set(Object.keys(E).concat(Object.keys(R)).map(Number))].sort((a,b) => a-b);
+  let aE = 0, aR = 0, lastE = {emp:0,liq:0,pago:0}, lastR = {pago:0,saldo:0};
+  return ranks.map(r => { const e = E[r] || lastE, x = R[r] || lastR; const m = {r, pE: (e.pago||0) - aE, pR: (x.pago||0) - aR, emp: e.emp||0, liq: e.liq||0, pagoAcE: e.pago||0, pagoAcR: x.pago||0, saldoR: x.saldo||0};
+    aE = e.pago||0; aR = x.pago||0; lastE = e; lastR = x; return m; });
+}
+function rcPagFin(C){
+  const o = C.o, M = rcMensal(), H = RC.hist;
+  const porNE = (() => { if(!H || H.erro) return []; const m = new Map();
+    ['exe','rap'].forEach(v => { const b = H[v]; if(!b || !b.ranks || !b.ranks.length) return; const r0 = b.ranks[0];
+      b.linhas.filter(d => d.rank === r0).forEach(d => { const k = d.ug+'|'+d.ne, x = m.get(k) || {ug:d.ug, ne:d.ne, emp:0, liq:0, pago:0, insc:0, pagoR:0, saldo:0};
+        if(v === 'exe'){ x.emp += d.emp||0; x.liq += d.liq||0; x.pago += d.pago||0; } else { x.insc += d.inscrito||0; x.pagoR += d.pago||0; x.saldo += d.saldo||0; } m.set(k, x); }); });
+    return [...m.values()].sort((a,b) => String(b.ne).localeCompare(String(a.ne))); })();
+  const cro = (o.cro||[]).filter(c => c.a === new Date().getFullYear());
+  const prevMes = r => { const c = cro.filter(x => x.m === r % 100).reduce((s,x) => s+(x.v||0), 0); return c || (C.prev ? C.prev/12 : 0); };
+  const nm = r => ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'][(r%100)-1]+'/'+String(Math.floor(r/100)).slice(2);
+  const tot = porNE.reduce((s,x) => ({emp:s.emp+x.emp, liq:s.liq+x.liq, pago:s.pago+x.pago, insc:s.insc+x.insc, pagoR:s.pagoR+x.pagoR, saldo:s.saldo+x.saldo}), {emp:0,liq:0,pago:0,insc:0,pagoR:0,saldo:0});
+  const k = (t, v, s, c) => `<div style="${c ? '--c:'+c : ''}"><small>${t}</small><b>${v}</b><em>${s||''}</em></div>`;
+  return `${rcCab(C, 'execução financeira')}
+  <div class="ri-k">${k('Empenhado 2026', riR(C.emp), 'notas do exercício')}${k('Liquidado 2026', riR(tot.liq), '')}${k('Pago 2026 (EXE)', riR(C.pagoE), '', '#e07b12')}${k('Pago de RAP', riR(C.pagoR), 'empenhos de anos anteriores', '#e07b12')}${k('RAP em aberto', riR(C.rapAb), '', '#1f4e79')}${k('Previsto 2026', riR(C.prev), C.prev ? riP(C.pagoE + C.pagoR, C.prev)+' pago' : '')}</div>
+  ${riSec('Pagamentos mês a mês · previsto × pago')}${M && M.length ? `<table class="ri-t"><tr><th>Mês</th><th class="n">Previsto</th><th class="n">Pago EXE</th><th class="n">Pago RAP</th><th class="n">Pago no mês</th><th class="n">Acumulado</th><th>Situação</th></tr>
+    ${M.map(m => { const p = prevMes(m.r), tt = m.pE + m.pR; return `<tr><td>${nm(m.r)}</td><td class="n">${riR(p)}</td><td class="n">${riR(m.pE)}</td><td class="n">${riR(m.pR)}</td><td class="n"><b>${riR(tt)}</b></td><td class="n">${riR(m.pagoAcE + m.pagoAcR)}</td><td>${tt < 0.005 && p > 0 ? '<span style="color:#b3261e">sem pagamento no mês</span>' : tt + 0.5 < p*0.8 ? '<span style="color:#b8650a">abaixo do previsto</span>' : '✓'}</td></tr>`; }).join('')}</table>
+    <p class="ri-nota">Previsto do mês: cronograma do Contratos.gov.br; sem cronograma, o previsto de 2026 ÷ 12. Pago = posição do Tesouro do mês menos a do mês anterior.</p>`
+    : `<p class="ri-nota">${H && H.erro ? 'O Tesouro do painel não abriu: '+esc(H.erro) : !o.nes.length ? 'Sem nota de empenho ligada ao contrato no Contratos.gov.br.' : 'Lendo o Tesouro do painel…'}</p>`}
+  ${riSec('Por nota de empenho · posição mais recente')}${porNE.length ? `<table class="ri-t"><tr><th>Nota de empenho</th><th>UG</th><th class="n">Empenhado</th><th class="n">Liquidado</th><th class="n">Pago</th><th class="n">RAP inscrito</th><th class="n">RAP pago</th><th class="n">RAP a pagar</th></tr>
+    ${porNE.map(x => `<tr><td>${esc(x.ne)}</td><td>${esc(x.ug)}</td><td class="n">${riR(x.emp)}</td><td class="n">${riR(x.liq)}</td><td class="n">${riR(x.pago)}</td><td class="n">${riR(x.insc)}</td><td class="n">${riR(x.pagoR)}</td><td class="n">${riR(x.saldo)}</td></tr>`).join('')}
+    <tr><td><b>Total</b></td><td></td><td class="n"><b>${riR(tot.emp)}</b></td><td class="n"><b>${riR(tot.liq)}</b></td><td class="n"><b>${riR(tot.pago)}</b></td><td class="n"><b>${riR(tot.insc)}</b></td><td class="n"><b>${riR(tot.pagoR)}</b></td><td class="n"><b>${riR(tot.saldo)}</b></td></tr></table>`
+    : `<p class="ri-nota">${o.nes.length ? 'Nenhuma das '+o.nes.length+' nota(s) ligada(s) ao contrato aparece no Tesouro de '+new Date().getFullYear()+'.' : 'Sem nota de empenho ligada.'}</p>`}
+  <p class="ri-nota">Notas ligadas ao contrato no Contratos.gov.br: ${esc(o.nes.map(e => e.ne).join(', ') || 'nenhuma')}.</p>`;
+}
+function rcPagFat(C){
+  const o = C.o, F = (o.fat||[]).slice().sort((a,b) => (b.em||0) - (a.em||0)), venc = new Set(o.fatVenc);
+  const pagas = F.filter(f => /pag|liquid/i.test(f.sit||'')), pend = F.filter(f => /pendente|andamento/i.test(f.sit||''));
+  const k = (t, v, s, c) => `<div style="${c ? '--c:'+c : ''}"><small>${t}</small><b>${v}</b><em>${s||''}</em></div>`, soma = L => L.reduce((s,f) => s+(f.v||0), 0);
+  return `${rcCab(C, 'faturas e pagamentos')}
+  <div class="ri-k">${k('Faturas registradas', F.length, riR(soma(F)))}${k('Pagas / liquidadas', pagas.length, riR(soma(pagas)), '#2e8a57')}${k('Pendentes', pend.length, riR(soma(pend)), '#d08c1a')}${k('Vencidas', o.fatVenc.length, riR(soma(o.fatVenc)), o.fatVenc.length ? '#b3261e' : '#2e8a57')}${k('Última fatura', F[0] ? riDt(F[0].em) : '—', F[0] ? esc(F[0].sit||'') : '')}${k('Pago 2026 no Tesouro', riR(C.pagoE + C.pagoR), 'EXE + RAP')}</div>
+  ${F.length ? `<table class="ri-t"><tr><th>Nº fatura</th><th>Emissão</th><th>Vencimento</th><th class="n">Valor (− glosa)</th><th>Situação</th><th>Liquidação</th><th>Documento SIAFI</th></tr>
+    ${F.map(f => `<tr${venc.has(f) ? ' style="background:#fdecea"' : ''}><td>${esc(f.n)}</td><td>${riDt(f.em)}</td><td>${riDt(f.venc)}${venc.has(f) ? ' <b style="color:#b3261e">vencida</b>' : ''}</td><td class="n">${riR(f.v)}</td><td>${esc(f.sit||'—')}</td><td>${riDt(f.liq)}</td><td>${esc(f.np||'—')}</td></tr>`).join('')}</table>`
+    : '<p class="ri-nota">Nenhuma fatura registrada no Contratos.gov.br para este contrato.</p>'}
+  <p class="ri-nota">Fonte: faturas cadastradas no Contratos.gov.br (o pagamento efetivo está na aba Execução financeira, pelo Tesouro).</p>`;
+}
+function rcPagAlt(C){
+  const o = C.o, H = C.his, pg = o.pag || {};
+  let ant = null;
+  const linhas = H.map(h => { const vg = h.vg !== null && h.vg !== undefined && h.vg > 0 ? h.vg : null; const dv = vg !== null && ant !== null && Math.abs(vg - ant) > 0.5 ? vg - ant : null; if(vg !== null) ant = vg;
+    return `<tr><td>${riDt(h.ass)}</td><td><b>${esc(h.tipo)}</b> ${esc(h.n||'')}</td><td>${esc(h.qual || (/apostil/i.test(h.tipo) && /repactu/i.test(h.obs) ? 'REPACTUAÇÃO' : /apostil/i.test(h.tipo) && /reajust/i.test(h.obs) ? 'REAJUSTE' : '—'))}</td><td>${riDt(h.pub)}</td><td>${h.iniV ? riDt(h.iniV)+' a ' : ''}${riDt(h.fim)}</td>
+      <td class="n">${vg !== null ? riR(vg) : '—'}${dv !== null ? `<br><small style="color:${dv < 0 ? '#b3261e' : '#2e8a57'}">${dv > 0 ? '+' : '−'}${riR(Math.abs(dv))} (${(dv/(vg-dv)*100).toLocaleString('pt-BR', {maximumFractionDigits:1})}%)</small>` : ''}</td>
+      <td>${h.retro === 'Sim' ? 'Sim'+(h.vRetro ? ' · '+riR(h.vRetro) : '')+(h.iniNV ? ' · desde '+riDt(h.iniNV) : '') : '—'}</td><td><small>${esc((h.obs||'').slice(0, 220))}</small></td></tr>`; }).join('');
+  // itens por termo: quantidade (e periodicidade) de cada item depois de cada termo
+  const ith = o.ith || [], itens = [...new Map(ith.map(x => [x.item, x.desc || x.tipo || 'item'])).entries()];
+  const termos = [...new Map(ith.slice().sort((a,b) => (a.dt||0) - (b.dt||0)).map(x => [x.idT, x])).values()];
+  const tabItens = termos.length && itens.length ? `<table class="ri-t"><tr><th>Data</th><th>Termo</th>${itens.map(([, d], i) => `<th class="n" title="${esc(d)}">Item ${i+1}</th>`).join('')}<th class="n">Valor total dos itens</th></tr>
+    ${termos.map(tm => { const L = ith.filter(x => x.idT === tm.idT), h = H.find(z => String(z.idT) === String(tm.idT));
+      return `<tr><td>${riDt(tm.dt)}</td><td>${esc(tm.tipoT)}${h ? ' '+esc(h.n) : ''}</td>${itens.map(([id]) => { const x = L.find(z => z.item === id); return `<td class="n">${x ? Number(x.q).toLocaleString('pt-BR')+(x.per && x.per !== '1' ? ` <small>× ${esc(x.per)}</small>` : '') : '—'}</td>`; }).join('')}<td class="n">${riR(L.reduce((s,x) => s+(x.vt||0), 0))}</td></tr>`; }).join('')}</table>
+    <p class="ri-nota">${itens.map(([, d], i) => `Item ${i+1}: ${esc(d)}`).join(' · ')}. Quantidade como está cadastrada em cada termo; "× 12" é a periodicidade (meses). Até 2021 alguns contratos cadastravam a quantidade como número de meses.</p>`
+    : '<p class="ri-nota">Quantidade dos itens por termo: o robô começa a trazer este dado na próxima atualização.</p>';
+  const docs = (o.arq||[]).length ? `<table class="ri-t"><tr><th>Documento</th><th>Tipo</th><th>Abrir</th></tr>${o.arq.map(x => `<tr><td>${esc(x.desc || x.tipo)}</td><td>${esc(x.tipo)}</td><td>${x.pdf ? `<a href="${esc(x.pdf)}" target="_blank" rel="noopener">PDF ↗</a>` : ''}${x.sei ? ` · <a href="${esc(x.sei)}" target="_blank" rel="noopener">SEI ↗</a>` : ''}</td></tr>`).join('')}</table>` : '<p class="ri-nota">Nenhum documento anexado no Contratos.gov.br.</p>';
+  return `${rcCab(C, 'alterações e documentos')}
+  ${riSec('Termos do contrato · o que mudou em cada um')}${H.length ? `<table class="ri-t"><tr><th>Assinatura</th><th>Termo</th><th>Alteração</th><th>Publicação</th><th>Vigência</th><th class="n">Valor global depois</th><th>Retroativo</th><th>Observação</th></tr>${linhas}</table>` : '<p class="ri-nota">Sem termos registrados.</p>'}
+  ${H.some(h => h.qual === undefined || (h.vg === null && !h.pub)) ? '<p class="ri-nota">Publicação, tipo da alteração e valor depois de cada termo chegam com a próxima atualização do robô.</p>' : ''}
+  ${riSec('Itens / postos em cada termo')}${tabItens}
+  ${riSec('Documentos')}${docs}
+  <p class="ri-nota">${pg['Link PNCP'] ? `<a href="${esc(pg['Link PNCP'])}" target="_blank" rel="noopener">Contrato no PNCP ↗</a>` : 'Sem link do PNCP'}${pg['Link edital PNCP'] ? ` · <a href="${esc(pg['Link edital PNCP'])}" target="_blank" rel="noopener">Edital no PNCP ↗</a>` : ''}${pg['Página lida em'] ? ' · página do Contratos.gov.br lida em '+esc(pg['Página lida em']) : ''}</p>`;
+}
+function rcPagHist(C){
+  return `${rcCab(C, 'histórico 2014–2025')}<div>${riSec('Pagamentos de 2014 a 2025 · Portal da Transparência')}${window.__histSecao(C.o.nes, 'contrato '+C.o.num)}</div>`;
+}
+const RC_ABAS = [['resumo','1 · Resumo do contrato'],['fin','2 · Execução financeira'],['fat','3 · Faturas e pagamentos'],['alt','4 · Alterações e documentos'],['hist','5 · Histórico 2014–2025']];
+function rcDoc(aba){
+  const C = rcCalc();
+  const corpo = aba === 'fin' ? rcPagFin(C) : aba === 'fat' ? rcPagFat(C) : aba === 'alt' ? rcPagAlt(C) : aba === 'hist' ? rcPagHist(C) : rcPagResumo(C);
+  return corpo + `<div class="ri-fonte">Fontes: Contratos.gov.br (API · robô), Tesouro do painel (BASE TESOURO GERENCIAL, notas de empenho ligadas ao contrato), PNCP e Portal da Transparência (histórico). Dias e alertas calculados na data de geração do relatório.</div>`;
+}
+function desenharRelCtr(){
+  const el = document.getElementById('v-extra'); if(!el || el.dataset.tela !== 'relctr') return;
+  const topo = `<div class="vx-top"><div><h1>📄 RELATÓRIO DO CONTRATO</h1><small>da assinatura ao pagamento · Contratos.gov.br (API) + Tesouro + PNCP</small></div>${RC.o ? `<div><button type="button" class="vx-btn" data-rcpdf style="background:#fff;color:#155a30">📄 Imprimir / PDF</button> <button type="button" class="vx-btn" data-rcxl style="background:#1e7a3c;color:#fff">⬇ Excel</button></div>` : ''}</div>`;
+  const busca = `<div class="ri-busca"><div class="ri-bx"><input id="rcBusca" autocomplete="off" value="${esc(RC.o ? RC.o.num : '')}" placeholder="Nº do contrato (00026/2026), fornecedor, CNPJ ou processo"><div id="rcSug" class="ri-sug" hidden></div></div><button type="button" class="vx-btn" data-rcbusca>Gerar relatório</button></div>`;
+  let corpo = '';
+  if(!RC.id) corpo = `<div class="vx-card ri-vazio"><b>Digite acima o que você sabe do contrato.</b><br>A busca acha pelo <b>número do contrato</b>, pelo <b>fornecedor</b>, pelo <b>CNPJ</b> ou pelo <b>processo</b>, nas UGs 130010, 130141 e 130255.</div>`;
+  else if(RC.erro) corpo = `<div class="vx-card ri-vazio">${esc(RC.erro)}</div>`;
+  else if(!RC.o) corpo = `<div class="vx-card ri-vazio">Lendo o contrato…</div>`;
+  else corpo = `<div class="ri-abas">${RC_ABAS.map(([k, t]) => { const n = k === 'resumo' ? rcCalc().al.filter(a => a[0] !== 'n').length : 0; return `<button type="button" data-rcaba="${k}" class="${RC.aba === k ? 'on' : ''}">${t}${n ? ` <span class="ri-nb">${n}</span>` : ''}</button>`; }).join('')}</div><div class="ri-doc">${rcDoc(RC.aba)}${RC.tes === null && RC.aba !== 'hist' ? '<p class="ri-nota">Lendo o Tesouro do painel…</p>' : ''}</div>`;
+  el.innerHTML = topo + busca + corpo;
+}
+function rcExcel(){
+  const C = rcCalc(), o = C.o, L = [];
+  (o.his||[]).forEach(h => L.push(['Termo', riDt(h.ass), (h.tipo||'')+' '+(h.n||''), (h.qual||'')+(h.obs ? ' · '+h.obs : ''), h.vg || 0]));
+  (o.fat||[]).forEach(f => L.push(['Fatura', riDt(f.em), f.n, (f.sit||'')+(f.venc ? ' · vence '+riDt(f.venc) : ''), f.v || 0]));
+  (rcMensal()||[]).forEach(m => L.push(['Pagamento (Tesouro)', String(m.r % 100).padStart(2,'0')+'/'+Math.floor(m.r/100), 'EXE + RAP', 'pago no mês', m.pE + m.pR]));
+  baixarXlsx({titulo: 'Contrato '+o.num+' · '+C.ug, sub: o.forn+' · '+o.cnpj, filtros: [], fonte: 'Contratos.gov.br (robô) e Tesouro do painel', arquivo: 'contrato_'+String(o.num).replace(/\W+/g,'_'),
+    cab: [{t:'Tipo'},{t:'Data'},{t:'Número / documento'},{t:'Descrição'},{t:'Valor', n:1}], linhas: L});
+}
+function rcPDF(){
+  if(!RC.o) return;
+  const css = [...document.querySelectorAll('style')].filter(s => s.textContent.includes('.ri-doc') || s.textContent.includes('.vx-top')).map(s => s.textContent).join('\n');
+  const quando = new Date().toLocaleString('pt-BR', {dateStyle:'short', timeStyle:'short'}), nr = RC.o.num;
+  const pag = ['resumo','fin','fat','alt'].map((a, k) => `${k ? '<div class="pg"></div>' : ''}<div class="ri-doc">${rcDoc(a)}</div>`).join('');
+  abrirPDF(`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>Relatório do contrato ${escPDF(nr)}</title><style>${css}
+  @page{size:A4 landscape;margin:9mm 9mm 11mm}html,body{margin:0;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}body{padding:12px;font-family:"Segoe UI",Arial,sans-serif;color:#1d2b24}
+  .ri-doc{box-shadow:none;padding:0}.pg{break-before:page}.ri-t tr,.ri-al,.ri-k>div{break-inside:avoid}.ri-sec{break-after:avoid}
+  .barra{background:#fff8e1;border:1px solid #e6cf7a;border-radius:10px;padding:9px 14px;margin-bottom:14px;font-size:13px;display:flex;gap:12px;align-items:center}.barra button{font:inherit;font-weight:700;background:#1f6b3a;color:#fff;border:0;border-radius:8px;padding:7px 16px;cursor:pointer}
+  ${CSS_CAB_PDF}@media print{.barra{display:none}body{padding:0}}</style></head><body>
+  <div class="barra"><button onclick="window.print()">Salvar em PDF</button><span>Na janela de impressão, escolha <b>Salvar como PDF</b>. São 4 páginas: resumo, execução financeira, faturas e alterações.</span></div>
+  ${cabecalhoPDF('Relatório do contrato '+escPDF(nr), quando)}${pag}
+  <script>setTimeout(function(){ try{ window.print(); }catch(e){} }, 700);<\/script></body></html>`, 'relatorio_contrato_'+String(nr).replace(/\W+/g,'_'));
+}
+document.addEventListener('input', e => { if(e.target.id === 'rcBusca') rcSugestoes(e.target.value); });
+document.addEventListener('keydown', e => { if(e.target.id === 'rcBusca' && e.key === 'Enter'){ e.preventDefault(); rcIndice().then(() => { const L = rcBuscar(e.target.value); if(L.length === 1) rcAbrir(L[0].o.id); else rcSugestoes(e.target.value); }).catch(() => {}); }
+  if(e.target.id === 'rcBusca' && e.key === 'Escape'){ const b = document.getElementById('rcSug'); if(b) b.hidden = true; } });
+document.addEventListener('click', e => {
+  if(!e.target.closest('#v-extra') || document.getElementById('v-extra').dataset.tela !== 'relctr') return;
+  const n = e.target.closest('[data-rcid]'); if(n){ rcAbrir(n.dataset.rcid); return; }
+  if(e.target.closest('[data-rcbusca]')){ const v = document.getElementById('rcBusca').value.trim(); if(!v) return; rcIndice().then(() => { const L = rcBuscar(v); const ex = L.find(x => rcN(x.o.num) === rcN(v)); if(ex) rcAbrir(ex.o.id); else if(L.length === 1) rcAbrir(L[0].o.id); else rcSugestoes(v); }).catch(err => { RC.erro = err.message; RC.id = '?'; desenharRelCtr(); }); return; }
+  const a = e.target.closest('[data-rcaba]'); if(a){ RC.aba = a.dataset.rcaba; desenharRelCtr(); return; }
+  if(e.target.closest('[data-rcpdf]')){ rcPDF(); return; }
+  if(e.target.closest('[data-rcxl]')){ e.preventDefault(); rcExcel(); return; }
+  if(!e.target.closest('.ri-bx')){ const b = document.getElementById('rcSug'); if(b) b.hidden = true; }
+});
+// ficha do contrato (app antigo) → relatório
+window.__abrirRelCtr = id => ir('relctr', {id});
+
 function riExcel(){
   const d = RI.d; if(!d) return; const i = d.i || {};
   baixarXlsx({titulo: 'Pagamentos do convenente · instrumento '+i.nr_instrumento, sub: i.proponente||'', filtros: [], fonte: 'Transferegov (robô)', arquivo: 'pagamentos_'+i.nr_instrumento,
@@ -11230,7 +11465,7 @@ window.relExtrasParc = relExtrasParc; window.rgAbrir = rgAbrir;
 async function ir(tela, sel){
   if(!tela || tela==='menu') tela = 'visao';
   { const vx = document.getElementById('v-extra'); if(vx) vx.hidden = true; }
-  if(tela==='indic' || tela==='metodo' || tela==='assist' || tela==='relinst'){ fecharMS(); VISAO = 'menu'; telaExtra(tela); if(tela==='relinst' && sel && sel.nr) riAbrir(sel.nr); return; }   // a barra lateral substitui a página de MENU: o painel abre na Visão geral
+  if(tela==='indic' || tela==='metodo' || tela==='assist' || tela==='relinst' || tela==='relctr'){ fecharMS(); VISAO = 'menu'; telaExtra(tela); if(tela==='relinst' && sel && sel.nr) riAbrir(sel.nr); if(tela==='relctr' && sel && sel.id) rcAbrir(sel.id); return; }   // a barra lateral substitui a página de MENU: o painel abre na Visão geral
   if(TELAS_ANTIGAS.includes(tela)){
     marcarHash(tela);
     fecharMS(); VISAO = 'menu'; abrirAntiga(tela, sel); return;
@@ -11546,7 +11781,7 @@ function preCarregar(){
     ['PARCERIAS', [['parc','🤝','Parceria SDR',[['geral','Visão geral'],['prop','Propostas'],['inst','Instrumentos vigentes'],['pc','Prestação de contas']]],
                    ['prop','📝','Propostas SDR'],['conv','📋','Execução Convênio/TF 420013'],['repasse','🏠','Contrato de Repasse'],['_rel','📊','Relatório de gestão de parcerias']]],
     ['TED', [['tedapi','✉','TED GERAL SDR'],['ted','👥','TED EQUIPE SDR'],['_relted','📊','Relatório de gestão de TED']]],
-    ['RELATÓRIOS', [['relinst','📄','Relatório do instrumento'],['indic','🎯','Indicadores']]],
+    ['RELATÓRIOS', [['relinst','📄','Relatório do instrumento'],['relctr','📄','Relatório do contrato'],['indic','🎯','Indicadores']]],
     ['AJUDA', [['assist','🤖','Assistente virtual'],['metodo','📚','Metodologia e fontes']]],
   ];
   const st = document.createElement('style');

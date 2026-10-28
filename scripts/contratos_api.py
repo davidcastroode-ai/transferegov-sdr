@@ -16,7 +16,10 @@ ARQ = {
             'Processo', 'Objeto', 'Início vigência', 'Fim vigência', 'Valor inicial', 'Valor global', 'Valor acumulado', 'Nº parcelas', 'Valor parcela', 'Link transparência', 'Consultado em'],
     'emp': ['ID contrato (API)', 'UG contrato', 'Nº contrato', 'UG da NE', 'Nota de empenho', 'Plano interno', 'Data emissão'],
     'fat': ['ID contrato (API)', 'UG contrato', 'Nº contrato', 'Nº fatura', 'Emissão', 'Vencimento', 'Valor (− glosa)', 'Situação', 'Data liquidação', 'NP / documento SIAFI'],
-    'his': ['ID contrato (API)', 'UG contrato', 'Nº contrato', 'Tipo do termo', 'Nº do termo', 'Data assinatura', 'Fim vigência', 'Valor global (novo)', 'Observação'],
+    'his': ['ID contrato (API)', 'UG contrato', 'Nº contrato', 'Tipo do termo', 'Nº do termo', 'Data assinatura', 'Fim vigência', 'Valor global (novo)', 'Observação',
+            'ID termo', 'Qualificação', 'Data publicação', 'Início vigência', 'Valor global', 'Nº parcelas', 'Valor parcela', 'Início novo valor', 'Retroativo', 'Valor retroativo'],
+    # quantidade e valor de cada item do contrato em cada termo (postos antes × depois de aditivo/supressão/repactuação)
+    'ith': ['ID contrato (API)', 'UG contrato', 'Nº contrato', 'ID item', 'Item', 'Tipo', 'ID termo', 'Tipo do termo', 'Data termo', 'Quantidade', 'Periodicidade', 'Valor unitário', 'Valor total'],
     'res': ['ID contrato (API)', 'UG contrato', 'Nº contrato', 'Função', 'Nome', 'Portaria', 'Situação'],
     'arq': ['ID contrato (API)', 'UG contrato', 'Nº contrato', 'Tipo', 'Descrição', 'Link PDF', 'Link SEI', 'Origem'],
     'itn': ['ID contrato (API)', 'UG contrato', 'Nº contrato', 'Item / posto', 'Tipo', 'Quantidade', 'Valor unitário', 'Valor total', 'Nº item da compra'],
@@ -124,9 +127,12 @@ def link_edital(idc):
 
 def num(s):
     s = str(s or '').strip()
-    if not s:
+    if not s or s in ('None', 'null'):
         return 0.0
-    return float(s.replace('.', '').replace(',', '.')) if ',' in s else float(s)
+    try:
+        return float(s.replace('.', '').replace(',', '.')) if ',' in s else float(s)
+    except ValueError:
+        return 0.0
 
 
 def br(v):
@@ -271,7 +277,10 @@ def main():
         for f in d['faturas'] if isinstance(d['faturas'], list) else []:
             L['fat'].append(ch + [f.get('numero'), f.get('emissao'), f.get('vencimento'), br(num(f.get('valor')) - num(f.get('glosa'))), f.get('situacao'), f.get('data_liquidacao'), f.get('sfadrao_id')])
         for h in sorted(d['historico'] if isinstance(d['historico'], list) else [], key=lambda h: h.get('data_assinatura') or ''):
-            L['his'].append(ch + [h.get('tipo'), h.get('numero'), h.get('data_assinatura'), h.get('vigencia_fim'), br(num(h.get('novo_valor_global') or h.get('valor_global'))), (h.get('observacao') or '')[:200]])
+            ql = ' · '.join(q.get('descricao', '') for q in (h.get('qualificacao_termo') or []) if isinstance(q, dict) and q.get('descricao') and q.get('descricao') != 'INFORMATIVO')
+            L['his'].append(ch + [h.get('tipo'), h.get('numero'), h.get('data_assinatura'), h.get('vigencia_fim'), br(num(h.get('novo_valor_global') or h.get('valor_global'))), (h.get('observacao') or '')[:400],
+                                  h.get('id'), ql, h.get('data_publicacao') or '', h.get('vigencia_inicio') or '', br(num(h.get('valor_global'))), h.get('num_parcelas') or '', br(num(h.get('valor_parcela'))),
+                                  h.get('data_inicio_novo_valor') or '', h.get('retroativo') or '', br(num(h.get('retroativo_valor')))])
         for r in d['responsaveis'] if isinstance(d['responsaveis'], list) else []:
             L['res'].append(ch + [r.get('funcao_id'), re.sub(r'^[\d\*\.\-]+\s*-\s*', '', r.get('usuario') or ''), r.get('portaria') or '', r.get('situacao')])
         for a in d['arquivos'] if isinstance(d['arquivos'], list) else []:
@@ -279,6 +288,9 @@ def main():
             L['arq'].append(ch + [a.get('tipo'), (a.get('descricao') or '')[:200], a.get('path_arquivo') or '', '' if sei in ('null', 'None') else sei, a.get('origem') or ''])
         for x in d['itens'] if isinstance(d['itens'], list) else []:
             L['itn'].append(ch + [(x.get('descricao_complementar') or x.get('catmatseritem_id') or '')[:200], x.get('tipo_id'), x.get('quantidade'), br(num(x.get('valorunitario'))), br(num(x.get('valortotal'))), x.get('numero_item_compra')])
+            for hi in x.get('historico_item') or [] if isinstance(x.get('historico_item'), list) else []:
+                L['ith'].append(ch + [x.get('id'), (x.get('descricao_complementar') or x.get('catmatseritem_id') or '')[:200], x.get('tipo_id'), hi.get('contrato_historico_id'), hi.get('tipo_historico'),
+                                      hi.get('data_termo'), hi.get('quantidade'), hi.get('periodicidade'), br(num(hi.get('valor_unitario'))), br(num(hi.get('valor_total')))])
         for x in d['cronograma'] if isinstance(d['cronograma'], list) else []:
             L['cro'].append(ch + [x.get('mesref'), x.get('anoref'), x.get('vencimento'), br(num(x.get('valor'))), x.get('tipo')])
         pg = d.get('pagina') or {}
