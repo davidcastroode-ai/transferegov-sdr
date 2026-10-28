@@ -32,7 +32,7 @@ with sync_playwright() as pw:
             print('aba', aba, 'erro', e, flush=True)
     for i, sub in enumerate(['Ajustes do PT', 'Prorroga de Ofício', 'TAs', 'Apostilamentos']):
         try:
-            p.get_by_text(sub, exact=True).first.click(timeout=15000)
+            p.locator('a:visible').filter(has_text=re.compile(r'^\s*' + re.escape(sub) + r'\s*$')).first.click(timeout=15000)
             p.wait_for_load_state('networkidle', timeout=60000)
             salvar(p, f'{i+2}_' + re.sub(r'\W+', '_', sub))
             # "Listar Termos Aditivos e Solicitações" e afins
@@ -43,8 +43,8 @@ with sync_playwright() as pw:
                     continue
                 if re.search(r'^Listar|Solicita', v):
                     print('   botão:', v, flush=True)
-            for alvo in ['Listar Termos Aditivos e Solicitações', 'Listar Apostilamentos e Solicitações', 'Listar']:
-                loc = p.locator(f'input[value="{alvo}"]')
+            for alvo in ['Solicita', 'Listar']:
+                loc = p.locator(f'input[value*="{alvo}"]:visible')
                 if loc.count():
                     loc.first.click(timeout=15000)
                     p.wait_for_load_state('networkidle', timeout=60000)
