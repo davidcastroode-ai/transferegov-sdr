@@ -164,6 +164,19 @@ def reaproveitar():
     return True
 
 
+# leitura anterior da página dos contratos (postos, PNCP, edital): usada quando a página não abre na rodada
+# (1º a reserva guardada no repositório, por cima a rodada anterior: a mais recente vale)
+PAG_ANT, REUSO = {}, {'pag': 0}
+for _c in [os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'config', 'contratos_pag_reserva.csv'), os.path.join(ANT, 'contratos_api_pag.csv') if ANT else '']:
+    try:
+        if _c and os.path.exists(_c):
+            _l = list(csv.reader(open(_c, encoding='utf-8')))
+            if _l and 'Link edital PNCP' in _l[0]:
+                PAG_ANT.update({r[0]: r for r in _l[1:] if r and len(r) == len(_l[0])})
+    except Exception:
+        pass
+
+
 def ligar_editais(pag):
     """Edital (contratação) no PNCP de cada contrato: link do contrato no PNCP -> numeroControlePNCP -> id da contratação.
     pag: linhas no formato do arquivo contratos_api_pag (índice 8 = link PNCP, 9 = id da contratação, 10 = link do edital)."""
@@ -235,6 +248,10 @@ def main():
         pg = d.get('pagina') or {}
         if pg:
             L['pag'].append(ch + [pg.get('mo'), pg.get('postos'), pg.get('vagas'), pg.get('perc'), pg.get('ncontr'), pg.get('pncp'), '', ''])
+        elif str(ch[0]) in PAG_ANT:   # a página de transparência não abriu hoje: fica a leitura anterior (postos, link do PNCP e edital)
+            L['pag'].append(ch + PAG_ANT[str(ch[0])][3:]); REUSO['pag'] += 1
+    if REUSO['pag']:
+        print(f"Contratos.gov.br: página de {REUSO['pag']} contrato(s) não abriu hoje · mantida a leitura anterior", flush=True)
     ligar_editais(L['pag'])
     for k in ARQ:
         gravar(k, L[k])
