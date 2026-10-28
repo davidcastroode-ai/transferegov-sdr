@@ -30,28 +30,23 @@ with sync_playwright() as pw:
             break
         except Exception as e:
             print('aba', aba, 'erro', e, flush=True)
-    for i, sub in enumerate(['Ajustes do PT', 'Prorroga de Ofício', 'TAs', 'Apostilamentos']):
+    BASEV = 'https://discricionarias.transferegov.sistema.gov.br/voluntarias'
+    DEST = [('Ajustes_do_PT', '/ForwardAction.do?modulo=proposta&path=/SelecionarObjeto/SelecionarObjeto.do?destino=ListarAjustePlanoTrabalho'),
+            ('Prorroga_de_Oficio', '/ForwardAction.do?modulo=proposta&path=/SelecionarConvenio/SelecionarConvenio.do?destino=ListarProrrogas'),
+            ('TAs', '/ForwardAction.do?modulo=proposta&path=/SelecionarConvenio/SelecionarConvenio.do?destino=ListarTermosAditivos'),
+            ('Apostilamentos', '/ForwardAction.do?modulo=proposta&path=/SelecionarConvenio/SelecionarConvenio.do?destino=Apostilamento')]
+    for i, (nome, cam) in enumerate(DEST):
         try:
-            p.locator('a:visible').filter(has_text=re.compile(r'^\s*' + re.escape(sub) + r'\s*$')).first.click(timeout=15000)
+            p.goto(BASEV + cam, timeout=90000)
             p.wait_for_load_state('networkidle', timeout=60000)
-            salvar(p, f'{i+2}_' + re.sub(r'\W+', '_', sub))
-            # "Listar Termos Aditivos e Solicitações" e afins
-            for bt in p.locator('input[type=button], input[type=submit], a').all():
-                try:
-                    v = (bt.get_attribute('value') or bt.inner_text() or '').strip()
-                except Exception:
-                    continue
-                if re.search(r'^Listar|Solicita', v):
-                    print('   botão:', v, flush=True)
-            for alvo in ['Solicita', 'Listar']:
-                loc = p.locator(f'input[value*="{alvo}"]:visible')
-                if loc.count():
-                    loc.first.click(timeout=15000)
-                    p.wait_for_load_state('networkidle', timeout=60000)
-                    salvar(p, f'{i+2}b_' + re.sub(r'\W+', '_', sub))
-                    p.go_back()
-                    p.wait_for_load_state('networkidle', timeout=60000)
-                    break
+            salvar(p, f'{i+2}_{nome}')
+            for bt in p.locator('input[type=button]:visible, input[type=submit]:visible').all():
+                print('   botão:', bt.get_attribute('value'), flush=True)
+            loc = p.locator('input[value*="Solicita"]:visible, input[value^="Listar"]:visible')
+            if loc.count():
+                loc.first.click(timeout=15000)
+                p.wait_for_load_state('networkidle', timeout=60000)
+                salvar(p, f'{i+2}b_{nome}')
         except Exception as e:
-            print('sub', sub, 'erro', str(e)[:200], flush=True)
+            print(nome, 'erro', str(e)[:200], flush=True)
     b.close()
