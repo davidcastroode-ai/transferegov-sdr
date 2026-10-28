@@ -1,0 +1,2894 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd"><html lang="en-US"><head>
+        <title>
+            Transferegov - null
+            
+                - Acesso Livre
+            
+        </title>
+        <base href="https://discricionarias.transferegov.sistema.gov.br/voluntarias/br/gov/mp/siconv/uc/proposta/editar/detalhar-proposta.jsp">
+        <meta http-equiv="Content-Type" content="text/html; charset:UTF-8">
+        <link rel="shortcut icon" href="/voluntarias/layout/default/imagens/favicon.ico" type="image/x-icon">
+	
+		
+<link rel="stylesheet" type="text/css" media="screen" href="/voluntarias/layout/default/default-application.css">
+<link rel="stylesheet" type="text/css" media="screen" href="/voluntarias/layout/default/default-calendar.css">
+<link rel="stylesheet" type="text/css" media="screen" href="/voluntarias/layout/default/dimming/dimming.css">
+<link rel="stylesheet" type="text/css" media="screen" href="/voluntarias/layout/default/default/style-default.css">
+<link rel="stylesheet" type="text/css" media="screen" href="/voluntarias/layout/default/menu/menu.css">
+<link rel="stylesheet" type="text/css" media="print" href="/voluntarias/layout/default/siconvPrint.css">
+<link rel="stylesheet" type="text/css" media="screen" href="/voluntarias/layout/default/menu/novoMenu.css">
+<link rel="stylesheet" type="text/css" media="screen" href="/voluntarias/layout/default/banner-governo.css">
+<link rel="stylesheet" type="text/css" media="screen" href="/voluntarias/layout/default/default/thumbnailviewer.css">
+		
+<!-- 
+Adicionar javascript usando o seguinte formato:
+<script type="text/javascript" language="Javascript1.1" src="/contexto/layout//<nome_arquivo>.js"></script>
+-->
+<script type="text/javascript" async="" src="https://www.googletagmanager.com/gtag/js?id=G-4Z2J0XLTLF&amp;cx=c&amp;gtm=4e6ar1h2"></script><script async="" src="https://www.googletagmanager.com/gtm.js?id=GTM-WHZ5PJG8"></script><script type="text/javascript" src="/voluntarias/layout/default/javaScripts/dimmingdiv.js"></script>
+<script type="text/javascript" src="/voluntarias/layout/default/javaScripts/layout-common.js"></script>
+<script type="text/javascript" src="/voluntarias/layout/default/javaScripts/key-events.js"></script>
+<script type="text/javascript" src="/voluntarias/layout/default/javaScripts/scripts.js"></script>
+<script type="text/javascript" src="/voluntarias/layout/default/javaScripts/cpf.js"></script>
+<script type="text/javascript" src="/voluntarias/layout/default/javaScripts/cnpj.js"></script>
+<script type="text/javascript" src="/voluntarias/layout/default/javaScripts/moeda.js"></script>
+<script type="text/javascript" src="/voluntarias/layout/default/javaScripts/textCounter.js"></script>
+<script type="text/javascript" src="/voluntarias/layout/default/javaScripts/calculaValor.js"></script>
+<script type="text/javascript" src="/voluntarias/layout/default/javaScripts/thumbnailviewer.js"></script></head><body onkeypress="keySubmit(event)"><div id="thumbBox" onclick="thumbnailviewer.closeit()"><div id="thumbImage"></div><div class="footerbar">fechar X</div></div><div id="thumbLoading"><img src="/voluntarias/layout/default/imagens/loading.gif"> Loading Image...</div>
+
+
+<script type="text/javascript">
+console.log("Segundos: " + "0");
+</script> 
+	<script type="text/javascript" src="https://idp.transferegov.sistema.gov.br/idp//public/refresh.jsp?1793208653747" charset="utf-8"></script>
+
+
+		
+		<script type="text/javascript" src="/voluntarias/layout/default/javaScripts/jquery-1.8.2.min.js" charset="utf-8"></script>
+		<script type="text/javascript" src="/voluntarias/layout/default/javaScripts/jquery.cookie-1.3.0.js" charset="utf-8"></script>
+		<script type="text/javascript" src="/voluntarias/layout/default/javaScripts/jquery-ui-1.9.0.custom.min.js" charset="utf-8"></script>
+		<link rel="stylesheet" type="text/css" media="screen" href="/voluntarias/layout/default/css/jquery-ui-1.9.0.custom.min.css">
+		
+		
+<link rel="stylesheet" type="text/css" media="screen" href="/voluntarias/br/gov/mp/siconv/uc/proposta/editar/detalhar-proposta.css
+">
+
+<link rel="stylesheet" type="text/css" media="all" href="/voluntarias/layout/producao/default-calendar.css">
+
+	    
+        <script type="text/javascript" src="/voluntarias/calendar-js.jsp"></script>
+        <script type="text/javascript" language="Javascript1.1" src="/voluntarias/form-validation.js"></script>
+        <script type="text/javascript" language="Javascript1.1"> 
+
+<!-- Begin 
+
+     var bCancel = false; 
+
+    function validateDetalharPropostaAlterarForm(form) {                                                                   
+        if (bCancel) 
+      return true; 
+        else 
+ var formValidationResult;
+       formValidationResult = validateDate(form); 
+     return (formValidationResult == 1);
+   } 
+
+    function editarDadosPropostaDetalharPropostaAlterarForm_DateValidations () { 
+     this.a0 = new Array("inicioVigenciaPendente", "Inicio Vigencia Pendente não é uma data válida ou não respeita o formato 'dd/MM/yyyy'.", new Function ("varName", "this.datePattern='dd/MM/yyyy';  return this[varName];"));
+     this.a1 = new Array("dataProposta", "Data da Proposta não é uma data válida ou não respeita o formato 'dd/MM/yyyy'.", new Function ("varName", "this.datePattern='dd/MM/yyyy';  return this[varName];"));
+     this.a2 = new Array("terminoVigencia", "Data Término de Vigência Atual não é uma data válida ou não respeita o formato 'dd/MM/yyyy'.", new Function ("varName", "this.datePattern='dd/MM/yyyy';  return this[varName];"));
+     this.a3 = new Array("dataPropostaPendente", "Data Proposta Pendente não é uma data válida ou não respeita o formato 'dd/MM/yyyy'.", new Function ("varName", "this.datePattern='dd/MM/yyyy';  return this[varName];"));
+     this.a4 = new Array("terminoVigenciaPendente", "Termino Vigencia Pendente não é uma data válida ou não respeita o formato 'dd/MM/yyyy'.", new Function ("varName", "this.datePattern='dd/MM/yyyy';  return this[varName];"));
+     this.a5 = new Array("inicioVigencia", "Data Início de Vigência não é uma data válida ou não respeita o formato 'dd/MM/yyyy'.", new Function ("varName", "this.datePattern='dd/MM/yyyy';  return this[varName];"));
+    } 
+
+
+//End --> 
+</script>
+
+
+        <script type="text/javascript" language="Javascript1.1"> 
+
+<!-- Begin 
+
+     var bCancel = false; 
+
+    function validateDetalharPropostaEnviarParaAnaliseForm(form) {                                                                   
+        if (bCancel) 
+      return true; 
+        else 
+ var formValidationResult;
+       formValidationResult = validateDate(form); 
+     return (formValidationResult == 1);
+   } 
+
+    function editarDadosPropostaDetalharPropostaEnviarParaAnaliseForm_DateValidations () { 
+     this.a0 = new Array("dataProposta", "Data da Proposta não é uma data válida ou não respeita o formato 'dd/MM/yyyy'.", new Function ("varName", "this.datePattern='dd/MM/yyyy';  return this[varName];"));
+    } 
+
+
+//End --> 
+</script>
+
+
+        <script type="text/javascript" language="Javascript1.1"> 
+
+<!-- Begin 
+
+     var bCancel = false; 
+
+    function validateDetalharPropostaVerDadosForm(form) {                                                                   
+        if (bCancel) 
+      return true; 
+        else 
+       return true; 
+   } 
+
+
+//End --> 
+</script>
+
+
+        <script type="text/javascript" language="Javascript1.1"> 
+
+<!-- Begin 
+
+     var bCancel = false; 
+
+    function validateDetalharPropostaAnalisarPlanoDeTrabalhoForm(form) {                                                                   
+        if (bCancel) 
+      return true; 
+        else 
+       return true; 
+   } 
+
+
+//End --> 
+</script>
+
+
+        <script type="text/javascript" language="Javascript1.1"> 
+
+<!-- Begin 
+
+     var bCancel = false; 
+
+    function validateDetalharPropostaAlterarRepassesFuturosForm(form) {                                                                   
+        if (bCancel) 
+      return true; 
+        else 
+       return true; 
+   } 
+
+
+//End --> 
+</script>
+
+
+        <script type="text/javascript" language="Javascript1.1"> 
+
+<!-- Begin 
+
+     var bCancel = false; 
+
+    function validateDetalharPropostaAnalisarConvenioForm(form) {                                                                   
+        if (bCancel) 
+      return true; 
+        else 
+       return true; 
+   } 
+
+
+//End --> 
+</script>
+
+
+        <script type="text/javascript" language="Javascript1.1"> 
+
+<!-- Begin 
+
+     var bCancel = false; 
+
+    function validateDetalharPropostaSolicitarComplementacaoConvenioForm(form) {                                                                   
+        if (bCancel) 
+      return true; 
+        else 
+       return true; 
+   } 
+
+
+//End --> 
+</script>
+
+
+        <script type="text/javascript" language="Javascript1.1"> 
+
+<!-- Begin 
+
+     var bCancel = false; 
+
+    function validateDetalharPropostaEditarPropostaConcedenteForm(form) {                                                                   
+        if (bCancel) 
+      return true; 
+        else 
+       return true; 
+   } 
+
+
+//End --> 
+</script>
+
+
+        <script type="text/javascript" language="Javascript1.1"> 
+
+<!-- Begin 
+
+     var bCancel = false; 
+
+    function validateDetalharPropostaUploadAnexoConvenioForm(form) {                                                                   
+        if (bCancel) 
+      return true; 
+        else 
+ var formValidationResult;
+       formValidationResult = cptValidateRequired(form); 
+     return (formValidationResult == 1);
+   } 
+
+    function editarDadosPropostaDetalharPropostaUploadAnexoConvenioForm_required () { 
+     this.a0 = new Array("anexoConvenioUpload", "O campo Documento Digitalizado do Instrumento é obrigatório.", new Function ("varName", " return this[varName];"));
+    } 
+
+
+//End --> 
+</script>
+
+
+        <script type="text/javascript" language="Javascript1.1"> 
+
+<!-- Begin 
+
+     var bCancel = false; 
+
+    function validateDetalharPropostaDownloadAnexoConvenioForm(form) {                                                                   
+        if (bCancel) 
+      return true; 
+        else 
+       return true; 
+   } 
+
+
+//End --> 
+</script>
+
+
+        <script type="text/javascript" language="Javascript1.1"> 
+
+<!-- Begin 
+
+     var bCancel = false; 
+
+    function validateDetalharPropostaExcluirAnexoConvenioForm(form) {                                                                   
+        if (bCancel) 
+      return true; 
+        else 
+       return true; 
+   } 
+
+
+//End --> 
+</script>
+
+
+        <script type="text/javascript" language="Javascript1.1"> 
+
+<!-- Begin 
+
+     var bCancel = false; 
+
+    function validateDetalharPropostaGerarExtratoPropostaForm(form) {                                                                   
+        if (bCancel) 
+      return true; 
+        else 
+       return true; 
+   } 
+
+
+//End --> 
+</script>
+
+
+        <script type="text/javascript" language="Javascript1.1"> 
+
+<!-- Begin 
+
+     var bCancel = false; 
+
+    function validateDetalharPropostaConcluirAlteracoesParaProrrogaForm(form) {                                                                   
+        if (bCancel) 
+      return true; 
+        else 
+       return true; 
+   } 
+
+
+//End --> 
+</script>
+
+
+        <script type="text/javascript" language="Javascript1.1"> 
+
+<!-- Begin 
+
+     var bCancel = false; 
+
+    function validateDetalharPropostaBaixarForm(form) {                                                                   
+        if (bCancel) 
+      return true; 
+        else 
+       return true; 
+   } 
+
+
+//End --> 
+</script>
+
+
+        <script type="text/javascript" language="Javascript1.1"> 
+
+<!-- Begin 
+
+     var bCancel = false; 
+
+    function validateDetalharPropostaCadastrarPropostaForm(form) {                                                                   
+        if (bCancel) 
+      return true; 
+        else 
+       return true; 
+   } 
+
+
+//End --> 
+</script>
+
+
+        <script type="text/javascript" language="Javascript1.1"> 
+
+<!-- Begin 
+
+     var bCancel = false; 
+
+    function validateDetalharPropostaCancelarPropostaForm(form) {                                                                   
+        if (bCancel) 
+      return true; 
+        else 
+       return true; 
+   } 
+
+
+//End --> 
+</script>
+
+
+        <script type="text/javascript" language="Javascript1.1"> 
+
+<!-- Begin 
+
+     var bCancel = false; 
+
+    function validateDetalharPropostaAnalisarPropostaForm(form) {                                                                   
+        if (bCancel) 
+      return true; 
+        else 
+       return true; 
+   } 
+
+
+//End --> 
+</script>
+
+
+        <script type="text/javascript" language="Javascript1.1"> 
+
+<!-- Begin 
+
+     var bCancel = false; 
+
+    function validateDetalharPropostaManterClausulaSuspensivaForm(form) {                                                                   
+        if (bCancel) 
+      return true; 
+        else 
+       return true; 
+   } 
+
+
+//End --> 
+</script>
+
+
+        <script type="text/javascript" language="Javascript1.1"> 
+
+<!-- Begin 
+
+     var bCancel = false; 
+
+    function validateDetalharPropostaEnviarParaInstituicaoForm(form) {                                                                   
+        if (bCancel) 
+      return true; 
+        else 
+       return true; 
+   } 
+
+
+//End --> 
+</script>
+
+
+        <script type="text/javascript" language="Javascript1.1"> 
+
+<!-- Begin 
+
+     var bCancel = false; 
+
+    function validateDetalharPropostaRecuperaDaInstituicaoForm(form) {                                                                   
+        if (bCancel) 
+      return true; 
+        else 
+       return true; 
+   } 
+
+
+//End --> 
+</script>
+
+
+        <script type="text/javascript" language="Javascript1.1"> 
+
+<!-- Begin 
+
+     var bCancel = false; 
+
+    function validateDetalharPropostaLimiteOBTVConvenenteForm(form) {                                                                   
+        if (bCancel) 
+      return true; 
+        else 
+       return true; 
+   } 
+
+
+//End --> 
+</script>
+
+
+        <script type="text/javascript" language="Javascript1.1"> 
+
+<!-- Begin 
+
+     var bCancel = false; 
+
+    function validateDetalharPropostaBaixarContrapartidaForm(form) {                                                                   
+        if (bCancel) 
+      return true; 
+        else 
+       return true; 
+   } 
+
+
+//End --> 
+</script>
+
+
+        <script type="text/javascript" language="Javascript1.1"> 
+
+<!-- Begin 
+
+     var bCancel = false; 
+
+    function validateDetalharPropostaDetalhesDoEventoForm(form) {                                                                   
+        if (bCancel) 
+      return true; 
+        else 
+       return true; 
+   } 
+
+
+//End --> 
+</script>
+
+
+        <script type="text/javascript" language="Javascript1.1"> 
+
+<!-- Begin 
+
+     var bCancel = false; 
+
+    function validateDetalharPropostaVerHistoricoDatasForm(form) {                                                                   
+        if (bCancel) 
+      return true; 
+        else 
+       return true; 
+   } 
+
+
+//End --> 
+</script>
+
+
+        <script type="text/javascript" language="Javascript1.1"> 
+
+<!-- Begin 
+
+     var bCancel = false; 
+
+    function validateDetalharPropostaVerHistoricoValoresForm(form) {                                                                   
+        if (bCancel) 
+      return true; 
+        else 
+       return true; 
+   } 
+
+
+//End --> 
+</script>
+
+
+        <script type="text/javascript" language="Javascript1.1"> 
+
+<!-- Begin 
+
+     var bCancel = false; 
+
+    function validateDetalharPropostaVoltarParaConsultaForm(form) {                                                                   
+        if (bCancel) 
+      return true; 
+        else 
+       return true; 
+   } 
+
+
+//End --> 
+</script>
+
+
+        <script type="text/javascript" language="Javascript1.1"> 
+
+<!-- Begin 
+
+     var bCancel = false; 
+
+    function validateDetalharPropostaAlterarConvenioForm(form) {                                                                   
+        if (bCancel) 
+      return true; 
+        else 
+       return true; 
+   } 
+
+
+//End --> 
+</script>
+
+
+        <script type="text/javascript" language="Javascript1.1"> 
+
+<!-- Begin 
+
+     var bCancel = false; 
+
+    function validateDetalharPropostaExibirParecerContratacaoPrejudicadaForm(form) {                                                                   
+        if (bCancel) 
+      return true; 
+        else 
+       return true; 
+   } 
+
+
+//End --> 
+</script>
+
+
+
+
+ 
+    	<script type="text/javascript" language="Javascript1.1">
+        //<!--
+
+
+            var HINTS_ITEMS = {
+                'editar.dados.proposta.detalhar.proposta.alterar.param.agencia.title':'agencia',
+                'editar.dados.proposta.detalhar.proposta.alterar.param.ampliacao.objeto.convenio.title':'ampliacaoObjetoConvenio',
+                'editar.dados.proposta.detalhar.proposta.alterar.param.anexo.convenio.title':'anexoConvenio',
+                'editar.dados.proposta.detalhar.proposta.alterar.param.assinado.title':'assinado',
+                'editar.dados.proposta.detalhar.proposta.alterar.param.banco.title':'banco',
+                'editar.dados.proposta.detalhar.proposta.alterar.param.banco.escolhido.title':'bancoEscolhido',
+                'editar.dados.proposta.detalhar.proposta.alterar.param.banco.mandatario.title':'bancoMandatario',
+                'editar.dados.proposta.detalhar.proposta.alterar.param.capacidade.tecnica.title':'capacidadeTecnica',
+                'editar.dados.proposta.detalhar.proposta.alterar.param.caracterizacao.interesses.reciprocos.title':'caracterizacaoInteressesReciprocos',
+                'editar.dados.proposta.detalhar.proposta.alterar.param.categorias.title':'Categorias',
+                'editar.dados.proposta.detalhar.proposta.alterar.param.conta.corrente.title':'contaCorrente',
+                'editar.dados.proposta.detalhar.proposta.alterar.param.data.assinatura.pendente.title':'dataAssinaturaPendente',
+                'editar.dados.proposta.detalhar.proposta.alterar.param.data.documento.obtvconvenente.title':'dataDocumentoOBTVConvenente',
+                'editar.dados.proposta.detalhar.proposta.alterar.param.data.limite.entrega.projeto.basico.title':'dataLimiteEntregaProjetoBasico',
+                'editar.dados.proposta.detalhar.proposta.alterar.param.data.limite.entrega.projeto.basico.pendente.title':'dataLimiteEntregaProjetoBasicoPendente',
+                'editar.dados.proposta.detalhar.proposta.alterar.param.data.prestacao.title':'dataPrestacao',
+                'editar.dados.proposta.detalhar.proposta.alterar.param.data.prestacao.pendente.title':'dataPrestacaoPendente',
+                'editar.dados.proposta.detalhar.proposta.alterar.param.data.proposta.title':'Data da Proposta (Use o formato: dd/mm/aaaa)',
+                'editar.dados.proposta.detalhar.proposta.alterar.param.data.proposta.pendente.title':'dataPropostaPendente (use this lenient format: dd/MM/yyyy)',
+                'editar.dados.proposta.detalhar.proposta.alterar.param.data.publicacao.title':'dataPublicacao',
+                'editar.dados.proposta.detalhar.proposta.alterar.param.data.publicacao.pendente.title':'dataPublicacaoPendente',
+                'editar.dados.proposta.detalhar.proposta.alterar.param.data.ult.alteracao.conta.title':'dataUltAlteracaoConta',
+                'editar.dados.proposta.detalhar.proposta.alterar.param.descricao.conta.title':'descricaoConta',
+                'editar.dados.proposta.detalhar.proposta.alterar.param.digito.title':'digito',
+                'editar.dados.proposta.detalhar.proposta.alterar.param.diligencia.title':'diligencia',
+                'editar.dados.proposta.detalhar.proposta.alterar.param.eh.usuario.logado.membro.de.instituicao.mandataria.title':'ehUsuarioLogadoMembroDeInstituicaoMandataria',
+                'editar.dados.proposta.detalhar.proposta.alterar.param.empenhado.title':'empenhado',
+                'editar.dados.proposta.detalhar.proposta.alterar.param.fluxo.automatico.title':'fluxoAutomatico',
+                'editar.dados.proposta.detalhar.proposta.alterar.param.formatar.numero.processo.title':'formatarNumeroProcesso',
+                'editar.dados.proposta.detalhar.proposta.alterar.param.fundamento.legal.title':'fundamentoLegal',
+                'editar.dados.proposta.detalhar.proposta.alterar.param.id.cef.title':'idCEF',
+                'editar.dados.proposta.detalhar.proposta.alterar.param.id.proposta.title':'Id Proposta',
+                'editar.dados.proposta.detalhar.proposta.alterar.param.inadimplente.motivo217.title':'inadimplenteMotivo217',
+                'editar.dados.proposta.detalhar.proposta.alterar.param.inadimplente.qualquer.motivo.title':'inadimplenteQualquerMotivo',
+                'editar.dados.proposta.detalhar.proposta.alterar.param.inicio.vigencia.title':'Data de In\u00EDcio da Vig\u00EAncia (Use o formato: dd/mm/aaaa)',
+                'editar.dados.proposta.detalhar.proposta.alterar.param.inicio.vigencia.pendente.title':'inicioVigenciaPendente (use this lenient format: dd/MM/yyyy)',
+                'editar.dados.proposta.detalhar.proposta.alterar.param.is.proposta.apos.desmembramento.justificativa.title':'isPropostaAposDesmembramentoJustificativa',
+                'editar.dados.proposta.detalhar.proposta.alterar.param.justificativa.title':'Justificativa',
+                'editar.dados.proposta.detalhar.proposta.alterar.param.legado.title':'legado',
+                'editar.dados.proposta.detalhar.proposta.alterar.param.mandatario.define.agencia.na.abertura.conta.title':'mandatarioDefineAgenciaNaAberturaConta',
+                'editar.dados.proposta.detalhar.proposta.alterar.param.modalidade.title':'Modalidade',
+                'editar.dados.proposta.detalhar.proposta.alterar.param.numero.convenio.title':'numeroConvenio',
+                'editar.dados.proposta.detalhar.proposta.alterar.param.numero.documento.obtvconvenente.title':'numeroDocumentoOBTVConvenente',
+                'editar.dados.proposta.detalhar.proposta.alterar.param.numero.interno.title':'numeroInterno',
+                'editar.dados.proposta.detalhar.proposta.alterar.param.numero.processo.title':'numeroProcesso',
+                'editar.dados.proposta.detalhar.proposta.alterar.param.numero.proposta.title':'N\u00FAmero da Proposta',
+                'editar.dados.proposta.detalhar.proposta.alterar.param.objeto.convenio.title':'objetoConvenio',
+                'editar.dados.proposta.detalhar.proposta.alterar.param.orgao.title':'\u00D3rg\u00E3o Correspondente',
+                'editar.dados.proposta.detalhar.proposta.alterar.param.orgao.concedente.title':'\u00D3rg\u00E3o',
+                'editar.dados.proposta.detalhar.proposta.alterar.param.orgao.subordinado.title':'\u00D3rg\u00E3o Vinculado',
+                'editar.dados.proposta.detalhar.proposta.alterar.param.permite.adiar.entrega.projeto.basico.title':'permiteAdiarEntregaProjetoBasico',
+                'editar.dados.proposta.detalhar.proposta.alterar.param.permite.obtvconvenente.title':'permiteOBTVConvenente',
+                'editar.dados.proposta.detalhar.proposta.alterar.param.problema.aser.resolvido.title':'problemaASerResolvido',
+                'editar.dados.proposta.detalhar.proposta.alterar.param.proponente.title':'proponente',
+                'editar.dados.proposta.detalhar.proposta.alterar.param.publicado.title':'publicado',
+                'editar.dados.proposta.detalhar.proposta.alterar.param.publico.alvo.title':'publicoAlvo',
+                'editar.dados.proposta.detalhar.proposta.alterar.param.relacao.proposta.objetivos.programas.title':'relacaoPropostaObjetivosProgramas',
+                'editar.dados.proposta.detalhar.proposta.alterar.param.resultados.esperados.title':'resultadosEsperados',
+                'editar.dados.proposta.detalhar.proposta.alterar.param.situacao.conta.title':'situacaoConta',
+                'editar.dados.proposta.detalhar.proposta.alterar.param.situacao.inadimplencia.title':'situacaoInadimplencia',
+                'editar.dados.proposta.detalhar.proposta.alterar.param.status.title':'Situa\u00E7\u00E3o',
+                'editar.dados.proposta.detalhar.proposta.alterar.param.status.convenio.title':'statusConvenio',
+                'editar.dados.proposta.detalhar.proposta.alterar.param.status.termo.aditivo.title':'statusTermoAditivo',
+                'editar.dados.proposta.detalhar.proposta.alterar.param.subtipo.instrumento.title':'subtipoInstrumento',
+                'editar.dados.proposta.detalhar.proposta.alterar.param.termino.vigencia.title':'Data de T\u00E9rmino da Vig\u00EAncia (Use o formato: dd/mm/aaaa)',
+                'editar.dados.proposta.detalhar.proposta.alterar.param.termino.vigencia.pendente.title':'terminoVigenciaPendente (use this lenient format: dd/MM/yyyy)',
+                'editar.dados.proposta.detalhar.proposta.alterar.param.termo.compromisso.tem.mandataria.title':'termoCompromissoTemMandataria',
+                'editar.dados.proposta.detalhar.proposta.alterar.param.url.detalhe.entidade.modulo.cadastramento.title':'urlDetalheEntidadeModuloCadastramento',
+                'editar.dados.proposta.detalhar.proposta.alterar.param.url.retorno.proposta.title':'urlRetornoProposta',
+                'editar.dados.proposta.detalhar.proposta.alterar.param.urle.tce.title':'urleTCE',
+                'editar.dados.proposta.detalhar.proposta.alterar.param.valor.aplicacao.title':'valorAplicacao',
+                'editar.dados.proposta.detalhar.proposta.alterar.param.valor.aplicacao.pendente.title':'valorAplicacaoPendente',
+                'editar.dados.proposta.detalhar.proposta.alterar.param.valor.contrapartida.bens.servicos.proposta.title':'Valor Contrapartida Bens e Servi\u00E7os',
+                'editar.dados.proposta.detalhar.proposta.alterar.param.valor.contrapartida.bens.servicos.proposta.pendente.title':'valorContrapartidaBensServicosPropostaPendente',
+                'editar.dados.proposta.detalhar.proposta.alterar.param.valor.contrapartida.financeira.proposta.title':'Valor Contrapartida Financeira',
+                'editar.dados.proposta.detalhar.proposta.alterar.param.valor.contrapartida.financeira.proposta.pendente.title':'valorContrapartidaFinanceiraPropostaPendente',
+                'editar.dados.proposta.detalhar.proposta.alterar.param.valor.contrapartida.proposta.title':'Valor da Contrapartida',
+                'editar.dados.proposta.detalhar.proposta.alterar.param.valor.contrapartida.proposta.pendente.title':'valorContrapartidaPropostaPendente',
+                'editar.dados.proposta.detalhar.proposta.alterar.param.valor.global.proposta.title':'Valor Global ',
+                'editar.dados.proposta.detalhar.proposta.alterar.param.valor.global.proposta.pendente.title':'valorGlobalPropostaPendente',
+                'editar.dados.proposta.detalhar.proposta.alterar.param.valor.limite.obtvconvenente.title':'valorLimiteOBTVConvenente',
+                'editar.dados.proposta.detalhar.proposta.alterar.param.valor.repasse.proposta.title':'Valor de Repasse',
+                'editar.dados.proposta.detalhar.proposta.alterar.param.valor.repasse.proposta.pendente.title':'valorRepassePropostaPendente',
+                'editar.dados.proposta.detalhar.proposta.alterar.param.proposta.original.pac.selecoes.title':'propostaOriginalPacSelecoes',
+                'editar.dados.proposta.detalhar.proposta.alterar.param.id.proposta.original.pac.selecoes.title':'idPropostaOriginalPacSelecoes',
+                'editar.dados.proposta.detalhar.proposta.alterar.param.motivo.devolucao.banco.title':'motivoDevolucaoBanco',
+                'editar.dados.proposta.detalhar.proposta.alterar.param.regime.simplificado.title':'regimeSimplificado',
+                'editar.dados.proposta.detalhar.proposta.enviar.para.analise.param.id.proposta.title':'Id Proposta',
+                'editar.dados.proposta.detalhar.proposta.enviar.para.analise.param.data.proposta.title':'Data da Proposta (Use o formato: dd/mm/aaaa)',
+                'editar.dados.proposta.detalhar.proposta.enviar.para.analise.param.data.assinatura.title':'dataAssinatura',
+                'editar.dados.proposta.detalhar.proposta.enviar.para.analise.param.enviada.instituicao.mandataria.title':'enviadaInstituicaoMandataria',
+                'editar.dados.proposta.detalhar.proposta.ver.dados.param.id.programa.title':'idPrograma',
+                'editar.dados.proposta.detalhar.proposta.analisar.plano.de.trabalho.param.id.proposta.title':'idProposta',
+                'editar.dados.proposta.detalhar.proposta.alterar.repasses.futuros.param.id.proposta.title':'idProposta',
+                'editar.dados.proposta.detalhar.proposta.analisar.convenio.param.id.proposta.title':'idProposta',
+                'editar.dados.proposta.detalhar.proposta.solicitar.complementacao.convenio.param.id.proposta.title':'idProposta',
+                'editar.dados.proposta.detalhar.proposta.editar.proposta.concedente.param.id.proposta.title':'idProposta',
+                'editar.dados.proposta.detalhar.proposta.upload.anexo.convenio.param.id.proposta.title':'idProposta',
+                'editar.dados.proposta.detalhar.proposta.upload.anexo.convenio.param.anexo.convenio.upload.title':'anexoConvenioUpload is required',
+                'editar.dados.proposta.detalhar.proposta.download.anexo.convenio.param.id.proposta.title':'idProposta',
+                'editar.dados.proposta.detalhar.proposta.download.anexo.convenio.param.id.arquivo.title':'idArquivo',
+                'editar.dados.proposta.detalhar.proposta.excluir.anexo.convenio.param.id.proposta.title':'idProposta',
+                'editar.dados.proposta.detalhar.proposta.excluir.anexo.convenio.param.id.arquivo.title':'idArquivo',
+                'editar.dados.proposta.detalhar.proposta.gerar.extrato.proposta.param.id.proposta.title':'idProposta',
+                'editar.dados.proposta.detalhar.proposta.concluir.alteracoes.para.prorroga.param.id.proposta.title':'idProposta',
+                'editar.dados.proposta.detalhar.proposta.baixar.param.id.title':'id',
+                'editar.dados.proposta.detalhar.proposta.cadastrar.proposta.param.id.proposta.title':'idProposta',
+                'editar.dados.proposta.detalhar.proposta.cancelar.proposta.param.id.proposta.title':'Id Proposta',
+                'editar.dados.proposta.detalhar.proposta.analisar.proposta.param.id.proposta.title':'Id Proposta',
+                'editar.dados.proposta.detalhar.proposta.manter.clausula.suspensiva.param.possui.contratacao.title':'possuiContratacao',
+                'editar.dados.proposta.detalhar.proposta.manter.clausula.suspensiva.param.possui.clausula.suspensiva.title':'possuiClausulaSuspensiva',
+                'editar.dados.proposta.detalhar.proposta.manter.clausula.suspensiva.param.situacao.contrato.atual.title':'situacaoContratoAtual',
+                'editar.dados.proposta.detalhar.proposta.manter.clausula.suspensiva.param.situacao.siafi.title':'situacaoSiafi',
+                'editar.dados.proposta.detalhar.proposta.enviar.para.instituicao.param.id.proposta.title':'idProposta',
+                'editar.dados.proposta.detalhar.proposta.recupera.da.instituicao.param.id.proposta.title':'idProposta',
+                'editar.dados.proposta.detalhar.proposta.limite.obtvconvenente.param.limite.disponivel.title':'limiteDisponivel',
+                'editar.dados.proposta.detalhar.proposta.baixar.contrapartida.param.id.anexo.title':'idAnexo',
+                'editar.dados.proposta.detalhar.proposta.detalhes.do.evento.param.data.evento.title':'dataEvento',
+                'editar.dados.proposta.detalhar.proposta.detalhes.do.evento.param.id.evento.title':'idEvento',
+                'editar.dados.proposta.detalhar.proposta.ver.historico.datas.param.id.proposta.title':'idProposta',
+                'editar.dados.proposta.detalhar.proposta.ver.historico.datas.param.tipo.title':'tipo',
+                'editar.dados.proposta.detalhar.proposta.ver.historico.valores.param.id.proposta.title':'idProposta',
+                'editar.dados.proposta.detalhar.proposta.ver.historico.valores.param.tipo.title':'tipo',
+                'editar.dados.proposta.detalhar.proposta.voltar.para.consulta.param.exibir.botao.voltar.para.consultar.proposta.title':'exibirBotaoVoltarParaConsultarProposta',
+                'editar.dados.proposta.detalhar.proposta.alterar.convenio.param.id.proposta.title':'idProposta',
+                'editar.dados.proposta.detalhar.proposta.exibir.parecer.contratacao.prejudicada.param.id.proposta.title':'idProposta',
+                'Alterar':'Alterar',
+                'Alterar_no':'You are not allowed to call this action',
+                'Alterar_reset':'Reset',
+                'Alterar_noreset':'You are not allowed to reset',
+                'enviarParaAnalise':'Enviar para An\u00E1lise',
+                'enviarParaAnalise_no':'You are not allowed to call this action',
+                'enviarParaAnalise_reset':'Reset',
+                'enviarParaAnalise_noreset':'You are not allowed to reset',
+                'ver dados':'Ver dados',
+                'ver dados_no':'You are not allowed to call this action',
+                'ver dados_reset':'Reset',
+                'ver dados_noreset':'You are not allowed to reset',
+                'Analisar Plano de Trabalho':'Analisar Plano de Trabalho',
+                'Analisar Plano de Trabalho_no':'You are not allowed to call this action',
+                'Analisar Plano de Trabalho_reset':'Reset',
+                'Analisar Plano de Trabalho_noreset':'You are not allowed to reset',
+                'alterarRepassesFuturos':'Alterar Repasses Futuros',
+                'alterarRepassesFuturos_no':'You are not allowed to call this action',
+                'alterarRepassesFuturos_reset':'Reset',
+                'alterarRepassesFuturos_noreset':'You are not allowed to reset',
+                'analisarConvenio':'Analisar Convenio',
+                'analisarConvenio_no':'You are not allowed to call this action',
+                'analisarConvenio_reset':'Reset',
+                'analisarConvenio_noreset':'You are not allowed to reset',
+                'solicitarComplementacaoConvenio':'Solicitar Complementacao Convenio',
+                'solicitarComplementacaoConvenio_no':'You are not allowed to call this action',
+                'solicitarComplementacaoConvenio_reset':'Reset',
+                'solicitarComplementacaoConvenio_noreset':'You are not allowed to reset',
+                'editarPropostaConcedente':'Editar Proposta Concedente',
+                'editarPropostaConcedente_no':'You are not allowed to call this action',
+                'editarPropostaConcedente_reset':'Reset',
+                'editarPropostaConcedente_noreset':'You are not allowed to reset',
+                'uploadAnexoConvenio':'Upload Anexo Convenio',
+                'uploadAnexoConvenio_no':'You are not allowed to call this action',
+                'uploadAnexoConvenio_reset':'Reset',
+                'uploadAnexoConvenio_noreset':'You are not allowed to reset',
+                'downloadAnexoConvenio':'Download Anexo Convenio',
+                'downloadAnexoConvenio_no':'You are not allowed to call this action',
+                'downloadAnexoConvenio_reset':'Reset',
+                'downloadAnexoConvenio_noreset':'You are not allowed to reset',
+                'excluirAnexoConvenio':'Excluir Anexo Convenio',
+                'excluirAnexoConvenio_no':'You are not allowed to call this action',
+                'excluirAnexoConvenio_reset':'Reset',
+                'excluirAnexoConvenio_noreset':'You are not allowed to reset',
+                'gerarExtratoProposta':'Gerar Extrato Proposta',
+                'gerarExtratoProposta_no':'You are not allowed to call this action',
+                'gerarExtratoProposta_reset':'Reset',
+                'gerarExtratoProposta_noreset':'You are not allowed to reset',
+                'ConcluirAlteracoesParaProrroga':'Concluir Alteracoes Para Prorroga',
+                'ConcluirAlteracoesParaProrroga_no':'You are not allowed to call this action',
+                'ConcluirAlteracoesParaProrroga_reset':'Reset',
+                'ConcluirAlteracoesParaProrroga_noreset':'You are not allowed to reset',
+                'baixar':'Baixar',
+                'baixar_no':'You are not allowed to call this action',
+                'baixar_reset':'Reset',
+                'baixar_noreset':'You are not allowed to reset',
+                'CadastrarProposta':'Cadastrar Proposta',
+                'CadastrarProposta_no':'You are not allowed to call this action',
+                'CadastrarProposta_reset':'Reset',
+                'CadastrarProposta_noreset':'You are not allowed to reset',
+                'CancelarProposta':'Cancelar Proposta',
+                'CancelarProposta_no':'You are not allowed to call this action',
+                'CancelarProposta_reset':'Reset',
+                'CancelarProposta_noreset':'You are not allowed to reset',
+                'AnalisarProposta':'Analisar Proposta',
+                'AnalisarProposta_no':'You are not allowed to call this action',
+                'AnalisarProposta_reset':'Reset',
+                'AnalisarProposta_noreset':'You are not allowed to reset',
+                'detalharProponente':'Detalhar Proponente',
+                'detalharProponente_no':'You are not allowed to call this action',
+                'detalharProponente_reset':'Reset',
+                'detalharProponente_noreset':'You are not allowed to reset',
+                'Manter Clausula Suspensiva':'Manter Clausula Suspensiva',
+                'Manter Clausula Suspensiva_no':'You are not allowed to call this action',
+                'Manter Clausula Suspensiva_reset':'Reset',
+                'Manter Clausula Suspensiva_noreset':'You are not allowed to reset',
+                'enviarParaInstituicao':'Enviar Para Instituicao',
+                'enviarParaInstituicao_no':'You are not allowed to call this action',
+                'enviarParaInstituicao_reset':'Reset',
+                'enviarParaInstituicao_noreset':'You are not allowed to reset',
+                'recuperaDaInstituicao':'Recupera Da Instituicao',
+                'recuperaDaInstituicao_no':'You are not allowed to call this action',
+                'recuperaDaInstituicao_reset':'Reset',
+                'recuperaDaInstituicao_noreset':'You are not allowed to reset',
+                'limiteOBTVConvenente':'Limite OBTVConvenente',
+                'limiteOBTVConvenente_no':'You are not allowed to call this action',
+                'limiteOBTVConvenente_reset':'Reset',
+                'limiteOBTVConvenente_noreset':'You are not allowed to reset',
+                'BaixarContrapartida':'Baixar Contrapartida',
+                'BaixarContrapartida_no':'You are not allowed to call this action',
+                'BaixarContrapartida_reset':'Reset',
+                'BaixarContrapartida_noreset':'You are not allowed to reset',
+                'Detalhes do Evento':'Detalhes do Evento',
+                'Detalhes do Evento_no':'You are not allowed to call this action',
+                'Detalhes do Evento_reset':'Reset',
+                'Detalhes do Evento_noreset':'You are not allowed to reset',
+                'reabilitarProposta':'Reabilitar Proposta',
+                'reabilitarProposta_no':'You are not allowed to call this action',
+                'reabilitarProposta_reset':'Reset',
+                'reabilitarProposta_noreset':'You are not allowed to reset',
+                'verHistoricoDatas':'Ver Historico Datas',
+                'verHistoricoDatas_no':'You are not allowed to call this action',
+                'verHistoricoDatas_reset':'Reset',
+                'verHistoricoDatas_noreset':'You are not allowed to reset',
+                'verHistoricoValores':'Ver Historico Valores',
+                'verHistoricoValores_no':'You are not allowed to call this action',
+                'verHistoricoValores_reset':'Reset',
+                'verHistoricoValores_noreset':'You are not allowed to reset',
+                'Voltar para Consulta':'Voltar para Consulta',
+                'Voltar para Consulta_no':'You are not allowed to call this action',
+                'Voltar para Consulta_reset':'Reset',
+                'Voltar para Consulta_noreset':'You are not allowed to reset',
+                'alterarConvenio':'Alterar Convenio',
+                'alterarConvenio_no':'You are not allowed to call this action',
+                'alterarConvenio_reset':'Reset',
+                'alterarConvenio_noreset':'You are not allowed to reset',
+                'Editar Repasses':'Editar Repasses',
+                'Editar Repasses_no':'You are not allowed to call this action',
+                'Editar Repasses_reset':'Reset',
+                'Editar Repasses_noreset':'You are not allowed to reset',
+                'DetalharClausulaSuspensiva':'Detalhar Clausula Suspensiva',
+                'DetalharClausulaSuspensiva_no':'You are not allowed to call this action',
+                'DetalharClausulaSuspensiva_reset':'Reset',
+                'DetalharClausulaSuspensiva_noreset':'You are not allowed to reset',
+                'reabilitarPropostaImpedimento':'Reabilitar Proposta Impedimento',
+                'reabilitarPropostaImpedimento_no':'You are not allowed to call this action',
+                'reabilitarPropostaImpedimento_reset':'Reset',
+                'reabilitarPropostaImpedimento_noreset':'You are not allowed to reset',
+                'alterarAnalisePropostaAprovada':'Alterar Analise Proposta Aprovada',
+                'alterarAnalisePropostaAprovada_no':'You are not allowed to call this action',
+                'alterarAnalisePropostaAprovada_reset':'Reset',
+                'alterarAnalisePropostaAprovada_noreset':'You are not allowed to reset',
+                'exibirParecerContratacaoPrejudicada':'Exibir Parecer Contratacao Prejudicada',
+                'exibirParecerContratacaoPrejudicada_no':'You are not allowed to call this action',
+                'exibirParecerContratacaoPrejudicada_reset':'Reset',
+                'exibirParecerContratacaoPrejudicada_noreset':'You are not allowed to reset',
+                'desfazerAnaliseContratacaoPrejudicada':'Desfazer Analise Contratacao Prejudicada',
+                'desfazerAnaliseContratacaoPrejudicada_no':'You are not allowed to call this action',
+                'desfazerAnaliseContratacaoPrejudicada_reset':'Reset',
+                'desfazerAnaliseContratacaoPrejudicada_noreset':'You are not allowed to reset',
+                'exibirHistoricoContratacaoPrejudicada':'Exibir Historico Contratacao Prejudicada',
+                'exibirHistoricoContratacaoPrejudicada_no':'You are not allowed to call this action',
+                'exibirHistoricoContratacaoPrejudicada_reset':'Reset',
+                'exibirHistoricoContratacaoPrejudicada_noreset':'You are not allowed to reset',
+                'iniciarAnalise':'Iniciar Analise',
+                'iniciarAnalise_no':'You are not allowed to call this action',
+                'iniciarAnalise_reset':'Reset',
+                'iniciarAnalise_noreset':'You are not allowed to reset',
+                'EstornarCancelarProposta':'Estornar Cancelar Proposta',
+                'EstornarCancelarProposta_no':'You are not allowed to call this action',
+                'EstornarCancelarProposta_reset':'Reset',
+                'EstornarCancelarProposta_noreset':'You are not allowed to reset',
+                'calendar.popup':'Clique aqui para abrir um calend\u00E1rio e escolher uma data'
+            };
+            
+            var HINTS_COMBO_ITEMS = {            
+            }
+            
+            var hints = new THints (HINTS_CFG, HINTS_ITEMS);
+            
+            var HINTS_COMBO_CFG = {
+		'top'        : 5,	'left'       : 30,	'css'        : 'hintsClass',
+		'show_delay' : 400,	'hide_delay' : 3000,	'wise'       : false,
+		'follow'     : false,	'z-index'    : 110
+            };
+
+	    var combohints = new THints (HINTS_COMBO_CFG, HINTS_COMBO_ITEMS);
+
+            function getComboHintTitle(combo, title) {
+            	return title + combo.selectedIndex;
+            }
+
+            var comboTimerDelay = 10;
+
+            function handleComboMouseOut(event) {
+            	if (event.target.type == 'select-one')
+            		window.setTimeout('combohints.hide()', comboTimerDelay);
+            }	    
+        //-->
+    	</script>
+<script type="text/javascript">
+function UpdateDoubleSelect(combo, valor) {
+  eval('combo = document.' + 
+    combo + ';');
+  for(index = 0; 
+    index < combo.length; 
+    index++) {
+   if(combo[index].value == valor)
+     combo.selectedIndex = index;
+   }
+}
+  
+function descriptionDestination(key , componenteNome){
+	
+
+	var HINTS_DESTINATION  = {
+ 
+	} 
+	
+	
+	
+	var componenteDestino = document.getElementsByName(componenteNome);
+
+	if(componenteDestino[0] != null)
+	{
+		
+		componenteDestino[0].value = HINTS_DESTINATION[key];
+	}
+}
+</script>
+    
+
+        
+        <!-- Google Tag Manager -->
+        <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+        new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+        j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+        'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+        })(window,document,'script','dataLayer','GTM-WHZ5PJG8');</script>
+        <!-- End Google Tag Manager -->
+
+
+    
+    
+
+        
+    <!-- Google Tag Manager (noscript) -->
+    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-WHZ5PJG8"
+    height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+    <!-- End Google Tag Manager (noscript) -->
+
+
+    	<div id="container">
+			
+
+
+
+
+
+
+
+
+
+<script type="text/javascript">
+function getPath() {
+	return "/voluntarias"; 
+}
+
+function masterMenuControl(menuName) {
+	var menus = {"997366806": ["997366806_515135656","997366806_370039424","997366806_836661414","997366806_-1540371065","997366806_1965609892","997366806_-231259270"],"330887298": ["330887298_65788811","330887298_1035188630","330887298_-442619135","330887298_1425994969","330887298_-357076894","330887298_1420897254","330887298_1749698189"],"-173460853": ["-173460853_1628136647","-173460853_77212","-173460853_2180","-173460853_-503637981","-173460853_82854","-173460853_180189599","-173460853_-980577268","-173460853_-299372649","-173460853_-1293190284","-173460853_1195768174"],"-1941304600": ["-1941304600_-1941304600"],"1632390425": ["1632390425_1632390425"],"1304359359": ["1304359359_1304359359"],"-481524888": ["-481524888_82854","-481524888_180189599","-481524888_-1293190284","-481524888_698822478","-481524888_-333124204","-481524888_1374656230","-481524888_525520468","-481524888_-690617495","-481524888_-595045663","-481524888_1776368057","-481524888_1195768174","-481524888_1091183408","-481524888_-1509149946","-481524888_1304359359","-481524888_1816961443","-481524888_225687380"],"82870": ["82870_82870"],"2144784112": ["2144784112_100344749","2144784112_2061164","2144784112_607193508","2144784112_1815518206","2144784112_-186553564"]};
+	
+	for (var key in menus) {
+		var subMenus = menus[key];
+		
+		if (key == menuName) {
+			for (var i = 0; i < subMenus.length; i++) {
+				var element = document.getElementById('menu_link_' + subMenus[i]);
+				if (element != null) {
+					var display = element.style.display;
+					element.style.display = (display == 'none' || display == '') ? 'block' : 'none';
+				}
+			}
+		} else {
+			for (var i = 0; i < subMenus.length; i++) {
+				var element = document.getElementById('menu_link_' + subMenus[i]);				
+				if (element != null) {
+					element.style.display = 'none';
+				}
+			}
+		}
+	}
+}
+
+function menuItemControl(menuId) {
+	var subAbas = jQuery("#sub_grupo_abas a");
+	subAbas.css("pointer-events", "none");
+
+	jQuery.removeCookie("execucao");
+	jQuery.cookie("execucao", this.getExecMod(menuId), {path: '/'});
+		
+	setTimeout(function(){
+		subAbas.css("pointer-events", "auto");
+	}, 3000);
+
+}
+
+function getExecMod(menuId) {
+	var conc = "-173460853";
+	var conv = "-481524888";
+	
+	var hash = this.getGrupoMenuHash(menuId);
+	if (hash == conc) {
+		return "concedente";
+	} else if (hash == conv) {
+		return "convenente";
+	} else {
+		return null;
+	}
+}
+
+function getGrupoMenuHash(menuId) {
+	return menuId.replace("menu_link_", "").split("_")[0];
+}
+
+jQuery(document).ready(function () {
+	
+	var menus = {"997366806": ["997366806_515135656","997366806_370039424","997366806_836661414","997366806_-1540371065","997366806_1965609892","997366806_-231259270"],"330887298": ["330887298_65788811","330887298_1035188630","330887298_-442619135","330887298_1425994969","330887298_-357076894","330887298_1420897254","330887298_1749698189"],"-173460853": ["-173460853_1628136647","-173460853_77212","-173460853_2180","-173460853_-503637981","-173460853_82854","-173460853_180189599","-173460853_-980577268","-173460853_-299372649","-173460853_-1293190284","-173460853_1195768174"],"-1941304600": ["-1941304600_-1941304600"],"1632390425": ["1632390425_1632390425"],"1304359359": ["1304359359_1304359359"],"-481524888": ["-481524888_82854","-481524888_180189599","-481524888_-1293190284","-481524888_698822478","-481524888_-333124204","-481524888_1374656230","-481524888_525520468","-481524888_-690617495","-481524888_-595045663","-481524888_1776368057","-481524888_1195768174","-481524888_1091183408","-481524888_-1509149946","-481524888_1304359359","-481524888_1816961443","-481524888_225687380"],"82870": ["82870_82870"],"2144784112": ["2144784112_100344749","2144784112_2061164","2144784112_607193508","2144784112_1815518206","2144784112_-186553564"]};
+	var execucao = jQuery.cookie("execucao");
+	
+	for (var key in menus) {
+		var subMenus = menus[key];
+		
+		for (var i = 0; i < subMenus.length; i++) {
+			var menuId = "menu_link_" + subMenus[i];
+			var pills = getElementsInsideContainer(menuId);
+			if (pills == null) {
+				continue;
+			}
+			
+			if (jQuery(pills).attr('class') == 'activeTab') {
+				var execMod = getExecMod(menuId);
+				if (execMod != null && execucao != null && execMod != execucao) {
+					continue;
+				}
+				
+				jQuery('#div_' + key).attr('class', 'activeTab');
+				masterMenuControl(key);
+				
+				return;
+			}
+		}
+	}
+});
+
+function getElementsInsideContainer(id) {
+	var container = document.getElementById(id);
+	return (container == null) ? null : document.getElementById(id).getElementsByTagName("div");
+}
+</script>
+
+<script type="text/javascript">
+<!--
+function MM_jumpMenu(targ,selObj,restore){ //v3.0
+	eval(targ+".location='"+selObj.options[selObj.selectedIndex].value+"'");
+	if (restore) selObj.selectedIndex=0;
+}
+//-->
+
+function getSeconds() {
+    var date = new Date();
+    var milliseconds = date.getTime();
+    return Math.floor(milliseconds / 1000);
+}
+
+var tempoInicial = getSeconds();
+var mensagemSessao = '';
+var sessaoAtiva = true;
+
+function exibirMensagemSessao() {
+  alert(mensagemSessao);
+}
+
+function atualizarTempo() {
+    if (sessaoAtiva) {
+        setTimeout('atualizarTempo();', 1000);
+        var tempo = 1800 - (getSeconds() - tempoInicial);
+        if (tempo < 1) tempo = 1;
+        tempo--;
+        var min = Math.floor(tempo / 60);
+        var sec = tempo - (min * 60);
+        var secText = sec.toString();
+        while (secText.length < 2) secText = '0' + secText;
+        var novoTexto = min.toString() + ':' + secText;
+        document.getElementById("tempoRestante").innerHTML = novoTexto;
+        //
+        if (tempo == 180) {
+          mensagemSessao = 'Esta sessão irá se encerrar em menos 3 minutos! Salve o seu trabalho para evitar perdas.';        
+          setTimeout('exibirMensagemSessao();', 200);
+        }
+        if (tempo == 0) {
+          mensagemSessao = 'A sessão encerrou. Será preciso logar novamente.';
+          setTimeout('exibirMensagemSessao();', 200);
+          sessaoAtiva = false;
+        }
+    }
+}
+
+setTimeout('atualizarTempo();', 1000);
+ 
+</script>
+
+<div id="banner_governo" title="Ministério da Gestão e da Inovação em Serviços Públicos">
+	<center>
+		<table id="tabela" border="0" cellpadding="0" cellspacing="0">
+		
+		<tbody><tr valign="middle">
+		
+		<td width="100%" valign="middle">
+		    <div>
+				<img src="https://discricionarias.transferegov.sistema.gov.br:443/voluntarias/layout/producao/imagens/bgHeader_eleicao.jpg" alt="Ministério da Gestão e da Inovação em Serviços Públicos" border="0" usemap="#cabecalho">
+				<map name="cabecalho">
+					<area shape="rect" coords="160,13,290,34" href="http://www.acessoainformacao.gov.br"> 
+				</map>	
+				<strong>
+				<div id="tempoRestante" style="position:absolute; top:12px; left:8px; color:#D3D3D3; font-size:10px">29:52</div>
+				</strong>
+			</div>
+		</td>
+		</tr>		
+		</tbody></table>
+	</center>
+</div>
+
+	<div id="header">
+		
+		<div id="logo" style="position:absolute">
+    		<a href="javascript:window.location=getPath()+'/ForwardAction.do?modulo=Principal&amp;path=/Principal.do'" class="home">
+			<img src="https://discricionarias.transferegov.sistema.gov.br:443/voluntarias/layout/producao/imagens/logo_portal.png" alt=" Transferegov">
+            <span><img src="/voluntarias/layout/default/imagens/ico_home.gif">Página Principal</span>
+			</a>
+		</div>
+
+<div id="userInterno">
+			<div class="dado left">
+				
+			</div>
+		</div>
+		<!-- /userInterno -->
+
+		<div id="info">
+			<span class="version">28/10/2026 14:30-v.1.0.0-b4211876-</span>				
+	 		<a href="/voluntarias?LLO=true">
+				<span class="exit">Sair do Acesso Livre <input type="button" class="bt_exit" value=""></span>
+			</a>
+		</div> 
+		<!-- /info -->
+
+		
+<div id="menuInterno">
+	<div class="col1">
+		<div class="button menu" href="#CADASTRO_ENTE_ENTIDADE">Cadastro Ente/Entidade </div>
+		<div class="button menu" href="#PROGRAMAS">Programas</div>
+		<div class="button menu" href="#PROPOSTAS">Propostas</div>
+		<div class="button menu" href="#CONVENIOS">Instrumentos</div>
+		<div class="button menu" href="#EXECUCAO">Execução</div>
+		<div class="button menu" href="#CADASTROS">Cadastros</div>
+		<div class="button menu" href="#ACOMPANHAMENTO">Acomp. e Fiscalização</div>
+		<div class="button menu" href="#TCE">TCE</div>
+		<div class="button menu" href="#VERIFICACAO_IRREGULARIDADE">Verificação de Regularidade</div>
+		</div>
+<br style="clear:both">	</div>
+
+
+
+		
+		<div id="contentMenuInterno"></div>
+
+
+		<div id="breadcrumbs">
+			
+			
+				<div style="float: right">
+					<a href="/portal/acessoLivre.html">Acesso Livre &nbsp; &nbsp;</a>
+				</div>
+				
+		</div>
+
+		<div id="userCase">
+            	<h2></h2>
+                <div id="orgao">22000 - Ministério da Agricultura e Pecuária</div>
+                <div id="convenio">
+				  
+					<img src="/voluntarias/layout/default/imagens/seta_branco.gif">Instrumento 997273
+				  
+				</div>
+		</div>	
+		<!-- /userCase -->
+	
+	</div>
+	<!-- /header -->
+
+	
+	
+<div class="submenu" id="CADASTRO_ENTE_ENTIDADE" style="display: none;">
+	<div class="border">
+		<h3 class="title">Cadastro Ente/Entidade </h3>
+		<div class="colM">
+			<ul>
+			<li><a href="https://transfere.transferegov.sistema.gov.br/habilitacao/consulta-entidade.html">Consultar Ente/Entidade</a></li>
+			<li><a href="https://transfere.transferegov.sistema.gov.br/habilitacao/cadastro-credenciador.html">Incluir Ente/Entidade</a></li>
+			</ul>
+		</div>
+	</div>
+</div>
+
+
+<div class="submenu" id="PROGRAMAS" style="display: none;">
+	<div class="border">
+		<h3 class="title">Programas</h3>
+		<div class="colM">
+			<ul>
+			<li><a href="javascript:window.location=getPath()+'/ForwardAction.do?modulo=prestacao&amp;path=/mrosc/ChamamentoPublico/chamamentoPublicoConsultaPesquisa.jsf'">Chamamento Público</a></li>
+			<li><a href="javascript:window.location=getPath()+'/ForwardAction.do?modulo=Principal&amp;path=/MostraPrincipalConsultarPrograma.do?Usr=guest&amp;Pwd=guest'">Consultar Programas</a></li>
+			</ul>
+		</div>
+	</div>
+</div>
+
+
+<div class="submenu" id="PROPOSTAS" style="display: none;">
+	<div class="border">
+		<h3 class="title">Propostas</h3>
+		<div class="colM">
+			<ul>
+			<li><a href="javascript:window.location=getPath()+'/ForwardAction.do?modulo=Principal&amp;path=/MostraPrincipalConsultarProposta.do'">Consultar Propostas</a></li>
+			<li><a href="javascript:window.location=getPath()+'/ForwardAction.do?modulo=prestacao&amp;path=/propostapac/listarPropostaPac.jsf'">Seleção PAC</a></li>
+			</ul>
+		</div>
+	</div>
+</div>
+
+
+<div class="submenu" id="CONVENIOS" style="display: none;">
+	<div class="border">
+		<h3 class="title">Instrumentos</h3>
+		<div class="colM">
+			<ul>
+			<li><a href="javascript:window.location=getPath()+'/ForwardAction.do?modulo=Principal&amp;path=/MostraPrincipalConsultarConvenio.do'">Consultar Instrumentos/Pré-Instrumentos</a></li>
+			</ul>
+		</div>
+	</div>
+</div>
+
+
+<div class="submenu" id="EXECUCAO" style="display: none;">
+	<div class="border">
+		<h3 class="title">Execução</h3>
+		<div class="colM">
+			<ul>
+			<li><a href="javascript:window.location=getPath()+'/ForwardAction.do?modulo=Principal&amp;path=/MostraPrincipalRegistrarExecucaoTermoParceria.do'">Registro Execução Termo de Parceria</a></li>
+			</ul>
+		</div>
+	</div>
+</div>
+
+
+<div class="submenu" id="CADASTROS" style="display: none;">
+	<div class="border">
+		<h3 class="title">Cadastros</h3>
+		<div class="colM">
+			<ul>
+			<li><a href="https://pc.transferegov.sistema.gov.br/pc/#/acesso-livre">Listar Apetite ao Risco</a></li>
+			</ul>
+		</div>
+	</div>
+</div>
+
+
+<div class="submenu" id="ACOMPANHAMENTO" style="display: none;">
+	<div class="border">
+		<h3 class="title">Acomp. e Fiscalização</h3>
+		<div class="colM">
+			<ul>
+			<li><a href="javascript:window.location=getPath()+'/ForwardAction.do?modulo=proposta&amp;path=/SelecionarConvenio/SelecionarConvenio.do?destino=RelatorioFotografico'">Relatório Fotográfico</a></li>
+			<li><a href="javascript:window.location=getPath()+'/ForwardAction.do?modulo=&amp;path=_gerencial/RelatorioItensDespesasPAD/relatorioItensDespesasPAD.jsf'">Relatório de Acompanhamento - Itens de Despesas (PAD)</a></li>
+			</ul>
+		</div>
+	</div>
+</div>
+
+
+<div class="submenu" id="TCE" style="display: none;">
+	<div class="border">
+		<h3 class="title">TCE</h3>
+		<div class="colM">
+			<ul>
+			<li><a href="javascript:window.location=getPath()+'/ForwardAction.do?modulo=proposta&amp;path=/SelecionarConvenio/SelecionarConvenio.do?destino=ListarTCEInstauradoeTCE'">Consultar TCE Instaurada no e-TCE</a></li>
+			</ul>
+		</div>
+	</div>
+</div>
+
+
+<div class="submenu" id="VERIFICACAO_IRREGULARIDADE" style="display: none;">
+	<div class="border">
+		<h3 class="title">Verificação de Regularidade</h3>
+		<div class="colM">
+			<ul>
+			<li><a href="javascript:window.location=getPath()+'/ForwardAction.do?modulo=&amp;path=irregularidadeTribunal/adimplencia/consultaAdimplencia.jsf'">Consultar Adimplência do Ente/Entidade</a></li>
+			<li><a href="javascript:window.location=getPath()+'/ForwardAction.do?modulo=&amp;path=irregularidadeTribunal/listarIrreguralidadeTribunal.jsf'">Consultar Registro de Irregularidade</a></li>
+			<li><a href="javascript:window.location=getPath()+'/ForwardAction.do?modulo=&amp;path=irregularidadeTribunal/gerarExtratoIrregularidadeTribunal.jsf'">Extrato - Registro de Irregularidades</a></li>
+			</ul>
+		</div>
+	</div>
+</div>
+
+
+
+	
+	<script type="text/javascript" src="/voluntarias/layout/default/javaScripts/comportamentoMenu.js"></script>
+
+	<div id="pagina">
+		<div id="content">
+			
+			<div id="tabControls">
+		
+		
+			<div id="grupo_abas">
+			
+				<a href="javascript: void(0);" onclick="masterMenuControl('330887298');">
+					<div id="div_330887298" nowrap="" class="activeTab">
+						<span><span>Dados da Proposta</span></span>
+					</div>
+				</a>
+		
+				<a href="javascript: void(0);" onclick="masterMenuControl('997366806');">
+					<div id="div_997366806" nowrap="" class="masterTabInactive">
+						<span><span>Plano de Trabalho</span></span>
+					</div>
+				</a>
+		
+				<a href="javascript: void(0);" onclick="masterMenuControl('2144784112');">
+					<div id="div_2144784112" nowrap="" class="masterTabInactive">
+						<span><span>Requisitos</span></span>
+					</div>
+				</a>
+		
+				<a href="javascript: void(0);" onclick="masterMenuControl('-173460853');">
+					<div id="div_-173460853" nowrap="" class="masterTabInactive">
+						<span><span>Execução Concedente</span></span>
+					</div>
+				</a>
+		
+				<a href="javascript: void(0);" onclick="masterMenuControl('-481524888');">
+					<div id="div_-481524888" nowrap="" class="masterTabInactive">
+						<span><span>Execução Convenente</span></span>
+					</div>
+				</a>
+		
+				<a href="javascript: void(0);" onclick="masterMenuControl('1632390425');">
+					<div id="div_1632390425" nowrap="" class="masterTabInactive">
+						<span><span>Prestação de Contas</span></span>
+					</div>
+				</a>
+		
+				<a href="javascript: void(0);" onclick="masterMenuControl('82870');">
+					<div id="div_82870" nowrap="" class="masterTabInactive">
+						<span><span>TCE</span></span>
+					</div>
+				</a>
+		
+			</div>
+		<br>
+		
+			<div id="sub_grupo_abas">
+		
+					<a href="#" id="menu_link_330887298_65788811" onclick="menuItemControl(this.id);" style="display: block;">
+						<div nowrap="" class="activeTab">
+							<span><span>Dados</span></span>
+						</div>
+					</a>
+					
+					<a href="javascript:window.location=getPath()+&quot;/ForwardAction.do?modulo=proposta&amp;path=/SelecionarObjeto/SelecionarObjeto.do?destino=ListarProgramasProposta&quot;" id="menu_link_330887298_1035188630" onclick="menuItemControl(this.id);" style="display: block;">
+						<div nowrap="" class="inactiveTab">
+							<span><span>Programas</span></span>
+						</div>
+					</a>
+					
+					<a href="javascript:window.location=getPath()+&quot;/ForwardAction.do?modulo=proposta&amp;path=/SelecionarObjeto/SelecionarObjeto.do?destino=IncluirParticipantesProposta&quot;" id="menu_link_330887298_-442619135" onclick="menuItemControl(this.id);" style="display: block;">
+						<div nowrap="" class="inactiveTab">
+							<span><span>Participantes</span></span>
+						</div>
+					</a>
+					
+					<a href="javascript:window.location=getPath()+&quot;/ForwardAction.do?modulo=proposta&amp;path=/SelecionarObjeto/SelecionarObjeto.do?destino=DetalharCronoFisico&quot;" id="menu_link_997366806_515135656" onclick="menuItemControl(this.id);" style="display: none;">
+						<div nowrap="" class="inactiveTab">
+							<span><span>Crono Físico</span></span>
+						</div>
+					</a>
+					
+					<a href="javascript:window.location=getPath()+&quot;/ForwardAction.do?modulo=proposta&amp;path=/SelecionarObjeto/SelecionarObjeto.do?destino=DetalharCronoDesembolso&quot;" id="menu_link_997366806_370039424" onclick="menuItemControl(this.id);" style="display: none;">
+						<div nowrap="" class="inactiveTab">
+							<span><span>Crono Desembolso</span></span>
+						</div>
+					</a>
+					
+					<a href="javascript:window.location=getPath()+&quot;/ForwardAction.do?modulo=proposta&amp;path=/SelecionarObjeto/SelecionarObjeto.do?destino=DetalharBensProposta&quot;" id="menu_link_997366806_836661414" onclick="menuItemControl(this.id);" style="display: none;">
+						<div nowrap="" class="inactiveTab">
+							<span><span>Plano de Aplicação Detalhado</span></span>
+						</div>
+					</a>
+					
+					<a href="javascript:window.location=getPath()+&quot;/ForwardAction.do?modulo=proposta&amp;path=/SelecionarObjeto/SelecionarObjeto.do?destino=DetalharPlanoDeAplicacao&quot;" id="menu_link_997366806_-1540371065" onclick="menuItemControl(this.id);" style="display: none;">
+						<div nowrap="" class="inactiveTab">
+							<span><span>Plano de Aplicação Consolidado</span></span>
+						</div>
+					</a>
+					
+					<a href="javascript:window.location=getPath()+&quot;/ForwardAction.do?modulo=proposta&amp;path=/SelecionarObjeto/SelecionarObjeto.do?destino=ListarAnexosGenericos&quot;" id="menu_link_997366806_1965609892" onclick="menuItemControl(this.id);" style="display: none;">
+						<div nowrap="" class="inactiveTab">
+							<span><span>Anexos</span></span>
+						</div>
+					</a>
+					
+					<a href="javascript:window.location=getPath()+&quot;/ForwardAction.do?modulo=execucao&amp;path=/ListarDocumentosProjetoBasico/ListarDocumentosProjetoBasico.do?idProposta=null&quot;" id="menu_link_-1941304600_-1941304600" onclick="menuItemControl(this.id);" style="display: none;">
+						<div nowrap="" class="inactiveTab">
+							<span><span>Projeto Básico/Termo de Referência</span></span>
+						</div>
+					</a>
+					
+					<a href="javascript:window.location=getPath()+&quot;/ForwardAction.do?modulo=proposta&amp;path=/SelecionarObjeto/SelecionarObjeto.do?destino=DetalharParecerProposta&quot;" id="menu_link_997366806_-231259270" onclick="menuItemControl(this.id);" style="display: none;">
+						<div nowrap="" class="inactiveTab">
+							<span><span>Pareceres</span></span>
+						</div>
+					</a>
+					
+					<a href="javascript:window.location=getPath()+&quot;/ForwardAction.do?modulo=proposta&amp;path=/SelecionarObjeto/SelecionarObjeto.do?destino=ManterEmpenhoNovoSiafi&quot;" id="menu_link_-173460853_77212" onclick="menuItemControl(this.id);" style="display: none;">
+						<div nowrap="" class="inactiveTab">
+							<span><span>NEs</span></span>
+						</div>
+					</a>
+					
+					<a href="javascript:window.location=getPath()+&quot;/ForwardAction.do?modulo=proposta&amp;path=/SelecionarConvenio/SelecionarConvenio.do?destino=ListarDocumentoHabil&quot;" id="menu_link_-173460853_2180" onclick="menuItemControl(this.id);" style="display: none;">
+						<div nowrap="" class="inactiveTab">
+							<span><span>DH</span></span>
+						</div>
+					</a>
+					
+					<a href="javascript:window.location=getPath()+&quot;/ForwardAction.do?modulo=proposta&amp;path=/SelecionarConvenio/SelecionarConvenio.do?destino=ListarRepasses&quot;" id="menu_link_-173460853_-503637981" onclick="menuItemControl(this.id);" style="display: none;">
+						<div nowrap="" class="inactiveTab">
+							<span><span>OPs/OBs</span></span>
+						</div>
+					</a>
+					
+					<a href="javascript:window.location=getPath()+&quot;/ForwardAction.do?modulo=proposta&amp;path=/SelecionarObjeto/SelecionarObjeto.do?destino=ListarAjustePlanoTrabalho&quot;" id="menu_link_-173460853_-1293190284" onclick="menuItemControl(this.id);" style="display: none;">
+						<div nowrap="" class="inactiveTab">
+							<span><span>Ajustes do PT</span></span>
+						</div>
+					</a>
+					
+					<a href="javascript:window.location=getPath()+&quot;/ForwardAction.do?modulo=proposta&amp;path=/SelecionarObjeto/SelecionarObjeto.do?destino=ListarAjustePlanoTrabalho&quot;" id="menu_link_-481524888_-1293190284" onclick="menuItemControl(this.id);" style="display: none;">
+						<div nowrap="" class="inactiveTab">
+							<span><span>Ajustes do PT</span></span>
+						</div>
+					</a>
+					
+					<a href="javascript:window.location=getPath()+&quot;/ForwardAction.do?modulo=proposta&amp;path=/SelecionarConvenio/SelecionarConvenio.do?destino=ListarProrrogas&quot;" id="menu_link_-173460853_1195768174" onclick="menuItemControl(this.id);" style="display: none;">
+						<div nowrap="" class="inactiveTab">
+							<span><span>Prorroga de Ofício</span></span>
+						</div>
+					</a>
+					
+					<a href="javascript:window.location=getPath()+&quot;/ForwardAction.do?modulo=proposta&amp;path=/SelecionarConvenio/SelecionarConvenio.do?destino=ListarProrrogas&quot;" id="menu_link_-481524888_1195768174" onclick="menuItemControl(this.id);" style="display: none;">
+						<div nowrap="" class="inactiveTab">
+							<span><span>Prorroga de Ofício</span></span>
+						</div>
+					</a>
+					
+					<a href="javascript:window.location=getPath()+&quot;/ForwardAction.do?modulo=proposta&amp;path=/SelecionarConvenio/SelecionarConvenio.do?destino=ListarTermosAditivos&quot;" id="menu_link_-173460853_82854" onclick="menuItemControl(this.id);" style="display: none;">
+						<div nowrap="" class="inactiveTab">
+							<span><span>TAs</span></span>
+						</div>
+					</a>
+					
+					<a href="javascript:window.location=getPath()+&quot;/ForwardAction.do?modulo=proposta&amp;path=/SelecionarConvenio/SelecionarConvenio.do?destino=ListarTermosAditivos&quot;" id="menu_link_-481524888_82854" onclick="menuItemControl(this.id);" style="display: none;">
+						<div nowrap="" class="inactiveTab">
+							<span><span>TAs</span></span>
+						</div>
+					</a>
+					
+					<a href="javascript:window.location=getPath()+&quot;/ForwardAction.do?modulo=proposta&amp;path=/SelecionarConvenio/SelecionarConvenio.do?destino=Apostilamento&quot;" id="menu_link_-173460853_180189599" onclick="menuItemControl(this.id);" style="display: none;">
+						<div nowrap="" class="inactiveTab">
+							<span><span>Apostilamentos</span></span>
+						</div>
+					</a>
+					
+					<a href="javascript:window.location=getPath()+&quot;/ForwardAction.do?modulo=proposta&amp;path=/SelecionarConvenio/SelecionarConvenio.do?destino=Apostilamento&quot;" id="menu_link_-481524888_180189599" onclick="menuItemControl(this.id);" style="display: none;">
+						<div nowrap="" class="inactiveTab">
+							<span><span>Apostilamentos</span></span>
+						</div>
+					</a>
+					
+					<a href="javascript:window.location=getPath()+&quot;/ForwardAction.do?modulo=proposta&amp;path=/SelecionarConvenio/SelecionarConvenio.do?destino=ListarLicitacoes&quot;" id="menu_link_-481524888_698822478" onclick="menuItemControl(this.id);" style="display: none;">
+						<div nowrap="" class="inactiveTab">
+							<span><span>Processo de Execução</span></span>
+						</div>
+					</a>
+					
+					<a href="javascript:window.location=getPath()+&quot;/ForwardAction.do?modulo=proposta&amp;path=/SelecionarConvenio/SelecionarConvenio.do?destino=ListarContratos&quot;" id="menu_link_-481524888_1374656230" onclick="menuItemControl(this.id);" style="display: none;">
+						<div nowrap="" class="inactiveTab">
+							<span><span>Contratos/Subconvênio</span></span>
+						</div>
+					</a>
+					
+					<a href="javascript:window.location=getPath()+&quot;/ForwardAction.do?modulo=proposta&amp;path=/SelecionarConvenio/SelecionarConvenio.do?destino=ConsultarNotasFiscais&quot;" id="menu_link_-481524888_-595045663" onclick="menuItemControl(this.id);" style="display: none;">
+						<div nowrap="" class="inactiveTab">
+							<span><span>Documento de Liquidação</span></span>
+						</div>
+					</a>
+					
+					<a href="javascript:window.location=getPath()+&quot;/ForwardAction.do?modulo=proposta&amp;path=/SelecionarConvenio/SelecionarConvenio.do?destino=ManterMovimentacaoFinanceira&quot;" id="menu_link_1304359359_1304359359" onclick="menuItemControl(this.id);" style="display: none;">
+						<div nowrap="" class="inactiveTab">
+							<span><span>Movimentações Financeiras</span></span>
+						</div>
+					</a>
+					
+					<a href="javascript:window.location=getPath()+&quot;/ForwardAction.do?modulo=proposta&amp;path=/SelecionarConvenio/SelecionarConvenio.do?destino=ManterMovimentacaoFinanceira&quot;" id="menu_link_-481524888_1304359359" onclick="menuItemControl(this.id);" style="display: none;">
+						<div nowrap="" class="inactiveTab">
+							<span><span>Movimentações Financeiras</span></span>
+						</div>
+					</a>
+					
+					<a href="javascript:window.location=getPath()+&quot;/ForwardAction.do?modulo=proposta&amp;path=/SelecionarConvenio/SelecionarConvenio.do?destino=ListarSolicitacaoRendimentosAplicacao&quot;" id="menu_link_-481524888_1776368057" onclick="menuItemControl(this.id);" style="display: none;">
+						<div nowrap="" class="inactiveTab">
+							<span><span>Rendimento de Aplicação</span></span>
+						</div>
+					</a>
+					
+					<a href="javascript:window.location=getPath()+&quot;/ForwardAction.do?modulo=proposta&amp;path=/SelecionarConvenio/SelecionarConvenio.do?destino=ListarRelatoriosExecucao&quot;" id="menu_link_-481524888_1091183408" onclick="menuItemControl(this.id);" style="display: none;">
+						<div nowrap="" class="inactiveTab">
+							<span><span>Relatórios de Execução</span></span>
+						</div>
+					</a>
+					
+					<a href="javascript:window.location=getPath()+&quot;/ForwardAction.do?modulo=prestacao&amp;path=/prestacaocontas/ManterPrestacaoConta/manterPrestacaoContas.jsf&quot;" id="menu_link_1632390425_1632390425" onclick="menuItemControl(this.id);" style="display: none;">
+						<div nowrap="" class="inactiveTab">
+							<span><span>Prestação de Contas</span></span>
+						</div>
+					</a>
+					
+					<a href="javascript:window.location=getPath()+&quot;/ForwardAction.do?modulo=proposta&amp;path=/SelecionarConvenio/SelecionarConvenio.do?destino=ConsultarTCE&quot;" id="menu_link_82870_82870" onclick="menuItemControl(this.id);" style="display: none;">
+						<div nowrap="" class="inactiveTab">
+							<span><span>TCE</span></span>
+						</div>
+					</a>
+					
+					<a href="javascript:window.location=getPath()+&quot;/ForwardAction.do?modulo=&amp;path=_proposta/Requisitos/listarRequisitosDocumentos.jsf&quot;" id="menu_link_2144784112_100344749" onclick="menuItemControl(this.id);" style="display: none;">
+						<div nowrap="" class="inactiveTab">
+							<span><span>Requisitos para Celebração</span></span>
+						</div>
+					</a>
+									
+				</div> <!-- /sub_grupo_abas -->
+		
+			</div> <!-- /tabControls -->			
+		</div>
+		<!-- /content -->		
+	      
+	        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+
+ 
+
+
+<!-- mensagem de sucesso -->
+
+  
+<!--fim mensagem sucesso -->
+
+
+<!-- aviso de erro -->
+
+
+
+
+
+  
+       
+ 
+
+
+<script type="text/javascript">
+    window.addEventListener('DOMContentLoaded', function(evento) {
+        initDragDrop();
+    });
+    window.addEventListener('keydown', function(evento) {
+        if (evento.keyCode==27) {
+            document.getElementById("popUpLayer2").className="displayNone";
+        }
+    });
+</script>
+ 
+
+             
+			
+  <div id="pathway">
+    Detalhar Proposta
+  </div>
+  <div id="pageVariables">
+    
+        
+    
+    
+        
+    
+    
+        
+    
+    
+        
+    
+    
+        
+    
+    
+        
+    
+    
+        
+    
+    
+        
+    
+</div>
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+
+<script>
+function getPath(){return "/voluntarias";}
+</script>
+
+<script>
+	
+  var isFormSubmetido = false;
+		
+  function setaAcao(nomeAcao, fcValidacao, valida , nomeForm){
+		document.forms[0].action = "";
+							
+				if (nomeAcao.indexOf("/") == 0) {
+			document.forms[0].action = getPath() + nomeAcao + '.do';
+		}else{
+			document.forms[0].action = getPath() + '/' + nomeAcao + '.do';
+		}
+		document.forms[0].name = nomeForm;
+		if(true && valida){
+			if(eval(fcValidacao + '(document.forms[0])')){
+				if(isFormSubmetido) {
+					alert('H\u00e1 uma requisi\u00e7\u00e3o sendo processada. Aguarde o seu t\u00e9rmino.');
+				} else {
+					isFormSubmetido = true;
+					document.forms[0].submit();
+				}
+			}
+		}else{
+			if(isFormSubmetido) {
+				alert('H\u00e1 uma requisi\u00e7\u00e3o sendo processada. Aguarde o seu t\u00e9rmino.');
+			} else {
+				isFormSubmetido = true;
+				document.forms[0].submit();
+			}
+		}
+	}
+  
+
+	function setaAcaoCustom(nomeAcao, fcValidacao, valida , nomeForm){
+		document.forms[0].action = "";
+							
+		if (nomeAcao.indexOf("/") == 0) {
+			document.forms[0].action = getPath() + nomeAcao;
+		} else {
+			document.forms[0].action = getPath() + '/' + nomeAcao;
+		}
+		document.forms[0].name = nomeForm;
+		if(true && valida){
+			if(eval(fcValidacao + '(document.forms[0])')){
+				if(isFormSubmetido) {
+					alert('H\u00e1 uma requisi\u00e7\u00e3o sendo processada. Aguarde o seu t\u00e9rmino.');
+				} else {
+					isFormSubmetido = true;
+					document.forms[0].submit();
+				}
+			}
+		}else{
+			if(isFormSubmetido) {
+				alert('H\u00e1 uma requisi\u00e7\u00e3o sendo processada. Aguarde o seu t\u00e9rmino.');
+			} else {
+				isFormSubmetido = true;
+				document.forms[0].submit();
+			}
+		}
+	}
+	
+	function setaLocation(nomeAcao){
+		var action;
+		if (nomeAcao.indexOf("/") == 0) {
+			action=getPath() + nomeAcao + '.do';
+		}else{
+			action=getPath() + '/' + nomeAcao + '.do';
+		}
+		window.open(action, '', 'width=700,height=500,top=50,left=100');
+	}
+	
+	function retornarAoChamador() {
+		var urlRetorno = document.getElementsByName("urlRetornoProposta")[0].value;
+		window.open(urlRetorno, '_self');
+	}
+
+	function keySubmit(e){ }
+
+     <!--Operacao de Habilitar-->
+     function verificaHabilitados() { }
+    <!--Operacao de Desabilitar-->
+    function verificaDesabilitados() { }
+    
+    <!--Operacao de tornar visivel-->    
+    function verificaVisiveis() { }
+    
+    <!--Operacao de Esconder-->    
+    function verificaEscondidos() { }
+    
+    function verifica() {
+     	verificaHabilitados();
+     	verificaDesabilitados();
+     	verificaEscondidos();
+     	verificaVisiveis();
+    }
+
+    function confirma(){
+    	jQuery('body').addClass('modalConfirma');
+    }
+
+    jQuery(document).ready(function() {
+			jQuery( "#botaoModalNao" ).click(function() {
+				jQuery('body').removeClass('modalConfirma');
+			});
+	
+			jQuery( "#botaoModalSim" ).click(function() {
+				jQuery('#modalConfirmacao').removeClass('modalConfirma');
+				setaAcao('/EditarDadosProposta/DetalharPropostaEstornarCancelarProposta', 
+						'validateDetalharPropostaEstornarCancelarPropostaForm', 
+						false , 
+						'editarDadosPropostaDetalharPropostaEstornarCancelarPropostaForm'
+					)
+			});
+	});
+</script>
+
+<div id="ConteudoDiv">
+<div id="alterar" class="action">
+  <div class="trigger">
+    <form name="editarDadosPropostaDetalharPropostaAlterarForm" method="post" action="/voluntarias/EditarDadosProposta/DetalharPropostaAlterar.do" enctype="multipart/form-data">
+      
+
+<input type="hidden" name="invalidatePageControlCounter" value="1">
+      <input type="hidden" name="banco" value="1002" id="alterarBanco">
+<input type="hidden" name="bancoMandatario" value="" id="alterarBancoMandatario">
+<input type="hidden" name="dataDocumentoOBTVConvenente" value="" id="alterarDataDocumentoOBTVConvenente">
+<input type="hidden" name="diligencia" value="false" id="alterarDiligencia">
+<input type="hidden" name="ehUsuarioLogadoMembroDeInstituicaoMandataria" value="false" id="alterarEhUsuarioLogadoMembroDeInstituicaoMandataria">
+<input type="hidden" name="formatarNumeroProcesso" value="" id="alterarFormatarNumeroProcesso">
+<input type="hidden" name="idCEF" value="1002" id="alterarIdCEF">
+<input type="hidden" name="idProposta" value="2180395" id="alterarIdProposta">
+<input type="hidden" name="inadimplenteMotivo217" value="false" id="alterarInadimplenteMotivo217">
+<input type="hidden" name="inadimplenteQualquerMotivo" value="false" id="alterarInadimplenteQualquerMotivo">
+<input type="hidden" name="isPropostaAposDesmembramentoJustificativa" value="true" id="alterarIsPropostaAposDesmembramentoJustificativa">
+<input type="hidden" name="mandatarioDefineAgenciaNaAberturaConta" value="false" id="alterarMandatarioDefineAgenciaNaAberturaConta">
+<input type="hidden" name="numeroDocumentoOBTVConvenente" value="" id="alterarNumeroDocumentoOBTVConvenente">
+<input type="hidden" name="permiteAdiarEntregaProjetoBasico" value="" id="alterarPermiteAdiarEntregaProjetoBasico">
+<input type="hidden" name="permiteOBTVConvenente" value="Não" id="alterarPermiteOBTVConvenente">
+<input type="hidden" name="urlDetalheEntidadeModuloCadastramento" value="https://transfere.transferegov.sistema.gov.br/habilitacao/detalha-entidade.html?cnpj=20409373000128" id="alterarUrlDetalheEntidadeModuloCadastramento">
+<input type="hidden" name="urlRetornoProposta" value="" id="alterarUrlRetornoProposta">
+<input type="hidden" name="urleTCE" value="https://tce.apps.tcu.gov.br/api/publico/tces?numeroSiafiSiconv=997273" id="alterarUrleTCE">
+<input type="hidden" name="valorLimiteOBTVConvenente" value="" id="alterarValorLimiteOBTVConvenente">
+<input type="hidden" name="idPropostaOriginalPacSelecoes" value="" id="alterarIdPropostaOriginalPacSelecoes">
+ 
+      <input type="hidden" name="idProposta" value="2180395" id="enviarParaAnaliseIdProposta">
+ 
+	
+		<div id="msgInadimplenciaTce" forceid="true" style="display: none">
+			<div id="messages">
+				  <div class="warnings">			    
+				      <div class="warning">Senhor(a) Usuário(a),<br>Verificamos que esse instrumento possui um registro de Tomada de Contas Especial instaurada no sistema e-TCE do TCU. Portanto, solicitamos que as informações sejam atualizadas no Transferegov, para isso acesse o menu Prestação de Contas, opção Notificação Prévia Inadimplência, registrando a inadimplência do instrumento.</div>
+				  </div>
+			</div>
+		</div>
+		<div id="msgInadimplenciaLocal" forceid="true" style="display: none"> 
+			<div id="messages">
+				  <div class="warnings">			    
+				      <div class="warning">Senhor(a) Usuário(a),<br>Verificamos que esse instrumento possui inadimplência registrada no Transferegov pelo motivo 217 (Instauração de tomada de contas especial), mas não possui nenhum registro no e-TCE do TCU. Portanto, solicitamos que atualize a situação do instrumento. Caso seja necessário, registre a TCE no sistema e-TCE do TCU.</div>
+				  </div>
+			</div>
+		</div>
+		<div id="msgTceIndisponivel" forceid="true" style="display: none"> 
+			<div id="messages">
+				  <div class="warnings">			    
+				      <div class="warning">Sistema e-TCE indisponível.</div>			    
+				  </div>
+			</div>
+		</div>
+		
+		
+	
+      <table cellpadding="0" cellspacing="0">
+        <tbody>
+          
+          
+            <tr class="modalidade" id="tr-alterarModalidade">
+              <td class="label" width="27%">Modalidade</td>
+              <td colspan="4">
+		            	<table cellpadding="0" cellspacing="0">
+              <tbody><tr><td class="field" width="40%">
+                Termo de Fomento</td>
+                
+                
+	             
+	             
+	                <td class="label" width="15%">Situação no SIAFI</td>
+	                        <td class="field">
+	                           
+	                           Enviado para o SIAFI - 2026NS000314
+	                        </td>
+	             
+	             </tr></tbody></table>
+            </td></tr>
+          
+          
+	          
+	                <tr class="subtipoInstrumento" id="tr-alterarSubtipoInstrumento">
+		                <td class="label">Subtipo do Instrumento</td>
+		                <td class="field" colspan="4">
+		                   
+		                   Não possui subtipo
+		                </td>
+	            	</tr>
+            	
+       	      
+          
+			
+			
+				<tr class="situacaoContratoAtual" id="tr-alterarSituacaoContratoAtual">
+					<td class="label">Situação de Contratação Atual</td>
+					<td class="field" colspan="4">
+						<div style="float:left">
+							
+							Normal
+						</div>
+						
+					</td>					
+				</tr>
+			
+			
+			
+			
+          
+          
+	          <tr class="status" id="tr-alterarStatus">
+	            	<td class="label">Situação</td>
+	            	<td colspan="4">
+		            	<table cellpadding="0" cellspacing="0">
+	                	
+						<tbody><tr><td class="field" colspan="6">
+		              		<div style="float:left">Em execução</div>
+		              		
+		                    <span class="botaoTabelaSemLinha" style="float:right">
+		                    	<!-- (SO EXIBIDO SE O AMBIENTE FOR DESENVOLVIMENTO VIDE CONTROLEIMPL) -->
+		                    	
+		                    </span>
+              			</td>
+             			</tr>
+          
+                
+                
+                  
+                    <tr><td class="label" width="14%">Empenhado</td>
+                      <td class="field" width="5%"> sim</td>
+                                      
+                
+                
+                
+                  
+                    <td class="label" width="15%">Publicação</td>
+                      <td class="field">
+                        Publicado </td>
+                  
+                
+				                
+				</tr></tbody></table></td>
+            <td></td>
+          </tr>
+          
+                           
+                           
+		
+          
+          
+          
+          
+          
+            <tr class="numeroProposta" id="tr-alterarNumeroProposta">
+              
+                
+              		<td class="label">
+              		
+              			
+              			Código do Instrumento
+              			
+              		
+                		 &nbsp; 
+              		</td>
+              		
+              		<td class="field" colspan="2" width="18%">
+                		997273&nbsp; 
+              		</td>
+              	
+              
+              
+              <td class="label" width="25%">Número da Proposta</td>
+              <td class="field">
+              	
+                005243/2026
+              </td> 
+            </tr>
+          
+
+            
+
+            
+            
+              <tr class="numeroInterno" id="tr-alterarNumeroInterno">
+                <td class="label">Número Interno do Órgão</td>
+                <td class="field" colspan="4"> 005243/2026</td>
+              </tr>
+            
+          
+          
+          
+            
+              <tr class="numeroProcesso" id="tr-alterarNumeroProcesso">
+                <td class="label">Número do Processo</td>
+                <td class="field" colspan="4">21000.026338/2026-17</td>
+              </tr>
+            
+          
+          
+			
+				<!-- TagFuncionalidade funcionalidade='PROPOSTA_UPLOAD_ANEXO_CONVENIO' testarProposta='null' resultado='false' -->
+
+			
+          
+          
+			
+				<tr class="anexoConvenio" id="tr-alterarAnexoConvenio">
+					<td colspan="5">
+
+
+<script>
+function getPathanexosConvenio(){return "/voluntarias";}
+</script>
+
+
+           <script>
+               function setaParametrosanexosConvenio(param1, param2) {
+               		document.anexosConvenio.action = "";
+					document.anexosConvenio.action = getPathanexosConvenio() + '/' + param2 + '.do';
+					document.anexosConvenio.name=param1;						   
+					document.anexosConvenio.submit(); 
+					return true;                
+               }
+           </script>
+
+<div id="tituloListagem" class="table">
+<h3>Lista de Documentos Digitalizados</h3>
+
+    
+<table id="row">
+<thead>
+<tr>
+<th class="nomeArquivo">Nome Arquivo</th>
+<th class="dataUpload">Data Upload</th>
+<th></th>
+<th></th></tr></thead>
+<tbody id="tbodyrow">
+<tr class="odd">
+<td>
+            <div class="nomeArquivo">SEI_53749210_Termo_de_Fomento.pdf</div>
+        </td>
+<td>
+            <div class="dataUpload">25/06/2026</div>
+        </td>
+<td>
+                
+                
+                <nobr><a href="javascript:document.location='/voluntarias/EditarDadosProposta/DetalharPropostaDownloadAnexoConvenio.do?idArquivo=42616635';" class="buttonLink">Baixar</a></nobr>
+                
+            </td>
+<td>
+            
+            <!-- TagFuncionalidade funcionalidade='PROPOSTA_EXCLUIR_ANEXO_CONVENIO' testarProposta='null' resultado='false' -->
+
+		</td></tr>
+<tr class="even">
+<td>
+            <div class="nomeArquivo">SEI_53343536_Termo_de_Fomento.pdf</div>
+        </td>
+<td>
+            <div class="dataUpload">18/06/2026</div>
+        </td>
+<td>
+                
+                
+                <nobr><a href="javascript:document.location='/voluntarias/EditarDadosProposta/DetalharPropostaDownloadAnexoConvenio.do?idArquivo=42563279';" class="buttonLink">Baixar</a></nobr>
+                
+            </td>
+<td>
+            
+            <!-- TagFuncionalidade funcionalidade='PROPOSTA_EXCLUIR_ANEXO_CONVENIO' testarProposta='null' resultado='false' -->
+
+		</td></tr></tbody></table></div><div id="tableFooter">
+    
+</div>
+
+ </td>
+              	</tr>                                
+            
+           
+               
+            <tr class="proponente" id="tr-alterarProponente">
+              <td class="label">
+              
+              
+              
+              	Proponente
+              
+              
+              </td>
+              
+	              <td class="field" colspan="4">
+	              		<div style="float:left">CNPJ 20.409.373/0001-28 - ASSOCIACAO DOS PESCADORES E AQUICULTORES DE TRES MARIAS E ADJACENCIAS</div>
+	                    <span class="botaoTabelaSemLinha" style="float:right">
+	                    	
+		                    	<input type="button" name="editarDadosPropostaDetalharPropostaDetalharProponenteForm" value="Detalhar" onclick="location.href='https://transfere.transferegov.sistema.gov.br/habilitacao/detalha-entidade.html?cnpj=20409373000128';" onmouseover="hints.show('detalharProponente')" onmouseout="hints.hide()" id="form_submit">
+		                    
+	                    </span>
+	              </td>
+            </tr>    
+            
+            
+          
+                     
+               
+          
+            
+              <tr class="fundamentoLegal" id="tr-alterarFundamentoLegal">
+                <td class="label">Fundamento Legal</td>
+                <td colspan="4" class="field">
+                  LEI 13.019/2014</td>
+              </tr>
+            
+          
+          
+          
+            <tr class="orgaoConcedente" id="tr-alterarOrgaoConcedente">
+              <td class="label">Órgão</td>
+              <td class="field" colspan="4">
+                22000 - Ministério da Agricultura e Pecuária</td>
+            </tr>
+          
+          
+            
+          
+          
+
+			<!-- JUSTIFICATIVA -->
+			
+			
+				<tr>
+					<td class="subtitulo" colspan="2">
+						Justificativa
+					</td>
+				 </tr>
+				<tr class="caracterizacaoInteressesReciprocos" id="tr-alterarCaracterizacaoInteressesReciprocos">
+					<td class="label">Caracterização dos interesses recíprocos </td>
+					<td class="field" colspan="4"> O presente projeto visa fortalecer o cooperativismo e o associativismo na região, com o intuito de proporcionar agilidade nos atendimentos para os trabalhadores da pesca, e com isso, fortalecer a organização da base familiar desta entidade com melhores condições de trabalho e atendimento a todos os pescadores</td>
+				</tr>
+			
+
+			<!-- PUBLICO ALVO -->
+			<tr class="publicoAlvo" id="tr-alterarPublicoAlvo">
+				<td class="label">
+					Público alvo
+				</td>
+				<td class="field" colspan="4">
+					
+					Colônias vinculados/pertencentes a Associação dos Pescadores e Aquicultores de Três Marias e Adjacências
+				</td>
+			</tr>
+
+			<!-- PROBLEMA A SER RESOLVIDO -->
+			<tr class="problemaASerResolvido" id="tr-alterarProblemaASerResolvido">
+				<td class="label">
+					Problema a ser resolvido
+				</td>
+				<td class="field" colspan="4">
+					
+					Com este projeto, objetivamos melhorar a organização e eficiência das atividades pesqueiras, ofertar mais conforto, rapidez e mobilidade na execução das atividades aos pescadores das colônias associadas.
+				</td>
+			</tr>
+
+			<!-- RESULTADOS ESPERADOS -->
+			<tr class="resultadosEsperados" id="tr-alterarResultadosEsperados">
+				<td class="label">
+					Resultados esperados
+				</td>
+				<td class="field" colspan="4">
+					
+					Espera-se como resultados do projeto o fortalecimento das atividades associadas, o aumento da eficiência econômica dos pescadores, oferecendo a estas condições de qualificação e geração de renda, tornando-se empreendedores, superando suas condições educacionais, socioeconômicas, visando o resgate da dignidade e o sustento financeiro familiar.
+				</td>
+			</tr>
+
+			<!-- RELAÇÃO ENTRE A PROPSOTA E OS OBJETIVOS DO PROGRAMA -->
+			<tr class="relacaoPropostaObjetivosProgramas" id="tr-alterarRelacaoPropostaObjetivosProgramas">
+				<td class="label">
+					Relação entre a proposta e os objetivos e diretrizes do programa
+				</td>
+				<td class="field" colspan="4">
+					
+					O principal objetivo desta colaboração é promover a autonomia econômica dos pescadores familiares, por meio estruturação da rede de pescadores e aquicultores na região, permitindo melhores condições de trabalho e deslocamento para os eventos e reuniões da categoria. É sabido, que a implementação dessa proposta trará mais organização e eficiência nos atendimentos aos pescadores das colônias filiadas/associadas.
+				</td>
+			</tr>
+
+          <tr class="categorias" id="tr-alterarCategorias">
+             <td class="label">
+             	Categorias
+             </td>
+             <td class="field" colspan="4">
+             	
+                Equipamentos, Execução de Custeio
+             </td>
+          </tr>
+          
+          
+            <tr class="objetoConvenio" id="tr-alterarObjetoConvenio">
+              <td class="label">Objeto do Instrumento</td>
+              <td class="field" colspan="4">
+                Estruturar a rede de pescadores e aquicultores de Três Marias e Adjacências</td>
+            </tr>
+          
+          
+          
+           
+	  	  
+             <tr class="capacidadeTecnica" id="tr-alterarCapacidadeTecnica">
+               <td class="label">
+	               	
+	               	
+	               		Informações Complementares da Proposta
+	               	
+               </td>
+               <td class="field" colspan="4">
+                  
+                  
+               </td>
+             </tr>
+             <tr>
+				<td class="subtitulo" colspan="5">
+					
+					
+						Arquivos Anexos - Informações Complementares da Proposta
+					
+				</td>
+			 </tr>
+
+			 <tr>
+				<td colspan="5">
+        			 
+
+
+
+
+
+
+
+
+   
+
+
+
+
+
+
+
+
+
+
+<script>
+function getPatharquivosCapacidadeTecnica(){return "/voluntarias";}
+</script>
+
+
+           <script>
+               function setaParametrosarquivosCapacidadeTecnica(param1, param2) {
+               		document.arquivosCapacidadeTecnica.action = "";
+			document.arquivosCapacidadeTecnica.action = getPatharquivosCapacidadeTecnica() + '/' + param2 + '.do';
+			document.arquivosCapacidadeTecnica.name=param1;						   
+			document.arquivosCapacidadeTecnica.submit(); 
+			return true;                
+               }
+
+           </script>
+
+<div id="arquivosCapacidadeTecnica" class="table">
+    Nenhum registro foi encontrado.
+</div>
+
+
+				</td>
+			 </tr>
+   	            
+   	      
+	     	         	  
+          <tr> <td class="subtitulo" colspan="5"><br> OBTV </td> </tr>          
+            <tr class="bancoEscolhido" id="tr-alterarBancoEscolhido">
+              <td class="label">Opera por OBTV</td>
+              
+               
+               
+               
+              
+              <td class="field" colspan="2">Sim
+              </td>
+          
+          
+              <td class="label">Permite OBTV do tipo "OBTV para o Convenente"</td>
+              <td class="field" colspan="2">
+              <div style="float:left">
+                Não  </div>
+                    
+              </td>
+            </tr>
+            
+		          
+                                
+                  
+
+          <tr>
+            <td class="subtitulo" colspan="5"><br>
+              Dados Bancários</td>
+          </tr>
+          
+          
+          
+          
+            <tr class="bancoEscolhido" id="tr-alterarBancoEscolhido">
+              <td class="label">Banco</td>
+              <td class="field" colspan="4">
+                CAIXA ECONOMICA FEDERAL</td>
+            </tr>
+          
+          
+		  
+				
+				
+					 
+                        <tr class="agencia" id="tr-alterarAgencia">
+                          <td class="label">Agência</td>
+                          <td class="field" colspan="2">
+                            3813-0</td>
+                     
+                      
+                      
+                        <td class="label">Conta</td>
+                        <td class="field" colspan="">
+
+                           
+
+                           5679155199
+                        </td>
+                    </tr>
+                    	   
+				
+		  
+		  
+	                       <tr class="situacaoConta" id="tr-alterarSituacaoConta">
+                        <td class="label">Situação</td>
+                        <td class="field" colspan="2">
+
+                           
+
+                           Conta Regularizada
+                        </td>
+                    	       
+                    	   
+                    	   
+                        <td class="label">Data da Última Modificação</td>
+                        <td class="field">
+
+                           
+
+                           06/07/2026 00:00:00
+                        </td>
+                    </tr>
+                    	     
+	   
+		    		    		    	   
+	                       <tr class="descricaoConta" id="tr-alterarDescricaoConta">
+                        <td class="label">Descrição</td>
+                        <td class="field" colspan="4">
+
+                           
+
+                           A instituição bancária informou a regularização da conta do instrumento e a mesma está pronta para ser movimentada.
+                        </td>
+                    </tr>
+                    	         
+
+					 
+	   
+                    	   
+          <tr>
+            <td class="subtitulo" colspan="4"><br>
+              Datas</td>
+          </tr>
+          
+            <tr class="dataProposta" id="tr-alterarDataProposta">
+              <td class="label">Data da Proposta</td>
+              <td class="field" colspan="4">
+                02/03/2026
+							
+				</td>
+            </tr>
+          
+          
+            
+              <tr class="dataAssinatura" id="tr-enviarParaAnaliseDataAssinatura">
+                <td class="label">Data Assinatura</td>
+                <td class="field" colspan="4">
+                  24/06/2026
+                </td>
+              </tr>
+            
+          
+          
+              
+              <tr class="dataPublicacao" id="tr-enviarParaAnaliseDataPublicacao">
+                <td class="label">Instrumento publicado no DOU em</td>
+                <td class="field" colspan="4">
+                  26/06/2026</td>
+              </tr>
+              
+            
+          
+            <tr class="inicioVigencia" id="tr-alterarInicioVigencia">
+              <td class="label">Data Início de Vigência</td>
+              <td class="field" colspan="4">
+                24/06/2026
+			  </td>
+            </tr>
+          
+          
+            <tr class="terminoVigencia" id="tr-alterarTerminoVigencia">            
+              <td class="label">Data Término de Vigência Atual</td>
+              <td class="field" colspan="4">
+                24/06/2027
+			  </td>
+            </tr>
+          
+          
+          
+		    		    		    	   
+	                       <tr class="dataPrestacao" id="tr-alterarDataPrestacao">
+                        <td class="label">Data Limite p/ Prestação de Contas</td>
+                        <td class="field" colspan="4">
+
+
+
+                           
+
+
+                           22/09/2027
+                        </td>
+                    </tr>
+                    	       
+          
+          
+          
+          
+          
+              
+            
+          
+          
+          
+          
+          <tr>
+            <td class="subtitulo" colspan="5"><br>
+              Valores    </td>
+          </tr>
+          <tr class="percentualMinimoContrapartida" id="tr-alterarPercentualMinimoContrapartida">
+
+					<td class="arvoreValores arvoreExibe" colspan="5">
+		             <b>
+		                
+		                R$ 495.770,65 </b>
+		                Valor Global
+		                
+		              <span id="detalhePercentual">
+		              </span>
+		              
+		                <div style="padding-left:100px"><b>
+		                  
+		                  R$ 477.500,00 </b>
+		                  Valor de Repasse
+		                </div>
+		              
+		              
+		                <div style="padding-left:100px"><b>
+		                  
+		                  R$ 18.270,65 </b>
+		                  Valor da Contrapartida
+		                </div>
+		              
+		              
+		              
+                <div style="padding-left:200px"><b>
+                  
+                  R$ 18.270,65 </b>
+                  Valor Contrapartida Financeira
+                </div>
+              
+              
+              <div style="padding-left:200px"><b>
+                
+                R$ 0,00 </b>
+                Valor Contrapartida Bens e Serviços
+              </div>
+              
+              
+                <div style="padding-left:100px"><b>
+                  
+                  R$ 0,00 </b>
+                  Valor de Rendimentos de Aplicação
+                </div>
+              
+              
+		              
+		              
+              </td>           
+          </tr>
+          
+           
+          
+        
+
+  			<tr>
+				<td class="subtitulo" colspan="5">Anexos de comprovação da contrapartida</td>
+			</tr>
+          	<tr><td colspan="5">
+			 
+
+
+
+
+
+
+
+
+   
+
+
+
+
+
+
+
+
+
+
+<script>
+function getPathlistaAnexosContrapartida(){return "/voluntarias";}
+</script>
+
+
+           <script>
+               function setaParametroslistaAnexosContrapartida(param1, param2) {
+               		document.listaAnexosContrapartida.action = "";
+			document.listaAnexosContrapartida.action = getPathlistaAnexosContrapartida() + '/' + param2 + '.do';
+			document.listaAnexosContrapartida.name=param1;						   
+			document.listaAnexosContrapartida.submit(); 
+			return true;                
+               }
+			function selecionaDeseleciona(){
+				var boxes=document.getElementsByName('RowSelectionAsArray');
+                var setChecked;
+                if(boxes.length==0){
+                    boxes.checked=!boxes.checked;
+                }else{
+                    setChecked = !boxes[0].checked;
+                }
+               
+                for(var i=0;i<boxes.length;i++)
+                    boxes[i].checked=setChecked;
+            }
+           </script>
+
+
+<div id="listaAnexosContrapartida" class="table">
+    
+<table id="row">
+<thead>
+<tr>
+<th class="nome">Nome</th>
+<th></th></tr></thead>
+<tbody id="tbodyrow">
+<tr class="odd">
+<td>
+            <div class="nome">Dec._contrapartida.pdf</div>
+        </td>
+<td>
+                
+                
+                <nobr><a href="javascript:document.location='/voluntarias/EditarDadosProposta/DetalharPropostaBaixarContrapartida.do?idAnexo=18993369';" class="buttonLink">Baixar Contrapartida</a></nobr>
+                
+            </td></tr></tbody></table></div><div id="tableFooter">
+</div>
+
+
+
+			</td></tr>	
+          
+          
+          
+         <tr><td colspan="5">
+  <div id="tituloListagem">
+    <label class="subtitulo">Cronograma orçamentário do valor do repasse</label>
+    <div id="pageHelpSection">
+		<blockquote>
+                Deverão ser informados os valores que serão empenhados no orçamento de cada exercício.
+		</blockquote>
+    </div>
+     
+
+
+
+
+
+
+
+
+   
+
+
+
+
+
+
+
+
+
+
+<script>
+function getPathrepassesExerciciosFuturos(){return "/voluntarias";}
+</script>
+
+
+           <script>
+               function setaParametrosrepassesExerciciosFuturos(param1, param2) {
+               		document.repassesExerciciosFuturos.action = "";
+			document.repassesExerciciosFuturos.action = getPathrepassesExerciciosFuturos() + '/' + param2 + '.do';
+			document.repassesExerciciosFuturos.name=param1;						   
+			document.repassesExerciciosFuturos.submit(); 
+			return true;                
+               }
+			function selecionaDeseleciona(){
+				var boxes=document.getElementsByName('RowSelectionAsArray');
+                var setChecked;
+                if(boxes.length==0){
+                    boxes.checked=!boxes.checked;
+                }else{
+                    setChecked = !boxes[0].checked;
+                }
+               
+                for(var i=0;i<boxes.length;i++)
+                    boxes[i].checked=setChecked;
+            }
+           </script>
+
+
+<div id="repassesExerciciosFuturos" class="table">
+    
+<table id="row">
+<thead>
+<tr>
+<th class="ano">Ano</th>
+<th class="valor">Valor (R$)</th></tr></thead>
+<tbody id="tbodyrow">
+<tr class="odd">
+<td>
+            <div class="ano">2026</div>
+        </td>
+<td>
+            <div class="valor">R$ 477.500,00</div>
+        </td></tr></tbody></table></div><div id="tableFooter"><div class="exportlinks">Opções para exportar: <script>var export1=false;</script>
+<a href="/voluntarias/EditarDadosProposta/EditarDadosProposta.do?idProposta=2180395&amp;Pwd=guest&amp;d-16544-e=1&amp;d-16544-t=repassesExerciciosFuturos&amp;Usr=guest&amp;6578706f7274=1" onclick="if(export1) return false; else export1=true;" onblur="export1=false;"><span class="export csv">CSV </span></a>|<script>var export2=false;</script>
+<a href="/voluntarias/EditarDadosProposta/EditarDadosProposta.do?idProposta=2180395&amp;Pwd=guest&amp;d-16544-e=2&amp;d-16544-t=repassesExerciciosFuturos&amp;Usr=guest&amp;6578706f7274=1" onclick="if(export2) return false; else export2=true;" onblur="export2=false;"><span class="export excel">Excel </span></a>|<script>var export3=false;</script>
+<a href="/voluntarias/EditarDadosProposta/EditarDadosProposta.do?idProposta=2180395&amp;Pwd=guest&amp;d-16544-e=3&amp;d-16544-t=repassesExerciciosFuturos&amp;Usr=guest&amp;6578706f7274=1" onclick="if(export3) return false; else export3=true;" onblur="export3=false;"><span class="export xml">XML </span></a>|<script>var export4=false;</script>
+<a href="/voluntarias/EditarDadosProposta/EditarDadosProposta.do?idProposta=2180395&amp;Pwd=guest&amp;d-16544-e=5&amp;d-16544-t=repassesExerciciosFuturos&amp;Usr=guest&amp;6578706f7274=1" onclick="if(export4) return false; else export4=true;" onblur="export4=false;"><span class="export pdf">PDF </span></a></div>
+</div>
+
+
+
+    
+  </div>
+  </td></tr>
+          
+          
+          <tr>
+            <td>&nbsp;</td>
+            <td class="FormLinhaBotoes" colspan="4">
+            
+				<!-- VOLTAR (INTEGRAÇÃO MOD. CADASTRAMENTO -->
+            
+
+			<!-- VOLTAR (CONSULTA PROPOSTA) -->
+  			
+				<input type="button" name="editarDadosPropostaDetalharPropostaVoltarParaConsultaForm" value="Voltar" onclick="setaAcao('/EditarDadosProposta/DetalharPropostaVoltarParaConsulta', 'validateDetalharPropostaVoltarParaConsultaForm', false , 'editarDadosPropostaDetalharPropostaVoltarParaConsultaForm' )" onmouseover="hints.show('Voltar para Consulta')" onmouseout="hints.hide()" id="form_submit">
+			
+								
+			<!-- GERAR EXTRATO -->
+			<input type="button" name="editarDadosPropostaDetalharPropostaGerarExtratoPropostaForm" value="Gerar Extrato" onclick="setaAcao('/EditarDadosProposta/DetalharPropostaGerarExtratoProposta', 'validateDetalharPropostaGerarExtratoPropostaForm', true , 'editarDadosPropostaDetalharPropostaGerarExtratoPropostaForm' )" id="form_submit">
+              	
+			<!-- ALTERAR -->
+	         
+
+				<!-- ALTERAR (CONCEDENTE) -->
+			
+				
+          	
+			
+              
+			<!-- ALTERAR (QUANDO CONVÊNIO) -->
+			
+				<!-- TagFuncionalidade funcionalidade='PROPOSTA_HISTORICO_DETALHAR' testarProposta='true' resultado='false' -->
+
+			
+
+				<!-- CADASTRAR PROPOSTA -->
+			
+			
+			<!-- ENVIAR PARA INSTITUIÇÃO MANDATÁRIA -->
+			
+
+			<!-- RECUPERA PROPOSTA DA INSTITUIÇÃO MANDATÁRIA -->
+  			
+              
+			<!-- ENVIAR PARA ANÁLISE -->
+			
+
+				<!-- SUBMETER PARA AVALIAÇÃO PRELIMINAR -->
+				
+                
+				<!-- INICIAR ANÁLISE -->
+				
+                
+				<!-- ANALISAR PROPOSTA -->
+				
+                
+				<!-- ANALISAR PLANO DE TRABALHO -->
+				
+              
+				<!-- CANCELAR PROPOSTA -->
+				
+              
+
+                              
+				<!-- ESTORNAR CANCELAMENTO DE PROPOSTA --> 
+				 
+				
+			  <!-- ANALISAR CONVÊNIO -->
+              
+
+				<!-- SOLICITAR COMPLEMENTAÇÃO (APARENTEMENTE NÂO UTILIZADO) -->
+              
+              
+				<!-- SOLICITAR COMPLEMENTAÇÃO -->
+				
+              
+				<!-- CONCLUIR ALTERAÇÕES PARA PRORROGA -->
+	      
+               
+				<!-- REABILITAR PROPOSTA -->
+               
+
+				<!-- RESGATAR (REABILITAR PROPOSTA IMPEDIMENTO TÉCNICO) -->
+                
+                           
+				<!-- EDITAR REPASSES -->
+				
+                       
+				<!-- ALTERAR ANÁLISE DE PROPOSTA APROVADA (SO EXIBIDO SE O AMBIENTE FOR DESENVOLVIMENTO VIDE CONTROLEIMPL) -->
+				
+		
+				<!-- REANALISAR PROPOSTA (SO EXIBIDO SE O AMBIENTE FOR DESENVOLVIMENTO VIDE CONTROLEIMPL) -->
+				
+		
+				<!-- HISTÓRICO DE CONTRATAÇÃO (SO EXIBIDO SE O AMBIENTE FOR DESENVOLVIMENTO VIDE CONTROLEIMPL) -->
+				
+		
+<input type="hidden" id="idPropostaAtualHidden" value="2180395">
+<input type="hidden" id="idPropostaEfetivaHidden" value="2180395">
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </form> 
+    <script>
+		
+		function carregarTCE() {
+				var urlFinal = jQuery("input[name=urleTCE]").val();
+				var inadimplenteMotivo217 = jQuery("input[name=inadimplenteMotivo217").val();
+				var inadimplenteQualquerMotivo = jQuery("input[name=inadimplenteQualquerMotivo").val();
+				if (urlFinal != ''){
+					jQuery.ajax({ url: urlFinal, async: true, timeout: 5000})
+						.done(
+							function(data, textStatus, xhr){
+								if (xhr.status == '200'){
+									existeTCE = false;
+									if (data != null) {
+										tamanho = data.length;
+										for (i = 0; i < tamanho; i++){
+											if (data[i] != null) {
+												situacao = data[i].situacao;
+												if (encodeURI(situacao) != 'Exclu%C3%ADda'){
+													existeTCE = true;
+												}
+											}
+										}
+									}
+									if (existeTCE == true){
+										if (inadimplenteQualquerMotivo == 'false') {
+											jQuery("#msgInadimplenciaTce").show();
+											jQuery("#msgInadimplenciaLocal").hide();
+											jQuery("#msgTceIndisponivel").hide();
+										}
+									} else if (inadimplenteMotivo217 == 'true'){
+										jQuery("#msgInadimplenciaTce").hide();
+										jQuery("#msgInadimplenciaLocal").show();
+										jQuery("#msgTceIndisponivel").hide();
+									}
+								} else {
+									console.log('else');
+									erro = 'ERROR' + xhr.status + ';' + textStatus;
+									jQuery("#msgInadimplenciaTce").hide();
+									jQuery("#msgInadimplenciaLocal").hide();
+									jQuery("#msgTceIndisponivel").hide();
+								}
+							}
+						)
+						.fail(
+							function(xhr, textStatus, errorThrown ){
+								jQuery("#msgInadimplenciaTce").hide();
+								jQuery("#msgInadimplenciaLocal").hide();
+								jQuery("#msgTceIndisponivel").show();
+								erro = 'ERROR' + xhr.status + ';' + textStatus;  
+							} 
+						);
+				}
+		}
+		carregarTCE();
+	</script> 
+  </div>
+</div>
+
+
+<style>
+.modal {
+    display:    none;
+    position:   fixed;
+    z-index:    1000;
+    top:        0;
+    left:       0;
+    height:     100%;
+    width:      100%;
+    background: rgba( 255, 255, 255, .8 ) 
+                70% 70% 
+                no-repeat;
+}
+
+/* When the body has the loading class, we turn
+   the scrollbar off with overflow:hidden */
+body.modalConfirma {
+    overflow: hidden;   
+}
+
+/* Anytime the body has the loading class, our
+   modal element will be visible */
+body.modalConfirma .modal {
+    display: block;
+}
+
+.modalContent {
+    margin: auto;
+    width: 50%;
+    border: 1px solid #0099ff;
+    padding: 10px;
+    margin-top: 200px;
+    background-color: #EFEFEF;
+}
+</style>
+
+<div id="#modalConfirmacao" class="modal">
+	<div class="modalContent">
+		Tem certeza que deseja realizar o estorno do cancelamento da proposta?
+		<table>
+			<tbody>
+				<tr>					
+					<td class="FormLinhaBotoes" style="width:5px;">													                              
+						<input id="botaoModalSim" value="Sim" onmouseover="hints.show('Sim')" onmouseout="hints.hide()" type="button">
+					</td>
+					<td class="FormLinhaBotoes" style="width:5px;">													                              
+						<input id="botaoModalNao" value="Não" onmouseover="hints.show('Não')" onmouseout="hints.hide()" type="button">
+					</td>
+					<td>&nbsp;</td>
+				</tr>
+			</tbody>
+		</table>
+	</div>
+</div>
+ 
+
+
+ 
+
+        </div> <!-- /container -->            
+    
+
+
+
+</div></div></body></html>

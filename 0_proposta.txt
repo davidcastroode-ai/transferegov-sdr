@@ -1,0 +1,114 @@
+29:52
+28/10/2026 14:30-v.1.0.0-b4211876-
+Sair do Acesso Livre 
+Cadastro Ente/Entidade Programas Propostas Instrumentos Execução Cadastros Acomp. e Fiscalização TCE Verificação de Regularidade
+
+
+Acesso Livre    
+22000 - Ministério da Agricultura e Pecuária
+Instrumento 997273
+Dados da Proposta
+Plano de Trabalho
+Requisitos
+Execução Concedente
+Execução Convenente
+Prestação de Contas
+TCE
+
+
+Dados
+Programas
+Participantes
+Modalidade	
+Termo de Fomento	Situação no SIAFI	Enviado para o SIAFI - 2026NS000314
+
+Subtipo do Instrumento	Não possui subtipo
+Situação de Contratação Atual	
+Normal
+
+Situação	
+Em execução
+
+Empenhado	sim	Publicação	Publicado
+	
+Código do Instrumento  	997273 	Número da Proposta	005243/2026
+Número Interno do Órgão	005243/2026
+Número do Processo	21000.026338/2026-17
+
+Lista de Documentos Digitalizados
+Nome Arquivo	Data Upload		
+
+SEI_53749210_Termo_de_Fomento.pdf
+	
+25/06/2026
+	Baixar	
+
+SEI_53343536_Termo_de_Fomento.pdf
+	
+18/06/2026
+	Baixar	
+
+Proponente	
+CNPJ 20.409.373/0001-28 - ASSOCIACAO DOS PESCADORES E AQUICULTORES DE TRES MARIAS E ADJACENCIAS
+
+Fundamento Legal	LEI 13.019/2014
+Órgão	22000 - Ministério da Agricultura e Pecuária
+Justificativa
+Caracterização dos interesses recíprocos	O presente projeto visa fortalecer o cooperativismo e o associativismo na região, com o intuito de proporcionar agilidade nos atendimentos para os trabalhadores da pesca, e com isso, fortalecer a organização da base familiar desta entidade com melhores condições de trabalho e atendimento a todos os pescadores
+Público alvo	Colônias vinculados/pertencentes a Associação dos Pescadores e Aquicultores de Três Marias e Adjacências
+Problema a ser resolvido	Com este projeto, objetivamos melhorar a organização e eficiência das atividades pesqueiras, ofertar mais conforto, rapidez e mobilidade na execução das atividades aos pescadores das colônias associadas.
+Resultados esperados	Espera-se como resultados do projeto o fortalecimento das atividades associadas, o aumento da eficiência econômica dos pescadores, oferecendo a estas condições de qualificação e geração de renda, tornando-se empreendedores, superando suas condições educacionais, socioeconômicas, visando o resgate da dignidade e o sustento financeiro familiar.
+Relação entre a proposta e os objetivos e diretrizes do programa	O principal objetivo desta colaboração é promover a autonomia econômica dos pescadores familiares, por meio estruturação da rede de pescadores e aquicultores na região, permitindo melhores condições de trabalho e deslocamento para os eventos e reuniões da categoria. É sabido, que a implementação dessa proposta trará mais organização e eficiência nos atendimentos aos pescadores das colônias filiadas/associadas.
+Categorias	Equipamentos, Execução de Custeio
+Objeto do Instrumento	Estruturar a rede de pescadores e aquicultores de Três Marias e Adjacências
+Informações Complementares da Proposta	
+Arquivos Anexos - Informações Complementares da Proposta
+
+Nenhum registro foi encontrado.
+
+
+OBTV
+Opera por OBTV	Sim	Permite OBTV do tipo "OBTV para o Convenente"	
+Não
+
+
+Dados Bancários
+Banco	CAIXA ECONOMICA FEDERAL
+Agência	3813-0	Conta	5679155199
+Situação	Conta Regularizada	Data da Última Modificação	06/07/2026 00:00:00
+Descrição	A instituição bancária informou a regularização da conta do instrumento e a mesma está pronta para ser movimentada.
+
+Datas
+Data da Proposta	02/03/2026
+Data Assinatura	24/06/2026
+Instrumento publicado no DOU em	26/06/2026
+Data Início de Vigência	24/06/2026
+Data Término de Vigência Atual	24/06/2027
+Data Limite p/ Prestação de Contas	22/09/2027
+
+Valores
+R$ 495.770,65 Valor Global
+R$ 477.500,00 Valor de Repasse
+R$ 18.270,65 Valor da Contrapartida
+R$ 18.270,65 Valor Contrapartida Financeira
+R$ 0,00 Valor Contrapartida Bens e Serviços
+R$ 0,00 Valor de Rendimentos de Aplicação
+
+Anexos de comprovação da contrapartida
+
+Nome	
+
+Dec._contrapartida.pdf
+	Baixar Contrapartida
+
+
+Cronograma orçamentário do valor do repasse
+Deverão ser informados os valores que serão empenhados no orçamento de cada exercício.
+Ano	Valor (R$)
+
+2026
+	
+R$ 477.500,00
+Opções para exportar: CSV | Excel | XML | PDF
+
+ 	 
