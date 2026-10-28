@@ -11327,7 +11327,7 @@ window.addEventListener('scroll', () => { const p = document.querySelector('.msx
 (function(){ if(document.getElementById('msx-css')) return; const st = document.createElement('style'); st.id = 'msx-css'; st.textContent = `
 .msx{position:relative;min-width:0}.msx-b{display:flex;align-items:center;justify-content:space-between;gap:6px;width:100%;min-width:120px;font:inherit;font-size:12.5px;padding:6px 9px;border:1px solid #cfd8e3;border-radius:7px;background:#f7f9fb;color:#1d2b24;cursor:pointer;text-align:left}
 .msx-b span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.msx-b i{font-style:normal;color:#7a8794}.msx.on .msx-b{border-color:#1f4e79;box-shadow:0 0 0 2px #d7e4f1;color:#1f4e79;font-weight:600}
-.msx-pop{position:fixed;z-index:400;width:300px;max-width:calc(100vw - 16px);background:#fff;border:1px solid #c9d6e2;border-radius:10px;box-shadow:0 12px 30px rgba(0,0,0,.2);padding:8px;font:13px Barlow,'Segoe UI',Arial,sans-serif;color:#1d2b24}
+.msx-pop{position:fixed;z-index:9500;width:300px;max-width:calc(100vw - 16px);background:#fff;border:1px solid #c9d6e2;border-radius:10px;box-shadow:0 12px 30px rgba(0,0,0,.2);padding:8px;font:13px Barlow,'Segoe UI',Arial,sans-serif;color:#1d2b24}
 .msx-pop>input{width:100%;box-sizing:border-box;border:1px solid #cfd8e3;border-radius:7px;padding:6px 8px;font:inherit;margin-bottom:6px}
 .msx-l{max-height:260px;overflow:auto}.msx-l label{display:flex;align-items:center;gap:7px;padding:4px 4px;border-radius:5px;cursor:pointer}.msx-l label:hover{background:#eef5ff}.msx-l label.z{opacity:.45}
 .msx-l label span{flex:1;min-width:0}.msx-l em{font-style:normal;font-size:11px;color:#5a6672;background:#eef2f6;border-radius:8px;padding:0 6px}.msx-l p{margin:6px;color:#7a8794}

@@ -1,0 +1,24 @@
+name: Diagnóstico TED (planilhas da equipe)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  baixar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar as abas de TED da equipe e publicar na branch diag-ted
+        run: |
+          mkdir d && cd d
+          P="https://docs.google.com/spreadsheets/d/e/2PACX-1vRyLjeoCobYSRx7o3tiZ7fvj4-FhvKnGiSVxoA8l6yD2CqfJsUidxWN00jLuFpBMrFL6MesSdYuWnrb/pub"
+          for g in 195685963:ted_vigente 2018973768:ted_dispensa 1576888866:ted_pc 1791002980:ted_concluido; do
+            curl -sSL "$P?gid=${g%%:*}&single=true&output=csv" -o "${g##*:}.csv" || true; wc -c "${g##*:}.csv"; done
+          git init -q && git checkout -q -b diag-ted
+          git config user.name "robo-transferegov"; git config user.email "robo-transferegov@users.noreply.github.com"
+          git add -A && git commit -q -m "diag TED $(date -u '+%d/%m %H:%M')"
+          git push -q -f "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git" diag-ted
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
