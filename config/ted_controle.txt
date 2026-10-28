@@ -1,0 +1,6 @@
+# Abas do controle interno de TED da equipe (130010 e 420013), publicadas como CSV: nome|link
+# A data de fim de vigência real vem daqui (a API e o Tesouro não trazem as prorrogações)
+TED vigente|https://docs.google.com/spreadsheets/d/e/2PACX-1vRyLjeoCobYSRx7o3tiZ7fvj4-FhvKnGiSVxoA8l6yD2CqfJsUidxWN00jLuFpBMrFL6MesSdYuWnrb/pub?gid=195685963&single=true&output=csv
+Dispensa de TED|https://docs.google.com/spreadsheets/d/e/2PACX-1vRyLjeoCobYSRx7o3tiZ7fvj4-FhvKnGiSVxoA8l6yD2CqfJsUidxWN00jLuFpBMrFL6MesSdYuWnrb/pub?gid=2018973768&single=true&output=csv
+Prestação de contas|https://docs.google.com/spreadsheets/d/e/2PACX-1vRyLjeoCobYSRx7o3tiZ7fvj4-FhvKnGiSVxoA8l6yD2CqfJsUidxWN00jLuFpBMrFL6MesSdYuWnrb/pub?gid=1576888866&single=true&output=csv
+Aprovado / concluído|https://docs.google.com/spreadsheets/d/e/2PACX-1vRyLjeoCobYSRx7o3tiZ7fvj4-FhvKnGiSVxoA8l6yD2CqfJsUidxWN00jLuFpBMrFL6MesSdYuWnrb/pub?gid=1791002980&single=true&output=csv

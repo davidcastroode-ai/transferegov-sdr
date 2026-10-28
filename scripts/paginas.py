@@ -639,6 +639,17 @@ def ted(pasta):
     # ---- ajustes da equipe (aba TED ATUALIZADA): valem sobre a API e o Tesouro (a API guarda só a vigência original)
     pdata = lambda v: datetime.datetime.strptime(v[:10], '%d/%m/%Y').date() if re.match(r'\d{2}/\d{2}/\d{4}', v or '') else None
     aj = {x['ted'].upper(): x for x in ler(tp, 'ted_ajustes.csv')}
+    # controle interno direto (abas da equipe, 130010/420013): a data como a equipe digitou. Vale antes do Tesouro e da API,
+    # e antes do "Fim trazido do controle interno" da BASE TED (que chegava com 1 dia a menos)
+    ctlN, ctlP = {}, {}
+    for x in ler(tp, 'ted_controle.csv'):
+        if not pdata(x.get('fim')):
+            continue
+        if x.get('ted'):
+            ctlN.setdefault(x['ted'].upper(), x)
+        dp = re.sub(r'\D', '', x.get('processo') or '')
+        if len(dp) > 10:
+            ctlP.setdefault(dp, x)
     for o in linhas:
         so_t = o.get('org') == 'Só no Tesouro'
         o['fimApi'] = '' if so_t else o['fim']
@@ -767,8 +778,15 @@ def ted(pasta):
             o['ini'] = t['ini']
         if re.fullmatch(r'\d{4}', str(t.get('ano') or '')):
             o['ano'] = t['ano']
-        fimAj = (o.get('aj') or [''])[0]
-        fim = next((v for v in (fimAj, e.get('fim'), t.get('fim')) if pdata(v)), None)
+        ajL = o.get('aj') or ['', '', '']
+        manual = bool(ajL[0]) and not str(ajL[2] or '').startswith('Fim trazido do controle')
+        c_ = ctlN.get((o['n'] or o['cod'] or '').upper()) or ctlP.get(re.sub(r'\D', '', o.get('sei') or '')) if (o['n'] or o['cod'] or len(re.sub(r'\D', '', o.get('sei') or '')) > 10) else None
+        if c_:
+            o['fimCtl'], o['abaCtl'] = c_['fim'], c_['aba']
+            if not manual and o.get('aj') and ajL[0]:
+                o['aj'][0] = c_['fim']    # mostra na ficha a data do controle, não a cópia com 1 dia a menos
+        fimAj = ajL[0] if manual else ''
+        fim = next((v for v in (fimAj, o.get('fimCtl'), ajL[0], e.get('fim'), t.get('fim')) if pdata(v)), None)
         if fim and fim != o['fim']:
             o['fim'] = fim
             o['dias'] = (pdata(fim) - hoje).days
@@ -777,6 +795,25 @@ def ted(pasta):
                     o['fase'] = 'Em execução'
                 elif o['dias'] < 0 and o['fase'] == 'Em execução':
                     o['fase'] = 'Vigência vencida'
+    # TEDs que não passaram pelo bloco acima (só no Tesouro, só no controle interno, dispensas): fim também pelo controle da equipe
+    for o in linhas:
+        if o.get('org') not in ('Só no Tesouro', 'Só no controle interno', 'Recebido sem nº de TED'):
+            continue
+        ajL = o.get('aj') or ['', '', '']
+        if ajL[0] and not str(ajL[2] or '').startswith('Fim trazido do controle'):
+            continue
+        k_, dp_ = (o['n'] or o['cod'] or '').upper(), re.sub(r'\D', '', o.get('sei') or '')
+        c_ = (ctlN.get(k_) if k_ else None) or (ctlP.get(dp_) if len(dp_) > 10 else None)
+        if not c_ or c_['fim'] == o.get('fim'):
+            continue
+        o['fimCtl'], o['abaCtl'], o['fim'] = c_['fim'], c_['aba'], c_['fim']
+        if o.get('aj') and ajL[0]:
+            o['aj'][0] = c_['fim']
+        o['dias'] = (pdata(c_['fim']) - hoje).days
+        if o['fase'] == 'Vigência vencida' and o['dias'] >= 0:
+            o['fase'] = 'Em execução'
+        elif o['fase'] == 'Em execução' and o['dias'] < 0:
+            o['fase'] = 'Vigência vencida'
     for o in linhas:
         # órgão de quem enviou: o da API; sem ele, MAPA quando quem enviou é UG da SDR
         if not o.get('ord'):

@@ -547,9 +547,70 @@ def ler_aj(pasta_saida):
     return todas
 
 
+
+# ---- controle interno direto (abas da equipe): fim da vigência como a equipe digitou
+CONFIG_CTL = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'config', 'ted_controle.txt')
+
+
+def data_ctl(v):
+    """31/12/2026, 28/9/2026, 08/2028 (último dia do mês) ou número de série do Sheets (46387) -> dd/mm/aaaa"""
+    v = (v or '').strip()
+    m = re.match(r'(\d{1,2})/(\d{1,2})/(\d{4})', v)
+    if m:
+        return f'{int(m.group(1)):02d}/{int(m.group(2)):02d}/{m.group(3)}'
+    m = re.fullmatch(r'(\d{1,2})/(\d{4})', v)
+    if m and 1 <= int(m.group(1)) <= 12:
+        import calendar
+        a, mes = int(m.group(2)), int(m.group(1))
+        return f'{calendar.monthrange(a, mes)[1]:02d}/{mes:02d}/{a}'
+    m = re.fullmatch(r'(\d{5})(\.0+)?', v)
+    if m and 30000 < int(m.group(1)) < 80000:
+        import datetime as _dt
+        d = _dt.date(1899, 12, 30) + _dt.timedelta(days=int(m.group(1)))
+        return d.strftime('%d/%m/%Y')
+    return ''
+
+
+def ler_controle(pasta_saida):
+    linhas = [l.strip() for l in open(CONFIG_CTL, encoding='utf-8') if l.strip() and not l.strip().startswith('#')] if os.path.exists(CONFIG_CTL) else []
+    out = []
+    for l in linhas:
+        nome, url = l.split('|', 1)
+        try:
+            L = list(csv.reader(io.StringIO(baixar(url))))
+        except Exception as e:
+            print(f'Controle TED ({nome}): erro {e}', flush=True)
+            continue
+        ih = next((i for i, r in enumerate(L[:10]) if any(na(c) in ('PROCESSO',) for c in r)), None)
+        if ih is None:
+            continue
+        H = [re.sub(r'[^A-Z0-9 ]+', '', na(c)).strip() for c in L[ih]]
+        col = lambda *nomes: next((i for n_ in nomes for i, h in enumerate(H) if h == n_), None)
+        cN, cP, cF = col('NRO', 'NR', 'NRº', 'SIAFI', 'N TED'), col('PROCESSO'), col('FIM', 'FIM VIG', 'FIM VIGENCIA')
+        if cN is None:
+            cN = next((i for i, h in enumerate(H) if h.startswith('NR')), None)
+        for r in L[ih + 1:]:
+            g = lambda i: (r[i] if i is not None and i < len(r) else '').strip()
+            n, proc, fim_txt = re.split(r'[\s/]+', g(cN))[0].upper() if g(cN) else '', g(cP), g(cF)
+            if not (n or proc):
+                continue
+            out.append({'aba': nome, 'ted': n.replace('.0', '') if re.fullmatch(r'\d+\.0', n) else n, 'processo': proc, 'fim_txt': fim_txt, 'fim': data_ctl(fim_txt)})
+        print(f'Controle TED ({nome}): {len(L) - ih - 1} linhas', flush=True)
+    os.makedirs(os.path.join(pasta_saida, 'ted'), exist_ok=True)
+    with open(os.path.join(pasta_saida, 'ted', 'ted_controle.csv'), 'w', encoding='utf-8', newline='') as fh:
+        w = csv.DictWriter(fh, fieldnames=['aba', 'ted', 'processo', 'fim_txt', 'fim'])
+        w.writeheader()
+        w.writerows(out)
+    return out
+
+
 if __name__ == '__main__':
     ler(sys.argv[1] if len(sys.argv) > 1 else 'saida')
     ler_nc(sys.argv[1] if len(sys.argv) > 1 else 'saida')
     ler_pf(sys.argv[1] if len(sys.argv) > 1 else 'saida')
     ler_aj(sys.argv[1] if len(sys.argv) > 1 else 'saida')
     ler_ne(sys.argv[1] if len(sys.argv) > 1 else 'saida')
+    try:
+        ler_controle(sys.argv[1] if len(sys.argv) > 1 else 'saida')
+    except Exception as e:
+        print(f'Controle TED: falhou ({e})', flush=True)
