@@ -3428,8 +3428,9 @@ function evolucaoFicha(c, escopo, rE, rR, mesF){
 // crédito ligado às células (UG + ação + PI + fonte + natureza) dos empenhos da despesa
 const celulaDe = d => [d.ug, d.acao, d.pi, d.fonte, d.nd].join('|');
 function creditoDaDespesa(c, rank){
-  if(!DADOS.exe || !rank) return null;
-  const pos = posicao(DADOS.exe, rank);
+  const EXE = window.__DADOS_ANT ? window.__DADOS_ANT.exe : DADOS.exe;   // crédito da célula: só a base antiga tem as linhas sem nota de empenho
+  if(!EXE || !rank || !EXE.ranks || !EXE.ranks.length) return null;
+  const pos = posicao(EXE, Math.min(rank, EXE.ranks[0]));
   const minhas = pos.filter(d => d.ne && doContrato(d, c));
   const cels = new Set(minhas.map(celulaDe));
   if(!cels.size) return null;
@@ -3700,6 +3701,14 @@ const NOME_UG_CTRSDR = {'130010':'130010 · CEPLAC', '130141':'130141 · CGPI/SD
 const COR_UG_CTRSDR = {'130010':'#2e8a4f', '130141':'#1f4e79', '130255':'#d49a0f'};
 const CURTO_UG_CTRSDR = {'130010':'CEPLAC', '130141':'CGPI', '130255':'CGMAP'};
 let _ctrSdrExe = null;
+// Tesouro do painel (BASE TESOURO GERENCIAL, o mesmo das telas EXE/RAP): mapa por nota de empenho da posição mais recente
+let TES_CTR = null, _tesCtrP = null;
+const temTesPai = () => { try{ return window.parent!==window && typeof parent.__tesCtrMapa==='function'; }catch(e){ return false; } };
+function pedirTesCtr(depois){
+  if(TES_CTR || !temTesPai()) return;
+  if(!_tesCtrP) _tesCtrP = parent.__tesCtrMapa().then(r => { TES_CTR = r; _ctrSdrExe = null; if(API_CTR) API_CTR._sdr = null; }).catch(e => { TES_CTR = {erro: e.message}; });
+  if(depois) _tesCtrP.then(depois);
+}
 // pago (EXE + RAP) de um contrato num mês (rank = ano*100+mês): posição acumulada do mês menos a do mês anterior, pelas NEs ligadas na API
 function pagoNoMesCtr(id, r){
   const o = API_CTR && API_CTR.lista && API_CTR.lista.find(x => String(x.id) === String(id)); if(!o) return null;
@@ -3712,6 +3721,7 @@ function pagoNoMesCtr(id, r){
 }
 function execNEsCtr(o){
   // soma por contrato a posição mais recente do EXE e do RAP das NEs ligadas pela API
+  if(!_ctrSdrExe && TES_CTR && TES_CTR.mapa){ _ctrSdrExe = TES_CTR.mapa; }
   if(!_ctrSdrExe){ const m = new Map();
     try{ if(DADOS.exe && DADOS.exe.ranks && DADOS.exe.ranks.length) posicao(DADOS.exe, DADOS.exe.ranks[0]).forEach(d => { const k = d.ug+'|'+d.ne, x = m.get(k) || {emp:0,liq:0,pago:0,rapAberto:0,rapPago:0}; x.emp += d.emp||0; x.liq += d.liq||0; x.pago += d.pago||0; m.set(k, x); }); }catch(e){}
     try{ if(DADOS.rap && DADOS.rap.ranks && DADOS.rap.ranks.length) posicao(DADOS.rap, DADOS.rap.ranks[0]).forEach(d => { const k = d.ug+'|'+d.ne, x = m.get(k) || {emp:0,liq:0,pago:0,rapAberto:0,rapPago:0}; x.rapPago += d.pago||0; x.rapAberto += d.saldo||0; m.set(k, x); }); }catch(e){}
@@ -3884,7 +3894,10 @@ const VIEW_CTRSDR = {
   render(){
     if(!API_CTR){ carregarApiCtr(); return '<p class="estado">Lendo os contratos do Contratos.gov.br…</p>'; }
     if(API_CTR.erro) return `<p class="estado erro">Não foi possível ler a base do Contratos.gov.br (${esc(API_CTR.erro)}).</p>`;
-    if(!(DADOS.exe && DADOS.rap && DADOS.base) && !VIEW_CTRSDR._carregando){ VIEW_CTRSDR._carregando = 1; Promise.allSettled(['exe','rap','base'].map(dados)).then(() => { VIEW_CTRSDR._carregando = 2; if(VIEW && VIEW.id==='ctrsdr') render(); }); }
+    const pai = temTesPai();   // dentro do painel: empenhado/pago pelo Tesouro do painel; sozinho: bases EXE/RAP antigas
+    if(pai && !TES_CTR) pedirTesCtr(() => { if(VIEW && VIEW.id==='ctrsdr') render(); });
+    const precisa = pai ? ['base'] : ['exe','rap','base'];
+    if(!precisa.every(k => DADOS[k]) && !VIEW_CTRSDR._carregando){ VIEW_CTRSDR._carregando = 1; Promise.allSettled(precisa.map(dados)).then(() => { VIEW_CTRSDR._carregando = 2; if(VIEW && VIEW.id==='ctrsdr') render(); }); }
     _ctrSdrExe = null; API_CTR._sdr = null;
     const acaoSel = window.__ctrAcao || '';
     const base = filtrar(linhasCtrSdr()), rows = acaoSel ? base.filter(d => d.acoes.includes(acaoSel)) : base;
@@ -3893,7 +3906,7 @@ const VIEW_CTRSDR = {
     const prev = s(at,'prev'), emp = s(rows,'emp'), pago = s(rows,'pago'), rapA = s(rows,'rapAberto');
     const pct = (a,b) => b ? Math.round(100*a/b) : 0;
     const porUGn = UGS_CTRSDR.map(u => [u, at.filter(d => d.ugc===u).length]).filter(x => x[1]);
-    const atual = new Date(), carregando = VIEW_CTRSDR._carregando !== 2;
+    const atual = new Date(), carregando = temTesPai() ? !TES_CTR : !(DADOS.exe && DADOS.rap);
     // cartões
     const k4 = `<div class="cs-k4">
       <div class="cs-k dest"><span>Contratos ativos</span><b>${nI2(at.length)}</b><small>contratado <b style="font-size:15px;display:inline">${fmtC(s(at,'vg'))}</b> · ${rows.length - at.length} inativo(s)</small><div class="cs-ugs">${porUGn.map(([u,n]) => `<em>${CURTO_UG_CTRSDR[u]} ${n}</em>`).join('')}</div></div>
@@ -3941,7 +3954,8 @@ const VIEW_CTRSDR = {
       ['id','Contrato','fichaCtrApi'],['ano','Ano','i'],['ug','UG atual'],['uf','UF'],['forn','Fornecedor'],['cat','Categoria'],['sit','Situação'],['ini','Vig. início'],['fim','Vig. fim'],
       ['dias','Dias a vencer','i'],['vg','Valor global','n'],['postos','Postos','i'],['prev','Previsto 2026','n'],['emp','Empenhado 2026','n'],['pago','Pago 2026 (EXE+RAP)','n'],['rapAberto','RAP em aberto','n'],
       ['acaoTxt','Alertas','txt'],['gestorN','Gestor','txt'],['fiscTN','Fiscal técnico','txt'],['fiscAN','Fiscal administrativo','txt'],['lCompras','Contratos.gov.br','link'],['lPncp','PNCP','link'],['lEdital','Edital (PNCP)','link'],['ugo','UG de origem']], rows, {ordem:{campo:'ordCtr',dir:-1}, arquivo:'contratos-sdr'})}
-    <p class="rodape">Fonte: API do Contratos.gov.br (robô diário) · execução: EXE/RAP do Tesouro pelas notas de empenho ligadas ao contrato · previsto 2026: cronograma do Contratos.gov.br ou valor global distribuído pelos dias de vigência em 2026. UF: CEPLAC pela coluna "Local de atuação" da Base Contratos; 130141/130255 contadas no DF até conferir o local de entrega no Compras.</p>`;
+    ${temTesPai() && !(TES_CTR && TES_CTR.mapa) ? `<p class="dica" style="text-align:left">${TES_CTR && TES_CTR.erro ? '⚠ O Tesouro do painel não abriu ('+esc(TES_CTR.erro)+'): empenhado e pago usam as bases EXE/RAP antigas.' : 'Lendo o Tesouro do painel (empenhado e pago)…'}</p>` : ''}
+    <p class="rodape">Fonte: API do Contratos.gov.br (robô diário) · execução: ${TES_CTR && TES_CTR.mapa ? 'Tesouro do painel (BASE TESOURO GERENCIAL, '+esc(TES_CTR.rot)+')' : 'EXE/RAP do Tesouro'} pelas notas de empenho ligadas ao contrato · previsto 2026: cronograma do Contratos.gov.br ou valor global distribuído pelos dias de vigência em 2026. UF: CEPLAC pela coluna "Local de atuação" da Base Contratos; 130141/130255 contadas no DF até conferir o local de entrega no Compras.</p>`;
   }
 };
 async function abrirFichaCtrApi(id, origem){
@@ -3954,6 +3968,10 @@ async function abrirFichaCtrApi(id, origem){
   await carregarApiCtr();
   const o = API_CTR && API_CTR.lista.find(x => String(x.id) === String(id));
   if(!o){ el.innerHTML = '<div class="f-corpo"><p class="estado erro">Contrato não encontrado na base do Contratos.gov.br.</p></div>'; return; }
+  // empenhado, liquidado e pago mês a mês pelo Tesouro do painel (as bases antigas ficam só para o crédito da célula)
+  FICHA_TES = null;
+  if(temTesPai() && o.nes.length){ el.innerHTML = '<div class="f-corpo"><p>Lendo as notas de empenho no Tesouro do painel…</p></div>';
+    try{ const r = await parent.__tesNEsHist(o.nes); if(r && (r.exe.linhas.length || r.rap.linhas.length)) FICHA_TES = {id:o.id, ...r}; }catch(e){} }
   _ctrSdrExe = null;
   FICHA_API = o; FICHA_C = o.num; FICHA_ESC = 'AMBOS'; FICHA_MES = 0;
   el.innerHTML = fichaHTML(o.num, 'AMBOS', 0);
@@ -3968,7 +3986,16 @@ function doContrato(d, c){
   if(FICHA_API) return (FICHA_NES && FICHA_NES.has(d.ug+'|'+d.ne)) || (d.contrato===c && d.ug===FICHA_API.ug);
   return d.contrato===c || !!(FICHA_NES && FICHA_NES.has(d.ug+'|'+d.ne));
 }
+let FICHA_TES = null;
+// ficha do contrato da API com o Tesouro do painel: troca as bases EXE/RAP só enquanto monta a ficha
 function fichaHTML(c, escopo, mesF){
+  if(!(FICHA_API && FICHA_TES && FICHA_TES.id === FICHA_API.id)) return fichaHTML0(c, escopo, mesF);
+  const ant = {exe: DADOS.exe, rap: DADOS.rap}; window.__DADOS_ANT = ant;
+  DADOS.exe = FICHA_TES.exe; DADOS.rap = FICHA_TES.rap;
+  try{ return fichaHTML0(c, escopo, mesF).replace('fontes: Contratos.gov.br (API), PNCP, Tesouro Gerencial (EXE/RAP)', 'fontes: Contratos.gov.br (API), PNCP, Tesouro do painel (BASE TESOURO GERENCIAL)'); }
+  finally{ DADOS.exe = ant.exe; DADOS.rap = ant.rap; window.__DADOS_ANT = null; }
+}
+function fichaHTML0(c, escopo, mesF){
   { // contrato no Contratos.gov.br (para ligar as notas de empenho e mostrar postos, documentos e links)
     const b0 = DADOS.base ? DADOS.base.linhas.find(x => x.num===c) : null;
     const a0 = FICHA_API || (API_CTR && !API_CTR.erro ? apiDoContrato(b0, c) : null);
@@ -9989,7 +10016,8 @@ async function ctrExecTes(objs, rMes){
   await Promise.all(['exe','rap'].map(v => carregarVisao(v).catch(() => {})));
   const meses = Object.keys(MESES_TXT).map(Number).sort((a,b) => a-b), ult = meses[meses.length-1];
   if(!ult) return null;
-  const mQ = rMes ? rMes % 100 : null, quer = new Set([ult].concat(mQ ? [mQ, mQ-1].filter(x => x >= 1 && meses.includes(x)) : []));
+  // meses do Tesouro são ano*100+mês (202609); o anterior de janeiro não existe (posição acumulada do ano)
+  const mQ = rMes || null, antQ = m => m % 100 === 1 ? null : m - 1, quer = new Set([ult].concat(mQ ? [mQ, antQ(mQ)].filter(x => x && meses.includes(x)) : []));
   await Promise.all([...quer].flatMap(m => ['exe','rap'].map(v => garantirDetalhe(v, String(m)).catch(() => {}))));
   const neK = (ug, ne) => { const m = String(ne||'').toUpperCase().match(/\d{4}NE\d{6}/); return m ? String(ug||'').match(/\d{6}/)?.[0]+'|'+m[0] : ''; };
   const idx = {}, ix = (v, m) => { const k = v+m; if(idx[k]) return idx[k]; const M = new Map(); (DADOS[v].det[m]||[]).forEach(d => { const c = neK(d.ug, d.ne); if(!c) return; const x = M.get(c) || {}; MET_K[v].forEach(q => x[q] = (x[q]||0) + (+d[q]||0)); M.set(c, x); }); return idx[k] = M; };
@@ -9998,10 +10026,48 @@ async function ctrExecTes(objs, rMes){
   return objs.map(o => { if(!o) return null;
     const emp = soma(o, 'exe', ult, ['emp']), liq = soma(o, 'exe', ult, ['liq']), pagoE = soma(o, 'exe', ult, ['pago']), pagoR = soma(o, 'rap', ult, rapPago);
     const rapAb = soma(o, 'rap', ult, ['ppIns','ppRei','npIns','npRei']) - soma(o, 'rap', ult, ['ppCan','npCan','ppPag','npPag']);
-    let mes = null; if(mQ && meses.includes(mQ)){ const a = mQ - 1 >= 1 && meses.includes(mQ - 1) ? mQ - 1 : null;
+    let mes = null; if(mQ && meses.includes(mQ)){ const a = antQ(mQ) && meses.includes(antQ(mQ)) ? antQ(mQ) : null;
       const e = soma(o, 'exe', mQ, ['pago']) - (a ? soma(o, 'exe', a, ['pago']) : 0), r = soma(o, 'rap', mQ, rapPago) - (a ? soma(o, 'rap', a, rapPago) : 0); mes = {exe: e, rap: r, tot: e + r}; }
     return {emp, liq, pago: pagoE + pagoR, pagoE, pagoR, rapAb: Math.max(0, rapAb), mes, temMes: !mQ || meses.includes(mQ), ult}; });
 }
+// ===== Tesouro do painel para os contratos (tela Contratos SDR e ficha do contrato do app antigo) =====
+const neChaveTes = (ug, ne) => { const m = String(ne||'').toUpperCase().match(/\d{4}NE\d{6}/), u = String(ug||'').match(/\d{6}/); return m && u ? u[0]+'|'+m[0] : ''; };
+const rapSaldoTes = x => (TEM.rap.ppApg || TEM.rap.npApg) ? (x.ppApg||0) + (x.npApg||0) : Math.max(0, (x.ppIns||0)+(x.ppRei||0)+(x.npIns||0)+(x.npRei||0)-(x.ppCan||0)-(x.npCan||0)-(x.ppPag||0)-(x.npPag||0));
+// posição mais recente por nota de empenho: Map 'UG|2026NE000069' → {emp, liq, pago, rapPago, rapAberto}
+let _tesCtrMapa = null;
+window.__tesCtrMapa = () => _tesCtrMapa || (_tesCtrMapa = (async () => {
+  await Promise.all(['exe','rap'].map(v => carregarVisao(v).catch(() => {})));
+  const meses = Object.keys(MESES_TXT).map(Number).sort((a,b) => a-b), ult = meses[meses.length-1];
+  if(!ult) throw new Error('o Tesouro do painel não carregou');
+  await Promise.all(['exe','rap'].map(v => garantirDetalhe(v, String(ult)).catch(() => {})));
+  const M = new Map(), get = k => M.get(k) || (M.set(k, {emp:0, liq:0, pago:0, rapPago:0, rapAberto:0}), M.get(k));
+  (DADOS.exe.det[ult]||[]).forEach(d => { const k = neChaveTes(d.ug, d.ne); if(!k) return; const x = get(k); x.emp += d.emp||0; x.liq += d.liq||0; x.pago += d.pago||0; });
+  (DADOS.rap.det[ult]||[]).forEach(d => { const k = neChaveTes(d.ug, d.ne); if(!k) return; const x = get(k); x.rapPago += (d.ppPag||0)+(d.npPag||0); x.rapAberto += rapSaldoTes(d); });
+  return {mapa: M, mes: ult, rot: rotMes(ult)};
+})().catch(e => { _tesCtrMapa = null; throw e; }));
+// todos os meses de algumas notas de empenho, no formato das bases EXE/RAP do app antigo ({linhas, ranks}), para a ficha do contrato
+window.__tesNEsHist = async nes => {
+  await Promise.all(['exe','rap'].map(v => carregarVisao(v).catch(() => {})));
+  const quer = new Set(nes.map(e => neChaveTes(e.ug, e.ne)).filter(Boolean)), cods = [...new Set([...quer].map(k => k.split('|')[1]))];
+  const out = {exe: [], rap: []};
+  if(!cods.length) return {exe:{linhas:[], ranks:[]}, rap:{linhas:[], ranks:[]}, mes: ''};
+  for(const v of ['exe','rap']){ const D = DADOS[v];
+    const tarefas = D.fontes.filter(F => F.C.ne >= 0).flatMap(F => { const lotes = []; for(let i = 0; i < cods.length; i += 25) lotes.push(cods.slice(i, i+25));
+      return lotes.map(l => async () => { const r = await gqF(F, F.range, `select * where ${l.map(c => `${F.ids[F.C.ne]} contains '${c}'`).join(' or ')}`);
+        return r.rows.map(x => linhaObj(i => x[i], F)).filter(d => d.acao && d.mes && temValor(d, v) && !(F.ted && d.uo===UO_PROPRIA) && escopoSDR(d, F)
+          && (v !== 'rap' || !D.donoAcao[chaveDono(d)] || D.donoAcao[chaveDono(d)] === (F.gid||F.nome))); }); });
+    (await emLotes(tarefas, 6)).forEach(r => { if(r.ok) out[v].push(...r.v); }); }
+  const conv = {
+    exe: d => ({emp:d.emp||0, liq:d.liq||0, pago:d.pago||0}),
+    rap: d => { const pI = (d.ppIns||0)+(d.ppRei||0), nI = (d.npIns||0)+(d.npRei||0), pC = d.ppCan||0, nC = d.npCan||0, pP = d.ppPag||0, nP = d.npPag||0, nL = d.npLiq||0, saldo = rapSaldoTes(d);
+      return {inscrito:pI+nI, cancelado:pC+nC, liq:(pI-pC)+nL, pago:pP+nP, saldo, saldoTG:saldo, procInscrito:pI, npInscrito:nI, procCanc:pC, npCanc:nC, procPago:pP, npPago:nP, npLiq:nL, npALiq: d.npAlq || Math.max(0, nI-nC-nL)}; } };
+  const fmt = v => { const linhas = out[v].map(d => { const k = neChaveTes(d.ug, d.ne); if(!quer.has(k)) return null; const [ug, ne] = k.split('|');
+      return {rank:d.mes, chave:k, origem:v.toUpperCase(), ug, ne, ugNome:d.ugN, acao:d.acao, acaoNome:d.acaoN, pi:d.pi, fonte:d.fonte, fonteNome:d.fonteN, nd:d.nd, ndNome:'', ndDet:d.nd, ndDetNome:'',
+        fav:d.favN || d.fav, proc:d.proc, contrato:d.contr, form:d.form, tipo:d.tipo, depto:d.dep, ...conv[v](d)}; }).filter(Boolean);
+    return {linhas, ranks:[...new Set(linhas.map(d => d.rank))].sort((a,b) => b-a)}; };
+  const meses = Object.keys(MESES_TXT).map(Number).sort((a,b) => b-a);
+  return {exe: fmt('exe'), rap: fmt('rap'), mes: meses.length ? rotMes(meses[0]) : ''};
+};
 async function asResponderCtrLista(txt, ent){
   let L = (await asCtr()).filter(d => d.sit === 'Ativo'); const s = asN(txt), filt = []; let tema = 'contratos ativos';
   const w = await garantirAntigo();
