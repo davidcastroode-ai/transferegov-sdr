@@ -49,16 +49,20 @@ def linhas(z, nome):
 
 
 class Saida:
-    def __init__(self, pasta):
+    def __init__(self, pasta, anexar=False):
         self.pasta = pasta
         self.arq = {}
+        self.anexar = anexar   # refazer dias que falharam: acrescenta no fim dos arquivos que já existem
         os.makedirs(pasta, exist_ok=True)
 
     def gravar(self, nome, cab, rows):
         if nome not in self.arq:
-            f = open(os.path.join(self.pasta, nome), 'w', newline='', encoding='utf-8')
+            c = os.path.join(self.pasta, nome)
+            ja = self.anexar and os.path.exists(c) and os.path.getsize(c) > 0
+            f = open(c, 'a' if ja else 'w', newline='', encoding='utf-8')
             w = csv.writer(f)
-            w.writerow(cab)
+            if not ja:
+                w.writerow(cab)
             self.arq[nome] = (f, w, cab)
         f, w, c0 = self.arq[nome]
         for r in rows:
@@ -77,17 +81,20 @@ def idx(cab, *nomes):
     return None
 
 
-def despesas(ano, pasta):
-    out = Saida(pasta)
+def despesas(ano, pasta, dias=None):
+    out = Saida(pasta, anexar=dias is not None)
     d = datetime.date(ano, 1, 1)
     fim = min(datetime.date(ano, 12, 31), datetime.date.today() - datetime.timedelta(days=2))
+    lista = dias if dias is not None else []
+    if dias is None:
+        while d <= fim:
+            lista.append(d.strftime('%Y%m%d'))
+            d += datetime.timedelta(days=1)
     n_dias = n_falhas = 0
     tot = {'emp': 0, 'liq': 0, 'pag': 0, 'liq_ne': 0, 'pag_ne': 0}
-    while d <= fim:
-        dia = d.strftime('%Y%m%d')
-        dados = baixar(f'{CDN}despesas/{dia}_Despesas.zip')
-        d += datetime.timedelta(days=1)
-        time.sleep(0.6)
+    for dia in lista:
+        dados = baixar(f'{CDN}despesas/{dia}_Despesas.zip', tentativas=8 if dias is not None else 6)
+        time.sleep(0.6 if dias is None else 20)   # refazendo: devagar, o Portal recusa quando vem pedido demais em seguida
         if dados == 'falhou':
             n_falhas += 1
             out.gravar('falhas.csv', ['dia'], [[dia]])
@@ -172,8 +179,21 @@ def orcamento(ano, pasta):
     out.fechar()
 
 
+def falhas(ano, pasta):
+    """Refaz só os dias que falharam (lista em falhas.csv) e acrescenta nos arquivos do ano que já existem."""
+    c = os.path.join(pasta, 'falhas.csv')
+    dias = [l.strip() for l in open(c, encoding='utf-8').read().split('\n')[1:] if l.strip()] if os.path.exists(c) else []
+    log(f'falhas {ano}: {len(dias)} dias para refazer: {" ".join(dias)}')
+    if not dias:
+        return
+    os.replace(c, os.path.join(pasta, 'falhas_anteriores.csv'))
+    despesas(ano, pasta, dias)
+    if not os.path.exists(c):
+        open(c, 'w', encoding='utf-8').write('dia\n')
+
+
 if __name__ == '__main__':
     tipo, ano, pasta = sys.argv[1], int(sys.argv[2]), sys.argv[3]
     os.makedirs(pasta, exist_ok=True)
-    {'despesas': despesas, 'mensal': mensal, 'orcamento': orcamento}[tipo](ano, pasta)
+    {'despesas': despesas, 'mensal': mensal, 'orcamento': orcamento, 'falhas': falhas}[tipo](ano, pasta)
     open(os.path.join(pasta, f'log_{tipo}_{ano}.txt'), 'w').write('\n'.join(LOG))

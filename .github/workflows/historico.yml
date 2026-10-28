@@ -7,6 +7,10 @@ on:
         description: 'Anos (lista JSON)'
         default: '[2014,2015,2016,2017,2018,2019,2020,2021,2022,2023,2024,2025]'
         required: true
+      modo:
+        description: 'completo = baixa tudo · falhas = refaz só os dias que falharam'
+        default: 'completo'
+        required: true
 
 permissions:
   contents: write
@@ -25,11 +29,22 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
+      - name: Refazer dias que falharam
+        if: github.event.inputs.modo == 'falhas'
+        run: |
+          git fetch -q --depth 1 origin historico
+          mkdir -p saida/${{ matrix.ano }}
+          git archive FETCH_HEAD ${{ matrix.ano }} | tar -x -C saida
+          python scripts/historico_portal.py falhas ${{ matrix.ano }} saida/${{ matrix.ano }}
+          tail -n +2 saida/${{ matrix.ano }}/falhas.csv | wc -l
       - name: Despesas do ano (empenho, liquidação, pagamento)
+        if: github.event.inputs.modo != 'falhas'
         run: python scripts/historico_portal.py despesas ${{ matrix.ano }} saida/${{ matrix.ano }}
       - name: Execução e compras (mensais)
+        if: github.event.inputs.modo != 'falhas'
         run: python scripts/historico_portal.py mensal ${{ matrix.ano }} saida/${{ matrix.ano }}
       - name: Orçamento (anual)
+        if: github.event.inputs.modo != 'falhas'
         run: python scripts/historico_portal.py orcamento ${{ matrix.ano }} saida/${{ matrix.ano }}
       - uses: actions/upload-artifact@v4
         with:
