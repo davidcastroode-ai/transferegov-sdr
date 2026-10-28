@@ -3794,7 +3794,8 @@ function calcValoresCtr(o){
   // período atual: início do último termo de vigência (ou do contrato) já começado
   let iniP = o.ini;
   (o.his || []).forEach(h => { if(h.iniV && h.iniV <= hoje && (!iniP || h.iniV > iniP) && (/^contrato$/i.test(h.tipo) || /VIG[EÊ]NCIA/i.test(h.qual || '') || /prorrog/i.test(h.obs || ''))) iniP = h.iniV; });
-  const mT = meses(o.ini, o.fim), mP = meses(iniP, o.fim);
+  const mr = x => Math.abs(x - Math.round(x)) < 0.15 ? Math.round(x) : x;   // 25/04/2025 a 24/04/2030 = 60 meses
+  const mT = mr(meses(o.ini, o.fim)), mP = mr(meses(iniP, o.fim));
   // valor mensal
   let mensal = 0, base = '';
   const croT = (o.cro || []).reduce((s, c) => s + (c.v || 0), 0);
@@ -3815,7 +3816,16 @@ function calcValoresCtr(o){
   else if(!indet && cobre > 0){ mensal = o.vg / cobre; base = periodo ? 'valor global do período atual ('+dataCtrBR(iniP)+' a '+dataCtrBR(o.fim)+') ÷ '+Math.round(cobre)+' meses' : 'valor global ÷ '+Math.round(cobre)+' meses de vigência'; }
   else if(indet && parcelaOk && np > 1){ mensal = o.vg / np; base = 'vigência indeterminada: valor global ÷ '+np+' parcelas'; }
   if(periodo && !parcelaOk) conf.push('valor global tomado como do período atual ('+dataCtrBR(iniP)+' a '+dataCtrBR(o.fim)+'): contrato prorrogado e sem parcela que confirme');
-  if(croT && o.vg && Math.abs(croT - o.vg) > o.vg * 0.1) conf.push('cronograma soma '+fmtBRL(croT)+' para valor global de '+fmtBRL(o.vg)+' (cronograma duplicado ou desatualizado: não usado)');
+  // conferência pelas faturas: a fatura mensal típica (mediana das últimas 6) deve bater com o valor mensal calculado
+  const fts = (o.fat || []).filter(f => f.v > 0 && f.em).sort((x, y) => y.em - x.em).slice(0, 6).map(f => f.v).sort((x, y) => x - y);
+  const fMed = fts.length >= 3 ? fts[Math.floor(fts.length / 2)] : 0;
+  if(fMed && mensal && !compra){ const r = fMed / mensal;
+    if(r > 0.8 && r < 1.25) base += ' · confere com as faturas (~'+fmtBRL(fMed)+'/mês)';
+    else conf.push('faturas recentes de ~'+fmtBRL(fMed)+'/mês, diferente do valor mensal calculado ('+fmtBRL(mensal)+')'); }
+  // cronograma com a mesma parcela repetida e igual ao valor global: lançado errado (cada mês com o valor do contrato todo)
+  const croV = (o.cro || []).map(c => c.v), croRep = croV.length > 1 && croV.every(v => Math.abs(v - o.vg) < 0.01);
+  if(croRep) conf.push('cronograma com '+croV.length+' parcelas de '+fmtBRL(o.vg)+' (o valor global inteiro em cada mês): deveria ser o valor mensal'+(mensal ? ' (~'+fmtBRL(mensal)+')' : '')+'; o "valor acumulado" do Contratos.gov.br sai errado por isso');
+  else if(croT && o.vg && Math.abs(croT - o.vg) > o.vg * 0.1) conf.push('cronograma soma '+fmtBRL(croT)+' para valor global de '+fmtBRL(o.vg)+' (cronograma duplicado ou desatualizado: não usado)');
   // previsto 2026
   let prev = 0, comoPrev = '';
   if(compra){ comoPrev = 'compra: o previsto é o empenhado (o valor global é o teto)'; }
