@@ -3122,7 +3122,10 @@ function documentoPDF(o){
   </body></html>`;
 }
 function carimboExt(){ return `<div class="ext-data" style="font:11px Arial,sans-serif;color:#5a6672;text-align:right;margin:0 0 6px">Extraído em ${new Date().toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'})} · Painel SDR 2026</div>`; }
+// incorporado no Google Sites por URL: a aba nova não imprime; o painel monta o PDF e baixa (html2pdf)
+const PDF_PAI = () => { try{ return window.parent!==window && parent.__pdfEmbutido && parent.__pdfDireto; }catch(e){ return null; } };
 function abrirPDF(html, arquivo){
+  if(PDF_PAI()) return PDF_PAI()(html, arquivo);
   // dentro do Google Sites a impressão direta é bloqueada: abre numa aba própria (ou baixa o arquivo, se a aba for bloqueada)
   let w = null;
   try{ w = window.open('', '_blank'); }catch(e){}
@@ -3370,6 +3373,7 @@ function imprimirFicha(){
   // Dentro do Google Sites o painel roda num quadro que bloqueia a janela de impressão.
   // Por isso a ficha é aberta numa aba própria, que imprime / salva em PDF normalmente.
   const html = documentoFicha();
+  if(PDF_PAI()) return PDF_PAI()(html, 'ficha');
   let w = null;
   try{ w = window.open('', '_blank'); }catch(e){}
   if(w && w.document){ w.document.open(); w.document.write(html); w.document.close(); return; }
@@ -4434,7 +4438,7 @@ document.addEventListener('click', e => {
     REL_ESTADO.per = p ? p.value : REL_ESTADO.per; REL_ESTADO.filtros = f ? f.checked : true;
     g.disabled = true; g.textContent = 'Montando o relatório…';
     // abre a aba já no clique (o navegador só libera a aba nova dentro do clique) e escreve depois que os dados chegarem
-    let w = null; try{ w = window.open('', '_blank'); if(w && w.document) w.document.write('<p style="font:16px Arial;padding:30px">Montando o relatório…</p>'); }catch(x){}
+    let w = null; if(!PDF_PAI()) try{ w = window.open('', '_blank'); if(w && w.document) w.document.write('<p style="font:16px Arial;padding:30px">Montando o relatório…</p>'); }catch(x){}
     gerarRelatorio(REL_ESTADO.tipo, REL_ESTADO.per, REL_ESTADO.filtros).then(html => {
       const arq = 'relatorio-'+REL_ESTADO.tipo+'-'+REL_ESTADO.per;
       if(w && w.document){ w.document.open(); w.document.write(html); w.document.close(); } else abrirPDF(html, arq);
@@ -7680,6 +7684,7 @@ function imprimirTela(){
     </style></head>
     <body class="${document.body.className}" data-tema="${document.body.dataset.tema||''}"><p class="aviso-imp"><button onclick="window.print()">Salvar em PDF</button>Na janela de impressão, escolha <b>Salvar como PDF</b> em "Destino".</p>${carimboExt()}${el.outerHTML}
     <script>window.addEventListener('load', function(){ setTimeout(function(){ window.focus(); window.print(); }, 800); });<\/script></body></html>`;
+  if(PDF_PAI()) return PDF_PAI()(html, 'tela');
   let w = null;
   try{ w = window.open('', '_blank'); }catch(e){}
   if(w && w.document){ w.document.open(); w.document.write(html); w.document.close(); return; }
@@ -8677,7 +8682,40 @@ function documentoPDF(o){
   </body></html>`;
 }
 function carimboExt(){ return `<div class="ext-data" style="font:11px Arial,sans-serif;color:#5a6672;text-align:right;margin:0 0 6px">Extraído em ${new Date().toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'})} · Painel SDR 2026</div>`; }
+// Painel incorporado no Google Sites "por URL": o quadro do Sites bloqueia a impressão (window.print) da aba que abrimos.
+// Nesse caso o PDF é montado aqui mesmo (html2pdf) e baixado como arquivo .pdf.
+const EMBUTIDO = (() => { try{ return window.top !== window; }catch(e){ return true; } })();
+window.__pdfEmbutido = EMBUTIDO;
+function avisoPDF(txt, erro){
+  let a = document.getElementById('avisoPDF');
+  if(!a){ a = document.createElement('div'); a.id = 'avisoPDF'; a.style.cssText = 'position:fixed;right:18px;bottom:18px;z-index:99999;max-width:420px;background:#155a30;color:#fff;border-radius:12px;padding:12px 16px;font:14px Barlow,Arial,sans-serif;box-shadow:0 10px 30px rgba(0,0,0,.3)'; document.body.appendChild(a); }
+  a.style.background = erro ? '#b3261e' : '#155a30'; a.innerHTML = txt; a.hidden = false;
+  clearTimeout(a._t); if(!/Gerando/.test(txt)) a._t = setTimeout(() => { a.hidden = true; }, erro ? 15000 : 5000);
+}
+async function pdfDireto(html, arquivo){
+  avisoPDF('📄 Gerando o PDF… (alguns segundos)');
+  const limpo = String(html).replace(/<script>[^<]*window\.print\(\)[^<]*<\/script>/g, '').replace(/<div class="barra">[\s\S]*?<\/div>/, '').replace(/<p class="aviso-imp">[\s\S]*?<\/p>/g, '');
+  const fr = document.createElement('iframe'); fr.setAttribute('aria-hidden', 'true');
+  fr.style.cssText = 'position:fixed;left:-12000px;top:0;width:1120px;height:900px;border:0;visibility:hidden';
+  document.body.appendChild(fr);
+  try{
+    await new Promise(r => { fr.onload = r; fr.srcdoc = limpo; });
+    const d = fr.contentDocument, s = d.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+    await new Promise((ok, falha) => { s.onload = ok; s.onerror = () => falha(new Error('não carregou o gerador de PDF')); d.head.appendChild(s); });
+    const nome = String(arquivo || 'relatorio').replace(/[^\w-]+/g, '_') + '.pdf';
+    // as opções nascem dentro do quadro (o html2pdf confere "é Array?" no próprio quadro)
+    const op = fr.contentWindow.JSON.parse(JSON.stringify({margin: [7, 7, 9, 7], filename: nome, image: {type: 'jpeg', quality: 0.95},
+      html2canvas: {scale: 2, useCORS: true, backgroundColor: '#ffffff', windowWidth: 1120}, jsPDF: {unit: 'mm', format: 'a4', orientation: 'landscape'},
+      pagebreak: {mode: ['css', 'legacy'], before: '.pg', avoid: ['tr', '.ri-al', '.ri-k > div']}}));
+    await fr.contentWindow.html2pdf().set(op).from(d.body).save();
+    avisoPDF('✓ PDF baixado: '+esc(nome)+'<br><small>confira a pasta de downloads do navegador</small>');
+  }catch(e){ avisoPDF('Não foi possível gerar o PDF aqui dentro do Google Sites ('+esc(e.message)+').<br><small>Abra o painel direto em <b>davidcastroode-ai.github.io/transferegov-sdr</b> e gere de lá.</small>', true); }
+  finally{ setTimeout(() => fr.remove(), 1500); }
+}
+window.__pdfDireto = pdfDireto;
 function abrirPDF(html, arquivo){
+  if(EMBUTIDO) return pdfDireto(html, arquivo);
   // dentro do Google Sites a impressão direta é bloqueada: abre numa aba própria (ou baixa o arquivo, se a aba for bloqueada)
   let w = null;
   try{ w = window.open('', '_blank'); }catch(e){}
@@ -11265,7 +11303,7 @@ document.addEventListener('click', async e => {
   const c = e.target.closest('[data-rgcmp]'); if(c){ RG.cmp = c.dataset.rgcmp; rgJanela(); return; }
   const g = e.target.closest('[data-rggerar]'); if(g){
     g.disabled = true; g.textContent = 'Montando o relatório…';
-    let jan = null; try{ jan = window.open('', '_blank'); if(jan && jan.document) jan.document.write('<p style="font:16px Arial;padding:30px">Montando o relatório…</p>'); }catch(x){}
+    let jan = null; if(!EMBUTIDO) try{ jan = window.open('', '_blank'); if(jan && jan.document) jan.document.write('<p style="font:16px Arial;padding:30px">Montando o relatório…</p>'); }catch(x){}
     try{ const P = w.relPeriodo(RG.tipo, RG.per), html = RG.modelo === 'orc' ? await rgOrc(P) : RG.modelo === 'ctr' ? await rgCtr(P) : await rgTed(P);
       if(jan && jan.document){ jan.document.open(); jan.document.write(html); jan.document.close(); } else abrirPDF(html, 'relatorio-'+RG.modelo+'-'+RG.per);
       f.hidden = true; }
