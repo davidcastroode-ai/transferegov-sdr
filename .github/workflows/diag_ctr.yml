@@ -1,0 +1,24 @@
+name: Diagnóstico Contratos (campos do histórico)
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  sondar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar exemplos da API e publicar na branch diag-ctr
+        run: |
+          mkdir d && cd d
+          B=https://contratos.comprasnet.gov.br/api/contrato
+          for i in 38856 21014 1017443 18731; do
+            for k in historico itens cronograma; do curl -sS -m 90 -A "Mozilla/5.0 painel-sdr-mapa" "$B/$i/$k" -o "${i}_${k}.json" || true; done
+          done
+          curl -sS -m 90 -A "Mozilla/5.0 painel-sdr-mapa" "$B/ug/130010" -o ug130010.json || true
+          ls -la
+          git init -q && git checkout -q -b diag-ctr
+          git config user.name "robo-transferegov"; git config user.email "robo-transferegov@users.noreply.github.com"
+          git add -A && git commit -q -m "diag ctr"
+          git push -q -f "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git" diag-ctr
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
