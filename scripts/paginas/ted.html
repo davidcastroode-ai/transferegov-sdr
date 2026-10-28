@@ -177,7 +177,7 @@ function ficha(o){
    ${fichaNE(o, t)}
    ${o.met.length?`<details><summary>Metas (${o.met.length})</summary>${t(['Meta','Descrição','Qtd','Período'], o.met.map(x => `<tr><td>${esc(x[0])}</td><td>${esc(x[1])}</td><td class="n">${esc(x[2])} ${esc(x[3])}</td><td>${esc(x[5])} a ${esc(x[6])}</td></tr>`).join(''))}</details>`:''}
    ${o.par.length?`<details><summary>Análises e pareceres (${o.par.length})</summary>${t(['Tipo','Resultado','Situação','Justificativa'], o.par.map(x => `<tr><td>${esc(x[0])}</td><td>${esc(sitN(x[1]))||'—'}</td><td>${esc(sitN(x[2]))}</td><td class="just">${esc(x[3])}</td></tr>`).join(''))}</details>`:''}
-   ${TES.carregado?`<details><summary>Tesouro Gerencial · contas e diferenças</summary>${fichaTes(o)}</details>`:''}
+   ${TES.carregado?`<details><summary>Tesouro Gerencial · valor, repasse e comprovação</summary>${fichaTes(o)}</details>`:''}
   </div></div>`;
 }
 // a página fica dentro de um iframe que cresce com o conteúdo: a janela da ficha abre na parte que a pessoa está vendo
@@ -218,12 +218,23 @@ function fichaNE(o, t){
 function fichaTes(o){
   if(!TES.carregado) return '';
   if(!o.tes) return `<div class="sub">Tesouro Gerencial (SIAFI)</div><p class="just">${o.n?'TED '+esc(o.n)+' não aparece no relatório do Tesouro carregado.':'Plano ainda sem nº de TED: não tem como estar no Tesouro.'}</p>`;
-  const t = o.tes, v = x => x===null||x===undefined ? '—' : R$(x);
-  return `<div class="sub">Tesouro Gerencial (SIAFI) · relatório de ${esc(TES.gerado_em)}</div>
-   <div class="fg" style="margin-top:4px"><div><span>A comprovar</span>${v(t.aComp)}</div><div><span>Comprovado</span>${v(t.comp)}</div><div><span>A repassar</span>${v(t.aRep)}</div><div><span>Repassado</span>${v(t.rep)}</div>
-   <div><span>Descentralizado</span>${v(t.nc)}</div><div><span>Firmado</span>${v(t.fir)}</div><div><span>Devolvido / anulado</span>${v(t.dev)}</div><div><span>UG emitente → favorecida</span>${esc(t.ugE)||'—'} → ${esc(t.ugF)||'—'}</div></div>
-   ${o.dif.length?`<table class="mini"><tr><th>Diferença</th><th class="n">API</th><th class="n">Tesouro</th><th class="n">Tesouro − API</th></tr>${o.dif.map(d => `<tr><td>${esc(d[0])}</td><td class="n">${fm(d[1])}</td><td class="n">${fm(d[2])}</td><td class="n" style="color:#c0392b">${fm(d[2]-d[1])}</td></tr>`).join('')}</table>`:''}
-   ${t.contas.length?`<table class="mini"><tr><th>Conta / coluna do relatório</th><th class="n">Valor</th></tr>${t.contas.map(c => `<tr><td>${esc(c[0])}</td><td class="n">${R$(c[1])}</td></tr>`).join('')}</table>`:''}`;
+  const t = o.tes, v = x => x===null||x===undefined ? '—' : R$(x), z = x => !x || Math.abs(x) < 0.005;
+  const fir = t.fir || 0, rep = t.rep || 0, pc = fir ? Math.min(100, rep/fir*100) : 0;
+  const caixa = (n, rot, val, sub, cor) => `<div style="flex:1;min-width:150px;background:${cor ? cor[0] : '#fff'};border:1px solid ${cor ? cor[0] : '#dfe7ee'};border-radius:10px;padding:8px 12px"><div style="font-size:11.5px;color:${cor ? cor[1] : '#5f6f7a'}">${n} · ${rot}</div><b style="font-size:16px;color:${cor ? cor[1] : '#1f2d3a'}">${val}</b>${sub ? `<div style="font-size:11.5px;color:${cor ? cor[1] : '#5f6f7a'}">${sub}</div>` : ''}</div>`;
+  const seta = '<span style="align-self:center;color:#7b8790;font-size:18px">→</span>';
+  const NOME_CAMPO = {'Repassado (PF)':'repassado', 'Firmado':'valor firmado', 'Descentralizado (NC)':'descentralizado'};
+  const alertas = (o.dif||[]).map(d => `<div style="border-left:4px solid #c0392b;background:#fdf1ef;padding:6px 10px;margin:8px 0;border-radius:0 8px 8px 0;font-size:13px"><b>A API do Transferegov está diferente do Tesouro · ${esc(NOME_CAMPO[d[0]] || d[0])}</b><br>API: ${R$(d[1])} · Tesouro: ${R$(d[2])} · diferença de ${R$(Math.abs(d[2]-d[1]))}. Vale o Tesouro: ${d[2] > d[1] ? 'a API está atrasada ou registra só parte dos lançamentos' : 'a API tem valor que o Tesouro não confirma (lançamento cancelado, estornado ou ainda não efetivado no SIAFI)'}.</div>`).join('');
+  const EXPL = {'113823800':'adiantamento do TED (o que já saiu para a unidade)', '812210202':'a comprovar pela unidade', '812210203':'comprovado', '812210201':'a repassar', '812210204':'a aprovar', '812210205':'aprovado', '812210206':'valor não repassado / devolvido', '812210211':'concluído', '799913600':'controle do TED (valor firmado)', '899913600':'controle do TED (valor firmado)'};
+  const contas = (t.contas||[]).map(c => { const k = (String(c[0]).match(/^(\d{9})/)||[])[1]; return `<tr><td>${esc(c[0])}${k && EXPL[k] ? `<small style="display:block;color:#7b8790">${esc(EXPL[k])}</small>` : ''}</td><td class="n">${R$(c[1])}</td></tr>`; }).join('');
+  return `<div class="sub">Tesouro Gerencial (SIAFI) · posição de ${esc(TES.gerado_em)}</div>
+   <div style="display:flex;gap:6px;flex-wrap:wrap;margin:6px 0">
+     ${caixa(1, 'Valor do TED (firmado)', v(t.fir), !z(t.nc) && Math.abs((t.nc||0) - fir) > 0.5 ? 'descentralizado (NC): '+v(t.nc) : '')}${seta}
+     ${caixa(2, 'Repassado à unidade', v(t.rep), (fir ? pc.toFixed(pc % 1 ? 1 : 0).replace('.', ',')+'% · ' : '')+'falta repassar '+v(t.aRep||0), z(t.aRep) && !z(t.rep) ? ['#e9f5ee','#1e6b45'] : null)}${seta}
+     ${caixa(3, 'Ainda a comprovar', v(t.aComp||0), 'comprovado: '+v(t.comp||0), !z(t.aComp) ? ['#fbf1dc','#7a4b00'] : ['#e9f5ee','#1e6b45'])}
+   </div>
+   <p style="margin:2px 0;color:#5f6f7a;font-size:12.5px">UG que enviou → UG que recebeu: ${esc(t.ugE)||'—'} → ${esc(t.ugF)||'—'} · devolvido / anulado: ${z(t.dev) ? 'nenhum' : v(t.dev)}</p>
+   ${alertas}
+   ${contas ? `<details style="margin-top:6px"><summary style="cursor:pointer;color:#1f4e79">Contas contábeis do SIAFI (para conferência)</summary><p style="font-size:12px;color:#5f6f7a;margin:4px 0">São as contas de onde saem os números acima.</p><table class="mini"><tr><th>Conta / coluna do relatório</th><th class="n">Valor</th></tr>${contas}</table></details>` : ''}`;
 }
 function tabela(id, L, cols, porPag){
   const p = PAG[id]||0, ini = p*porPag, pg = L.slice(ini, ini+porPag), nc = cols.length;
