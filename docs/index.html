@@ -3693,13 +3693,10 @@ function ctrbRender(){
     <div class="cb-exp">${EXP.map(([k, r]) => `<button type="button" data-ctrbexp="${k}" class="${ex === k ? 'on' : ''}">${r}</button>`).join('')}${ex ? '<button type="button" data-ctrbexp="" class="x">Fechar ✕</button>' : ''}</div>${corpoExp}</section>`;
   // distribuição da equipe (menu Opções) · por responsável (coluna Z da Base Contratos)
   let equipe = '';
-  if(CTRB.equipe){
-    const totA = soma(rows,'anual') || 1;
-    const grupos = agrupar(rows.map(d => Object.assign(Object.create(d), {respG: d.resp || '(sem responsável)'})), 'respG', ['anual']).sort((a,b) => b[1]._n - a[1]._n);
-    equipe = `<section class="card grafico cb-eq-s"><h3>Distribuição da equipe</h3><p class="dica">por responsável (coluna "Responsável CEPLAC" da Base Contratos) · em construção: os próximos indicadores entram quando a equipe for estruturada</p>
-      <div class="cb-eq">${grupos.map(([n, v]) => { const l = rows.filter(d => (d.resp || '(sem responsável)') === n), v90 = l.filter(d => normAccent(d.cat) === 'ATIVO' && d.dias !== null && d.dias <= 90).length;
-        return `<div${ctrbReg('eq|'+n, 'Responsável: '+n, l)} style="border-top-color:${v90 ? '#c62828' : 'var(--s1)'}"><b>${esc(n)}</b><strong>${l.length}<small> contrato(s)</small></strong>
-          <span>Valor anual: <b>${fmtC(v.anual)}</b> (${Math.round(100*v.anual/totA)}%)</span><span class="${v90 ? 'cb-r' : ''}">Vencem em até 90 dias: <b>${v90}</b></span><span>Pendências: <b>0</b></span></div>`; }).join('')}</div></section>`;
+  if(CTRB.equipe){   // estrutura reservada: os dados entram quando o script da equipe na Base Contratos estiver pronto
+    equipe = `<section class="card grafico cb-eq-s"><h3>Distribuição da equipe</h3><p class="dica">em construção · os dados entram quando a equipe for cadastrada na Base Contratos CEPLAC</p>
+      <div class="cb-eq">${[1,2,3,4].map(n => `<div style="cursor:default"><b>Responsável ${n}</b><strong>0<small> contrato(s)</small></strong>
+        <span>Valor anual: <b>0,00</b> (0%)</span><span>Vencem em até 90 dias: <b>0</b></span><span>Pendências: <b>0</b></span></div>`).join('')}</div></section>`;
   }
   // conferência com o Contratos.gov.br (mantida; cada número abre a lista)
   const conf = secaoConfApi(rows);
