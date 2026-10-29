@@ -11552,7 +11552,9 @@ async function relExtrasParc(html, P, usarFiltros){
 // CONTRATOS (Contratos.gov.br + Tesouro) · esboço aprovado em 26/10/2026 · padrão: só a CEPLAC (130010), que a equipe controla
 // =====================================================================
 RG.cats = [];
-async function rgCarregarCtr(){ const w = await garantirAntigo(); try{ await w.carregarApiCtr(); }catch(e){} let L = []; try{ L = w.linhasCtrSdr() || []; }catch(e){} AS.dados.ctr = L; return L; }
+async function rgCarregarCtr(){ const w = await garantirAntigo(); try{ await w.carregarApiCtr(); }catch(e){}
+  try{ w.pedirTesCtr(); const pr = w.eval('_tesCtrP'); if(pr) await pr; }catch(e){}   // espera o Tesouro (empenhado e pago do ano): sem ele o relatório saía com o ano zerado
+  let L = []; try{ L = w.linhasCtrSdr() || []; }catch(e){} AS.dados.ctr = L; return L; }
 async function rgCtr(P){
   const w = rgW(), L0 = await rgCarregarCtr(); if(!L0.length) throw new Error('os contratos do Contratos.gov.br não carregaram');
   const ugs = RG.ugs.length ? RG.ugs : ['130010'], L = L0.filter(d => ugs.includes(d.ugc) && (!RG.cats.length || RG.cats.includes(d.cat)));
