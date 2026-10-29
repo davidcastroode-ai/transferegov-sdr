@@ -4766,6 +4766,7 @@ function abrirFichaInst(num, origem){
     <div class="fi-cab"><small>Ficha de instrumento celebrado · ${esc((tipoInst(d)||['Convênios e Termos de Fomento'])[0])}</small>
       <h2>${esc(d.num)} ${tagTipoInst(d).replace('font-size:10px','font-size:13px')}</h2>
       <p>Autor: <b>${esc(d.parl||'—')}</b> · Proponente: <b>${esc(d.proponente)}</b></p>
+      <p style="font-size:11px;opacity:.75;margin:2px 0 6px">Dados: ${tgFonte()}${d.ajPT ? ' · ajuste de PT: '+esc(d.ajPT)+' (conferido no Acesso Livre do Transferegov 2×/dia)' : ''}</p>
       ${pillStatus(status)}${d.alerta?` <span class="st-pill" style="background:#c0392b">⚠ ${esc(d.alerta)}</span>`:''}${d.carteira && d.carteira!=='SDR'?` <span class="st-pill" style="background:#1a7f9c" title="Todas as notas de empenho deste instrumento foram emitidas pela UG 110008 (pesca)">🐟 ${esc(d.carteira)}</span>`:''}
       <div class="fi-caixas"><div>Exercício<b>${esc(d.ano||'—')}</b></div><div>UF<b>${esc(d.uf||'—')}</b></div><div>Modalidade<b>${esc(d.mod||'—')}</b></div><div>Emenda<b>${esc(d.emenda||'—')}</b></div><div title="${esc(ugNome(ugInst(d)))}">UG executora<b id="fi-ug">${esc(ugInst(d)||'…')}</b></div></div>
       <div class="fi-acoes">${d.link ? `<a class="fi-link" href="${esc(d.link)}" target="_blank" rel="noopener" title="Abrir o instrumento no Transferegov">Instrumento ↗</a>` : ''}${d.linkProg ? `<a class="fi-link" href="${esc(d.linkProg)}" target="_blank" rel="noopener" title="Abrir o programa no Transferegov">Programa ↗</a>` : ''}<button type="button" onclick="imprimirFicha()">📄 Extração em PDF</button><button type="button" data-fechaficha aria-label="Fechar a ficha">✕</button></div>
@@ -10603,6 +10604,22 @@ function riFornecedor(c){
   box.innerHTML = `<div class="ri-sg">Instrumentos em que ${esc(f.n)} recebeu pagamento</div>` + L.map(r => `<div class="ri-si" data-rinr="${esc(r[0])}"><b>${esc(r[0])}</b> · proposta ${esc(r[1]||'—')} · ${esc(r[7]||'')}<small>${esc(r[2]||'')} · ${esc(r[4]||'')}/${esc(r[5]||'')} · ${esc(r[6]||'')}</small></div>`).join('');
   box.hidden = false;
 }
+// Acesso Livre (robô "acesso_livre", branch abas): situação do momento de ajustes do PT, TAs (e solicitações), prorrogas e apostilamentos
+let _riAL = null, _riCarga = null;
+const riAL = () => _riAL || (_riAL = fetch('https://raw.githubusercontent.com/davidcastroode-ai/transferegov-sdr/abas/acesso_livre.json?d='+Date.now(), {cache:'no-store'}).then(r => r.ok ? r.json() : {}).catch(() => ({})));
+const riCarga = () => _riCarga || (_riCarga = fetch(RAW_DADOS+'atualizacao.json?d='+Date.now(), {cache:'no-store'}).then(r => r.ok ? r.json() : {}).then(j => j.data_carga || '').catch(() => ''));
+const riNrAj = s => { const m = String(s||'').match(/0*(\d+)\s*\/\s*(\d{4})/); return m ? (+m[1])+'/'+m[2] : String(s||'').trim(); };
+function riAplicarAL(d, A, carga){
+  d.carga = carga || '';
+  if(!A || !A.abas){ d.al = A && A.erro ? {erro: A.erro, lido: A.tentativa} : null; return; }
+  const tab = (aba, teste) => (A.abas[aba] || []).filter(teste || (() => true)).flatMap(x => x.rows.map(r => Object.fromEntries(x.ths.map((h, k) => [h || ('c'+k), r[k] || '']))));
+  const aj = tab('ajustes'), sol = tab('tas', x => !x.ths.includes('Tipo')), tas = tab('tas', x => x.ths.includes('Tipo')), apo = tab('apostilamentos'), pro = tab('prorrogas');
+  d.al = {lido: A.lido, aj, sol, tas, apo, pro};
+  // ajustes do PT: a situação do Acesso Livre vale sobre a dos dados abertos (que pode estar dias atrasada)
+  const sitAL = new Map(aj.map(x => [riNrAj(x['Número']), x['Situação']]));
+  d.aj = (d.aj || []).map(a => sitAL.has(riNrAj(a[0])) ? [a[0], a[1], sitAL.get(riNrAj(a[0]))] : a);
+  aj.forEach(x => { if(!d.aj.some(a => riNrAj(a[0]) === riNrAj(x['Número']))) d.aj.push([x['Número'], '', x['Situação']]); });
+}
 async function riAbrir(nr){
   RI.nr = String(nr).trim(); RI.d = null; RI.erro = ''; RI.aba = 'resumo';
   const box = document.getElementById('riSug'); if(box) box.hidden = true;
@@ -10611,7 +10628,8 @@ async function riAbrir(nr){
   try{ const k = riNK(RI.nr).slice(-3).padStart(3, '0');
     const P = RI.pedacos[k] || (RI.pedacos[k] = await riGz(RAW_DADOS+'relatorio/'+k+'.json.gz'));
     RI.d = P[RI.nr] || P[Object.keys(P).find(x => riNK(x) === riNK(RI.nr))];
-    if(!RI.d) RI.erro = 'Instrumento '+RI.nr+' não encontrado nos dados do Transferegov das UGs da SDR.'; }
+    if(!RI.d) RI.erro = 'Instrumento '+RI.nr+' não encontrado nos dados do Transferegov das UGs da SDR.';
+    else { const [A, carga] = await Promise.all([riAL(), riCarga()]); riAplicarAL(RI.d, A[RI.d.i && RI.d.i.nr_instrumento || RI.nr] || A[RI.nr], carga); } }
   catch(e){ RI.erro = e.message; }
   desenharRelInst();
 }
@@ -10635,6 +10653,8 @@ function riCalc(d){
   if(emExec && des > 0 && saldo > des*0.3) al.push(['a', 'Saldo alto em conta: '+riR(saldo), riP(saldo, des)+' do que foi desembolsado ainda não foi usado pelo convenente.']);
   if(emExec && prazoPct !== null && glob > 0 && pag/glob < prazoPct - 0.25) al.push(['a', 'Execução financeira abaixo do tempo decorrido', 'Pago '+riP(pag, glob)+' do valor global com '+riP(prazoPct, 1)+' do prazo já passado.']);
   if(/SUSPENSIVA/i.test(i.situacao_contratacao||'')) al.push(['a', 'Em cláusula suspensiva', i.clausula_suspensiva_ate ? 'Até '+i.clausula_suspensiva_ate+'.' : '']);
+  const solAb = (d.al && d.al.sol || []).filter(x => !/aprovad|conclu|cancelad|rejeitad|indeferid|publicad|assinad/i.test(x['Situação']||''));
+  if(solAb.length) al.push(['a', 'Solicitação de alteração (TA) '+solAb.map(x => x['Número']).join(', ')+' · '+solAb.map(x => x['Situação']).join(', '), solAb.map(x => x['Objeto']).join(' · ').slice(0, 300)]);
   if(ajAberto.length) al.push(['a', 'Ajuste de plano de trabalho em aberto', ajAberto.map(a => 'nº '+a[0]+' de '+a[1]+' ('+a[2]+')').join('; ')]);
   const prox = al.some(a => /Prestação de contas atrasada/.test(a[1])) ? 'Notificar o convenente para apresentar a prestação de contas e registrar a inadimplência se não houver resposta.'
     : al.some(a => /Vigência vencida/.test(a[1])) ? 'Verificar aditivo de prazo pendente ou encaminhar para prestação de contas.'
@@ -10643,7 +10663,7 @@ function riCalc(d){
     : al.some(a => /Saldo alto|abaixo do tempo/.test(a[1])) ? 'Cobrar do convenente a execução dos recursos já recebidos.'
     : emExec ? 'Sem alerta automático: acompanhar a execução e o prazo de vigência.' : '';
   const C0 = {ajAberto, hoje}, conv = riConvenente(d, C0);
-  if(conv.pend.length) al.push(['a', conv.pend.length+' registro(s) do convenente aguardando análise', 'Processo de execução, contrato ou ajuste do plano de trabalho enviado pelo convenente e ainda sem aceite da área. Veja a página 4.']);
+  if(conv.pend.length) al.push(['a', conv.pend.length+' registro(s) do convenente aguardando análise', 'Processo de execução, contrato ajuste do plano de trabalho ou solicitação de alteração (TA) enviados pelo convenente e ainda sem aceite da área. Veja a página 4.']);
   return {i, glob, rep, des, ades, saldo, contra, pag, receb, ini, fim, lim, fimOr, diasFim, prazoPct, ultDes, diasSemDes, sit, emExec, al, prox, ajAberto, hoje, conv};
 }
 // ---------- páginas ----------
@@ -10706,6 +10726,8 @@ function riPagResumo(d, C){
       <tr><td>Termos aditivos</td><td><b>${ta.length || riNum(i.qtd_aditivos) || 0}</b>${C.fimOr && C.fim && C.fimOr.getTime() !== C.fim.getTime() ? ` · vigência de ${riDt(C.fimOr)} → <b>${riDt(C.fim)}</b>` : ''}${glOr && Math.abs(glOr - C.glob) > 0.01 ? ` · valor global de ${riR(glOr)} → ${riR(C.glob)}` : ''}${ta.length ? '<br><small>'+ta.map(t => esc((t[0]||'')+' '+(t[1]||'')+' ('+(t[2]||'')+')')).join(' · ')+'</small>' : ''}</td></tr>
       <tr><td>Prorrogações de ofício</td><td>${pr.length ? pr.map(p => `${esc(p[0])}: até ${esc(p[2])} (${esc(p[3])} dias)`).join(' · ') : 'nenhuma'}</td></tr>
       <tr><td>Ajustes do plano de trabalho</td><td><b>${aj.length || riNum(i.qtd_ajustes_pt) || 0}</b>${i.ultimo_ajuste_pt ? ' · último em '+esc(i.ultimo_ajuste_pt) : ''} · ${C.ajAberto.length ? `<b style="color:#b8650a">${C.ajAberto.length} em aberto</b>` : 'nenhum em aberto'}</td></tr>
+      ${d.al && d.al.sol && d.al.sol.length ? `<tr><td>Solicitações de alteração (TA)</td><td>${d.al.sol.map(x => `<b>${esc(x['Número'])}</b> · ${esc(x['Situação'])}<br><small>${esc((x['Objeto']||'').slice(0, 160))}</small>`).join('<br>')}</td></tr>` : ''}
+      ${d.al && d.al.apo && d.al.apo.length ? `<tr><td>Apostilamentos</td><td>${d.al.apo.map(x => `${esc(x['Número']||'')} · ${esc(x['Tipo']||'')} · ${esc(x['Situação']||'')}`).join('<br>')}</td></tr>` : ''}
       <tr><td>Cláusula suspensiva</td><td>${/SUSPENSIVA/i.test(i.situacao_contratacao||'') ? 'sim'+(i.clausula_suspensiva_ate ? ', até '+esc(i.clausula_suspensiva_ate) : '') : 'não tem'}</td></tr></table>
     ${riSec('6 · Prestação de contas')}<table class="ri-t ri-kv"><tr><td>Situação</td><td>${/Presta/i.test(C.sit) ? esc(C.sit) : C.emExec ? 'não iniciada (instrumento em execução)' : esc(C.sit)}</td></tr><tr><td>Prazo</td><td>${C.lim ? 'até '+riDt(C.lim) : '—'}</td></tr><tr><td>TCE / inadimplência</td><td>${/SIM/i.test(i.em_processo_tce||'') ? 'em TCE' : 'não está em TCE'} · ${i.inadimplente_desde ? 'inadimplente desde '+esc(i.inadimplente_desde) : 'não inadimplente'}</td></tr>${riNum(i.saldo_devolvido_tesouro) ? `<tr><td>Saldo devolvido</td><td>${riR(riNum(i.saldo_devolvido_tesouro))}</td></tr>` : ''}</table></div></div>`;
 }
@@ -10771,6 +10793,7 @@ function riConvenente(d, C){
     ass: riCampo(r, /DATA_ASSINATURA|DT_ASSINATURA/), ini: riCampo(r, /INICIO_VIGENCIA|DT_INICIO/), fim: riCampo(r, /FIM_VIGENCIA|DT_FIM/), objeto: riCampo(r, /OBJETO/), valor: riNum(riCampo(r, /^V(A)?L(OR)?_(GLOBAL|CONTRATO|TOTAL)|^VALOR/)),
     sit: riCampo(r, /SITUACAO|STATUS/), aceite: riCampo(r, /ACEITE/), envio: riCampo(r, 'DATA_ENVIO_ANALISE'), pend: riPend(r)}));
   const aj = C.ajAberto.map(a => ({tipo:'Ajuste do plano de trabalho', nr: a[0], envio: a[1], sit: a[2], pend: true}));
+  (d.al && d.al.sol || []).filter(x => !/aprovad|conclu|cancelad|rejeitad|indeferid|publicad|assinad/i.test(x['Situação']||'')).forEach(x => aj.push({tipo:'Solicitação de alteração (TA)', nr: x['Número'], envio: '', sit: x['Situação'], pend: true}));
   const pend = lic.filter(x => x.pend).concat(ctc.filter(x => x.pend), aj);
   return {lic, ctc, pend};
 }
@@ -10918,7 +10941,7 @@ function riPagHist(d, C){
 function riDoc(aba){
   const d = RI.d, C = riCalc(d);
   const corpo = aba === 'hist' ? riPagHist(d, C) : aba === 'fisica' ? riPagFisica(d, C) : aba === 'financeira' ? riPagFinanceira(d, C) : aba === 'convenente' ? riPagConvenente(d, C) : aba === 'pc' ? riPagPC(d, C) : riPagResumo(d, C);
-  return corpo + `<div class="ri-fonte">Fontes: Transferegov (API de dados abertos · robô), Tesouro Gerencial (notas de empenho) e planilha Parceria SDR (departamento). Dias e alertas calculados na data de geração do relatório.</div>`;
+  return corpo + `<div class="ri-fonte">Fontes: Transferegov (API de dados abertos · robô${d.carga ? ' · carga do Transferegov de '+esc(d.carga.slice(0, 16)) : ''}), ${d.al && d.al.lido ? 'Acesso Livre do Transferegov (ajustes do PT, TAs e solicitações, apostilamentos · lido em '+esc(d.al.lido)+'), ' : ''}Tesouro Gerencial (notas de empenho) e planilha Parceria SDR (departamento). Dias e alertas calculados na data de geração do relatório.</div>`;
 }
 function desenharRelInst(){
   const el = document.getElementById('v-extra'); if(!el) return;
