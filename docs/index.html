@@ -3643,54 +3643,64 @@ function ctrbRender(){
   const at = rows.filter(d => normAccent(d.cat) === 'ATIVO'), enc = rows.length - at.length;
   const venc = at.filter(d => d.dias !== null && d.dias >= 0 && d.dias <= 90).sort((a,b) => a.dias-b.dias), vencidos = at.filter(d => d.dias !== null && d.dias < 0).sort((a,b) => a.dias-b.dias);
   const prev = soma(rows,'prev'), pago = temT ? soma(rows,'_pago') : null;
-  const card = (k, ic, tit, val, nota, lista, cor) => `<div class="cb-k"${ctrbReg('kpi|'+k, tit, lista)}><div class="cb-ic" style="${cor ? 'background:'+cor+'22;color:'+cor : ''}">${ic}</div><div><span>${tit}</span><b>${val}</b><small>${nota}</small></div></div>`;
-  const kpis = `<div class="cb-ks">
-    ${card('at', '📄', 'Contratos ativos', at.length, `${rows.length} firmados · ${enc} encerrados/outros`, at)}
-    ${card('v90', '📅', 'Vencem em até 90 dias', venc.length, vencidos.length ? `<em class="cb-r">+ ${vencidos.length} ativo(s) já vencido(s)</em>` : 'nenhum ativo vencido', venc.concat(vencidos), '#c75a00')}
-    ${card('vg', '💰', 'Valor global', fmtC(soma(rows,'global')), `anual ${fmtC(soma(rows,'anual'))} · mensal ${fmtC(soma(rows,'mensal'))}`, rows)}
-    ${card('ex', '📈', 'Execução financeira 2026', temT ? (prev ? Math.round(100*pago/prev)+'%' : '—') : '…', temT ? `pago ${fmtC(pago)} de ${fmtC(prev)} previstos` : T && T.erro ? 'Tesouro indisponível' : 'lendo o Tesouro…', rows.filter(d => d._pago > 0).sort((a,b) => b._pago-a._pago))}
-  </div>`;
-  // situação (rosca)
+  // faixa verde no topo com os 4 números (cada um abre a lista)
+  const pctEx = temT && prev ? Math.round(100*pago/prev) : null;
+  const card = (k, tit, val, nota, lista, extra) => `<div class="cb-hk"${ctrbReg('kpi|'+k, tit, lista)}><span>${tit}</span><b>${val}</b>${extra||''}<small>${nota}</small></div>`;
+  const kpis = `<div class="cb-hero"><div class="cb-ht"><small>${rows.length} contratos na Base${temT ? ' · Tesouro até '+esc(T.ult) : ''}</small></div><div class="cb-hks">
+    ${card('at', 'Ativos', at.length, `de ${rows.length} firmados`, at)}
+    ${card('v90', 'Vencem em 90 dias', venc.length, venc.length ? `próximo em ${venc[0].dias} dia(s)` : (vencidos.length ? vencidos.length+' ativo(s) vencido(s)' : 'nenhum'), venc.concat(vencidos))}
+    ${card('vg', 'Valor global', fmtC(soma(rows,'global')), `${fmtC(soma(rows,'mensal'))} por mês`, rows)}
+    ${card('ex', 'Execução 2026', pctEx === null ? (temT ? '—' : '…') : pctEx+'%', temT ? `${fmtC(pago)} de ${fmtC(prev)}` : T && T.erro ? 'Tesouro indisponível' : 'lendo o Tesouro…', rows.filter(d => d._pago > 0).sort((a,b) => b._pago-a._pago),
+      pctEx === null ? '' : `<div class="cb-pb"><i style="width:${Math.min(100, pctEx)}%"></i></div>`)}
+  </div></div>`;
+  // situação (rosca compacta com legenda)
   const sits = ['Vigente','A vencer','Vencido','Encerrado'].map(s => [s, rows.filter(d => ctrbSit(d) === s)]);
-  let ang = -Math.PI/2; const R = 52, r0 = 32, tot = rows.length || 1;
+  let ang = -Math.PI/2; const R = 52, r0 = 34, tot = rows.length || 1;
   const arco = (a0, a1) => { const p = (a, rr) => [60 + rr*Math.cos(a), 60 + rr*Math.sin(a)], g = a1 - a0 > Math.PI ? 1 : 0, [x0,y0] = p(a0,R), [x1,y1] = p(a1,R), [x2,y2] = p(a1,r0), [x3,y3] = p(a0,r0);
     return `M${x0},${y0}A${R},${R} 0 ${g} 1 ${x1},${y1}L${x2},${y2}A${r0},${r0} 0 ${g} 0 ${x3},${y3}Z`; };
   const fatias = sits.filter(([,l]) => l.length).map(([s, l]) => { const a1 = ang + 2*Math.PI*l.length/tot - (l.length === tot ? 1e-4 : 0), d = arco(ang, a1); ang = a1;
     return `<path d="${d}" fill="${CTRB_COR[s]}"${ctrbReg('sit|'+s, 'Situação: '+s, l)}><title>${s}: ${l.length}</title></path>`; }).join('');
-  const rosca = `<section class="card grafico cb-box"><h3>Contratos por situação</h3><div class="cb-ro"><svg viewBox="0 0 120 120" width="140" height="140">${fatias}<text x="60" y="58" text-anchor="middle" class="cb-rt">${rows.length}</text><text x="60" y="74" text-anchor="middle" class="cb-rs">contratos</text></svg>
-    <div class="cb-lg">${sits.map(([s, l]) => `<div${ctrbReg('sit|'+s, 'Situação: '+s, l)}><i style="background:${CTRB_COR[s]}"></i>${s}<b>${l.length}</b><small>${rows.length ? Math.round(100*l.length/rows.length) : 0}%</small></div>`).join('')}</div></div></section>`;
-  const aten = `<section class="card grafico cb-box cb-aten"><h3>⚠ Atenção à vigência</h3><p class="dica">${venc.length} contrato(s) vencem nos próximos 90 dias</p>
-    ${venc.slice(0, 6).map(d => `<div class="cb-li"${ctrbReg('vc|'+d.num, 'Contrato '+d.num, [d])}><span><b>${esc(d.num)}</b> ${esc(d.fav)}</span><em class="${d.dias <= 30 ? 'r' : 'a'}">${d.dias} dias</em></div>`).join('') || '<p class="vazio">Nenhum contrato vence nos próximos 90 dias.</p>'}
-    ${venc.length > 6 ? `<div class="cb-li cb-mais"${ctrbReg('vc|todos', 'Vencem em até 90 dias', venc)}>Ver todos (${venc.length})</div>` : ''}
-    ${vencidos.length ? `<div class="cb-li cb-mais"${ctrbReg('vc|vencidos', 'Ativos com vigência vencida', vencidos)}><span>${vencidos.length} ativo(s) com a vigência já vencida</span><em class="r">ver</em></div>` : ''}</section>`;
-  // despesa realizada (pago no mês, Tesouro) × valor mensal contratado (contratos ativos naquele mês)
+  const rosca = `<section class="card cb-c"><h3>Contratos por situação</h3><div class="cb-ro"><svg viewBox="0 0 120 120" width="128" height="128">${fatias}<text x="60" y="55" text-anchor="middle" class="cb-rs">Total</text><text x="60" y="76" text-anchor="middle" class="cb-rt">${rows.length}</text></svg>
+    <div class="cb-lg">${sits.map(([s, l]) => `<div${ctrbReg('sit|'+s, 'Situação: '+s, l)}><i style="background:${CTRB_COR[s]}"></i><span>${s}</span><b>${l.length}</b><small>(${rows.length ? Math.round(100*l.length/rows.length) : 0}%)</small></div>`).join('')}</div></div></section>`;
+  // próximos vencimentos: contagem regressiva
+  const tile = d => `<div class="cb-tl ${d.dias < 0 ? 'r' : d.dias <= 30 ? 'r' : d.dias <= 60 ? 'a' : ''}"${ctrbReg('vc|'+d.num, 'Contrato '+d.num, [d])} title="${esc(d.fav)} · fim ${esc(d.fim)}"><em>${Math.abs(d.dias)}</em><small>${d.dias < 0 ? 'dias vencido' : 'dias'}</small><span>${esc(d.num)}</span><span class="f">${esc(d.fav)}</span></div>`;
+  const aten = `<section class="card cb-c"><div class="cb-ct"><h3>Próximos vencimentos</h3>${venc.length ? `<a${ctrbReg('vc|todos', 'Vencem em até 90 dias', venc)}>ver os ${venc.length} →</a>` : ''}</div>
+    ${venc.length ? `<div class="cb-tls">${venc.slice(0, 5).map(tile).join('')}</div>` : '<p class="vazio">Nenhum contrato ativo vence nos próximos 90 dias.</p>'}
+    ${vencidos.length ? `<p class="cb-vcd"${ctrbReg('vc|vencidos', 'Ativos com vigência vencida', vencidos)}>⚠ ${vencidos.length} contrato(s) ativo(s) com a vigência já vencida · ver lista</p>` : ''}</section>`;
+  // pago no mês (Tesouro) × valor mensal contratado (contratos vigentes no mês)
   let graf;
   if(!temT) graf = `<p class="dica">${T && T.erro ? 'Não foi possível ler o Tesouro: '+esc(T.erro) : T === null && !(window.parent !== window) ? 'Disponível no painel completo.' : 'Lendo o pagamento mês a mês no Tesouro…'}</p>`;
   else {
-    const ano = Math.floor(T.meses[0]/100);
-    const pm = T.meses.map((m, i) => rows.reduce((s, d) => s + ((d._pm||[])[i]||0), 0));
+    const ano = Math.floor(T.meses[0]/100), n = T.meses.length;
+    const pm = T.meses.map((m, i) => rows.some(d => d._pm && d._pm[i] === null) ? null : rows.reduce((s, d) => s + ((d._pm||[])[i]||0), 0));
     const ct = T.meses.map(m => { const mm = m % 100, a = new Date(ano, mm-1, 1), b = new Date(ano, mm, 0);
       return rows.reduce((s, d) => { const i0 = ctrbDt(d.ini), f0 = ctrbDt(d.fim), ind = !f0 || /INDETERMIN/i.test(d.fim); return s + ((!i0 || i0 <= b) && (ind || f0 >= a) ? d.mensal||0 : 0); }, 0); });
-    const mx = Math.max(1, ...pm, ...ct), H = 150, W = 52;
-    const barras = T.meses.map((m, i) => { const h = H*pm[i]/mx, x = 40 + i*W, lst = rows.filter(d => (d._pm||[])[i] > 0.005).map(d => Object.assign(Object.create(d), {_vm: d._pm[i]})).sort((a,b) => b._vm-a._vm);
-      return `<g${ctrbReg('mes|'+m, 'Pago em '+T.rot[i]+'/'+ano, lst, ['_vm','Pago no mês'])}><rect x="${x}" y="${H+10-h}" width="30" height="${Math.max(h,0)}" rx="3" fill="var(--s2)"><title>${T.rot[i]}: pago ${fmtBRL(pm[i])} · contratado ${fmtBRL(ct[i])}</title></rect>
-        <text x="${x+15}" y="${H+24}" text-anchor="middle" class="cb-ax">${T.rot[i]}</text><text x="${x+15}" y="${H+4-h}" text-anchor="middle" class="cb-vl">${fmtC(pm[i]).replace(/\s?Mil/,' mil')}</text></g>`; }).join('');
-    const linha = ct.map((v, i) => `${55 + i*W},${H+10-H*v/mx}`).join(' ');
-    graf = `<svg viewBox="0 0 ${50 + T.meses.length*W} ${H+32}" class="cb-gr">${barras}<polyline points="${linha}" fill="none" stroke="#c75a00" stroke-width="2.5"/>${ct.map((v, i) => `<circle cx="${55 + i*W}" cy="${H+10-H*v/mx}" r="3" fill="#c75a00"><title>${T.rot[i]}: valor mensal contratado ${fmtBRL(v)}</title></circle>`).join('')}</svg>
-      <div class="cb-leg"><span><i style="background:var(--s2)"></i>Despesa realizada (pago no mês · Tesouro, EXE + RAP)</span><span><i style="background:#c75a00;height:3px"></i>Valor mensal contratado (contratos vigentes no mês)</span><span>clique numa barra para ver os contratos pagos no mês</span></div>`;
+    const mx = Math.max(1, ...pm.map(v => v||0), ...ct)*1.08, H = 170, L0 = 80, LW = 900, W = LW/n, bw = Math.min(46, W*0.6), y = v => 18 + H*(1 - v/mx);
+    const ultI = pm.map((v, i) => v === null ? -1 : i).filter(i => i >= 0).pop();
+    const barras = T.meses.map((m, i) => { const x = L0 + i*W + (W-bw)/2, v = pm[i];
+      if(v === null) return `<text x="${x+bw/2}" y="${H+10}" text-anchor="middle" class="cb-sd">s/ dado</text><text x="${x+bw/2}" y="${H+36}" text-anchor="middle" class="cb-ax">${T.rot[i]}</text>`;
+      const lst = rows.filter(d => (d._pm||[])[i] > 0.005).map(d => Object.assign(Object.create(d), {_vm: d._pm[i]})).sort((a,b) => b._vm-a._vm);
+      return `<g class="${i === ultI ? 'u' : ''}"${ctrbReg('mes|'+m, 'Pago em '+T.rot[i]+'/'+ano, lst, ['_vm','Pago no mês'])}><rect x="${x}" y="${y(v)}" width="${bw}" height="${Math.max(0, H+18-y(v))}" rx="6"><title>${T.rot[i]}/${ano} · pago ${fmtBRL(v)} · contratado ${fmtBRL(ct[i])} · clique para ver os contratos</title></rect>
+        <text x="${x+bw/2}" y="${H+36}" text-anchor="middle" class="cb-ax">${T.rot[i]}</text></g>`; }).join('');
+    const xs = i => L0 + i*W + W/2, linha = ct.map((v, i) => `${xs(i)},${y(v)}`).join(' ');
+    const grade = [0.5, 1].map(f => `<line x1="${L0}" x2="${L0+LW}" y1="${y(mx*f/1.08)}" y2="${y(mx*f/1.08)}" class="cb-gl"/><text x="${L0-8}" y="${y(mx*f/1.08)+4}" text-anchor="end" class="cb-ax">${fmtC(mx*f/1.08)}</text>`).join('');
+    const rot = ultI >= 0 ? `<g><rect x="${Math.min(L0+LW-110, xs(ultI)-55)}" y="${Math.max(0, y(pm[ultI])-30)}" width="110" height="22" rx="6" fill="var(--h1)"/><text x="${Math.min(L0+LW-55, xs(ultI))}" y="${Math.max(0, y(pm[ultI])-30)+15}" text-anchor="middle" class="cb-bl">${T.rot[ultI]} · ${fmtC(pm[ultI])}</text></g>` : '';
+    graf = `<svg viewBox="0 0 ${L0+LW+10} ${H+44}" class="cb-gr"><line x1="${L0}" x2="${L0+LW}" y1="${H+18}" y2="${H+18}" class="cb-gl"/>${grade}${barras}<polyline points="${linha}" fill="none" stroke="#c75a00" stroke-width="2.5" stroke-linejoin="round"/>${ct.map((v, i) => `<circle cx="${xs(i)}" cy="${y(v)}" r="3.5" fill="#c75a00"><title>${T.rot[i]}: valor mensal contratado ${fmtBRL(v)}</title></circle>`).join('')}${rot}</svg>
+      <div class="cb-leg"><span><i></i>pago no mês (Tesouro · EXE + RAP)</span><span><i class="l"></i>valor mensal contratado</span><span>passe o mouse para ver o valor · clique na barra para ver os contratos</span></div>${T.falta && T.falta.length ? `<p class="dica">Sem posição do Tesouro em ${T.falta.map(m => T.rot[T.meses.indexOf(m)]).join(', ')}: o pago desse(s) mês(es) entra no mês seguinte.</p>` : ''}`;
   }
-  const despesa = secao('Despesa realizada × valor contratado · '+(temT ? Math.floor(T.meses[0]/100) : '2026'), temT ? 'posição do Tesouro até '+esc(T.ult) : '', graf);
-  // explorar por (uma visão de cada vez, fechado até clicar)
+  const despesa = `<section class="card cb-c"><div class="cb-ct"><h3>Pago por mês × valor contratado · ${temT ? Math.floor(T.meses[0]/100) : '2026'}</h3></div>${graf}</section>`;
+  // explorar por: abas, uma visão de cada vez · cada item abre a lista
   const ordemFaixa = ['Vencido','Até 30 dias','31 a 60 dias','61 a 90 dias','91 a 365 dias','Mais de 1 ano','Indeterminado'];
-  const rF = semF('faixa'), faixas = ordemFaixa.map(x => [x, {n:rF.filter(d => d.faixa===x).length}]).filter(([,v]) => v.n);
-  const corFaixa = k => ({'Vencido':'#c62828','Até 30 dias':'#e0a100','31 a 60 dias':'#c9b020'})[k];
-  const EXP = [['vig','Status da vigência'],['tipo','Tipo'],['fav','Favorecido'],['uf','Estado (mapa)']];
-  const ex = CTRB.exp, corpoExp = !ex ? '' : ex === 'vig' ? colunas(faixas, [{k:'n',nome:'Contratos',cor:'var(--s1)',corFn:corFaixa,tip:v=>String(v)}], 'faixa', k => k, {altura:150, largura:26, gap:8, fmt:v=>String(v)})
-    : ex === 'tipo' ? bullet(agrupar(semF('tipo'),'tipo',['anual','global']).sort((a,b) => b[1].anual-a[1].anual),'tipo',[{k:'global',nome:'Valor global',curto:'Global',cor:'var(--s4)'},{k:'anual',nome:'Valor anual',curto:'Anual',cor:'var(--s1)'}],{limite:12})
-    : ex === 'fav' ? rankingCtr(agrupar(semF('fav'),'fav',['global','anual']).sort((a,b) => b[1].global-a[1].global),'fav',{k:'global', k2:'anual', rot2:'anual', limite:10})
-    : mapaBaseCtr(semF('uf'));
-  const explorar = `<section class="card grafico"><h3>Explorar por</h3><p class="dica">uma visão de cada vez · clique para abrir · clique num item para filtrar a tela</p>
-    <div class="cb-exp">${EXP.map(([k, r]) => `<button type="button" data-ctrbexp="${k}" class="${ex === k ? 'on' : ''}">${r}</button>`).join('')}${ex ? '<button type="button" data-ctrbexp="" class="x">Fechar ✕</button>' : ''}</div>${corpoExp}</section>`;
+  const corFaixa = {'Vencido':'#c62828','Até 30 dias':'#c62828','31 a 60 dias':'#e0a100','61 a 90 dias':'#c9b020'};
+  const EXP = [['tipo','Tipo'],['fav','Favorecido'],['uf','Estado'],['faixa','Vigência']];
+  const ex = CTRB.exp || 'tipo';
+  const grp = (c => { const m = new Map(); rows.forEach(d => { const k = d[c] || '—'; const x = m.get(k) || {n:0, v:0, l:[]}; x.n++; x.v += c === 'faixa' ? 1 : d.anual||0; x.l.push(d); m.set(k, x); });
+    let L = [...m.entries()]; L = c === 'faixa' ? L.sort((a,b) => ordemFaixa.indexOf(a[0]) - ordemFaixa.indexOf(b[0])) : L.sort((a,b) => b[1].v - a[1].v); return L; })(ex);
+  const mxE = Math.max(1, ...grp.map(([,x]) => x.v)), lim = CTRB.expTodos ? grp.length : 6;
+  const explorar = `<section class="card cb-c"><h3>Explorar por</h3><div class="cb-tabs">${EXP.map(([k, r]) => `<button type="button" data-ctrbexp="${k}" class="${ex === k ? 'on' : ''}">${r}</button>`).join('')}</div>
+    <div class="cb-rk">${grp.slice(0, lim).map(([k, x]) => `<div${ctrbReg('exp|'+ex+'|'+k, EXP.find(e => e[0] === ex)[1]+': '+k, x.l)}><span>${esc(k)} <small>${x.n} contrato(s)</small></span><b>${ex === 'faixa' ? x.n : fmtC(x.v)}</b><i><em style="width:${(100*x.v/mxE).toFixed(1)}%;${corFaixa[k] ? 'background:'+corFaixa[k] : ''}"></em></i></div>`).join('')}</div>
+    ${grp.length > 6 ? `<button type="button" class="cb-mais2" data-ctrbexptodos>${CTRB.expTodos ? 'mostrar menos' : 'mostrar todos ('+grp.length+')'}</button>` : ''}
+    <p class="dica">${ex === 'faixa' ? 'quantidade de contratos' : 'valor anual dos contratos'} · clique para ver a lista</p></section>`;
   // distribuição da equipe (menu Opções) · por responsável (coluna Z da Base Contratos)
   let equipe = '';
   if(CTRB.equipe){   // estrutura reservada: os dados entram quando o script da equipe na Base Contratos estiver pronto
@@ -3713,39 +3723,54 @@ function ctrbRender(){
   const tab = tabela('contr', 'Contratos · '+lista.length+' de '+rows.length, COLS, lista, {ordem:{campo:'dias', dir:1}, arquivo:'contratos-ceplac'}).replace('<div data-bm="t-contr">', filtrosT+'<div data-bm="t-contr">');
   // lista da seleção, logo abaixo do bloco clicado
   const S = CTRB.sel && CTRB.reg[CTRB.sel], zona = CTRB.sel ? CTRB.sel.split('|')[0] : '';
-  const painel = z => { if(!S || !({kpi:['kpi'], meio:['sit','vc'], graf:['mes'], eq:['eq'], conf:['conf']})[z].includes(zona)) return '';
+  const painel = z => { if(!S || !({kpi:['kpi'], vc:['vc'], sit:['sit','exp'], graf:['mes'], eq:['eq'], conf:['conf']})[z].includes(zona)) return '';
     const cols = [['num','Contrato','ficha'],['fav','Favorecido'],['unid','Unidade'],['resp','Responsável'],['tipo','Tipo'],['uf','UF'],['sitP','Situação'],['fim','Vig. fim'],['dias','Dias a vencer','i']]
       .concat(S.extra ? [[S.extra[0], S.extra[1], 'n']] : [['anual','Valor anual','n']].concat(temT ? [['_pago','Pago 2026','n']] : [])).concat(zona === 'conf' ? [['confTxt','Conferência','txt']] : []);
     S.lista.forEach(d => { d.sitP = d.sitP || (d.cat !== undefined ? ctrbSit(d) : ''); });
     return `<div class="cb-sel" id="cbSel"><button type="button" class="cb-fecha" data-ctrbfecha>Fechar ✕</button>${tabela('ctrsel', esc(S.tit)+' · '+S.lista.length+' contrato(s)', cols, S.lista, {ordem:{campo: S.extra ? S.extra[0] : 'dias', dir: S.extra ? -1 : 1}, arquivo:'contratos-selecao'})}</div>`; };
   setTimeout(() => { const el = document.getElementById('cbSel'); if(el && CTRB._rolar){ CTRB._rolar = false; el.scrollIntoView({behavior:'smooth', block:'nearest'}); } }, 60);
   return chips() + CSS_CTRSDR + CSS_CTRB + kpis + painel('kpi') + equipe + painel('eq')
-    + `<div class="cb-meio">${rosca}${aten}</div>` + painel('meio') + despesa + painel('graf') + explorar + conf + painel('conf') + tab
+    + aten + painel('vc') + despesa + painel('graf') + `<div class="cb-meio">${rosca}${explorar}</div>` + painel('sit') + `<div class="cb-conf">${conf}</div>` + painel('conf') + tab
     + `<p class="rodape">Fonte: aba Base Contratos${temT ? ' · pagamentos e empenhos: Tesouro Gerencial (posição até '+esc(T.ult)+'), pelas notas de empenho da Base e as ligadas ao contrato no Contratos.gov.br' : ''}</p>`;
 }
 const CSS_CTRB = `<style>
-.cb-ks{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:12px}
-.cb-k{display:flex;gap:12px;align-items:center;background:var(--card);border:1px solid var(--borda);border-radius:14px;padding:12px 14px;cursor:pointer;transition:border-color .15s}.cb-k:hover,.cb-k.on{border-color:var(--acento);box-shadow:0 0 0 2px var(--sel)}
-.cb-ic{width:42px;height:42px;border-radius:50%;background:var(--trilho);display:grid;place-items:center;font-size:20px;flex:none}.cb-k span{display:block;font-size:12.5px;color:var(--tinta-suave);font-weight:600}.cb-k b{display:block;font-size:26px;line-height:1.15;color:var(--forte)}.cb-k small{font-size:12px;color:var(--tinta-suave)}
-.cb-r{color:#c62828 !important;font-style:normal}.cb-meio{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}.cb-box{margin:0}
-.cb-ro{display:flex;align-items:center;gap:16px;flex-wrap:wrap}.cb-ro path{cursor:pointer}.cb-ro path:hover{opacity:.8}.cb-rt{font-size:22px;font-weight:700;fill:var(--forte)}.cb-rs{font-size:9px;fill:var(--tinta-suave)}
-.cb-lg{flex:1;min-width:170px}.cb-lg div{display:grid;grid-template-columns:14px 1fr auto 42px;gap:6px;align-items:center;padding:6px 4px;border-bottom:1px solid var(--linha);cursor:pointer;font-size:14px}.cb-lg div:hover{background:var(--hover)}.cb-lg i{width:11px;height:11px;border-radius:50%}.cb-lg small{color:var(--tinta-suave);text-align:right}
-.cb-aten{border:1.5px solid #e9a3a3}.cb-aten h3{color:#b3261e !important}.cb-li{display:flex;justify-content:space-between;gap:8px;align-items:center;padding:7px 4px;border-bottom:1px solid var(--linha);cursor:pointer;font-size:13.5px}.cb-li:hover{background:var(--hover)}
-.cb-li span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.cb-li em{font-style:normal;font-weight:700;font-size:12px;border-radius:10px;padding:2px 9px;white-space:nowrap}.cb-li em.r{background:#fde4e4;color:#b3261e}.cb-li em.a{background:#fdf0d5;color:#8a5a00}.cb-mais{color:var(--acento);font-weight:700}
-.cb-gr{width:100%;max-height:230px}.cb-gr g{cursor:pointer}.cb-gr g:hover rect{fill:var(--s1)}.cb-ax{font-size:11px;fill:var(--tinta-suave);font-weight:600}.cb-vl{font-size:9.5px;fill:var(--forte)}
-.cb-leg{display:flex;flex-wrap:wrap;gap:16px;font-size:12px;color:var(--tinta-suave);margin-top:4px}.cb-leg i{display:inline-block;width:14px;height:10px;border-radius:2px;margin-right:5px;vertical-align:middle}
-.cb-exp{display:flex;flex-wrap:wrap;gap:8px;margin:4px 0 10px}.cb-exp button{border:1.5px solid var(--acento);background:transparent;color:var(--acento);border-radius:18px;padding:6px 14px;font-weight:700;cursor:pointer}.cb-exp button.on{background:var(--acento);color:#fff}.cb-exp button.x{border-color:var(--linha);color:var(--tinta-suave)}
-.cb-eq{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px}.cb-eq>div{background:#fff;border:1px solid var(--borda);border-top:4px solid var(--s1);border-radius:12px;padding:10px 12px;cursor:pointer;display:flex;flex-direction:column;gap:3px;font-size:13px}.cb-eq>div:hover{box-shadow:0 0 0 2px var(--sel)}.cb-eq strong{font-size:24px}.cb-eq strong small{font-size:13px;font-weight:400}
+.cb-hero{background:linear-gradient(135deg,var(--h1),var(--h2));border-radius:18px;padding:16px 18px 18px;color:#fff;margin-bottom:14px}
+.cb-ht small{display:block;font-size:12.5px;color:#d6efd8;margin:0 0 10px}
+.cb-hks{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.cb-hk{background:rgba(255,255,255,.12);border-radius:14px;padding:11px 13px;cursor:pointer;transition:background .15s}.cb-hk:hover{background:rgba(255,255,255,.22)}
+.cb-hk span{display:block;font-size:12.5px;color:#d6efd8;font-weight:600}.cb-hk b{display:block;font-size:28px;line-height:1.15;font-weight:700}.cb-hk small{font-size:12px;color:#eaf6eb}
+.cb-pb{height:6px;background:rgba(255,255,255,.25);border-radius:3px;margin:5px 0 3px}.cb-pb i{display:block;height:6px;border-radius:3px;background:#a6e88a}
+.cb-c{margin:0 0 14px;padding:14px 16px}.cb-c h3{margin:0 0 6px;font-size:16px;color:var(--forte)}.cb-ct{display:flex;justify-content:space-between;align-items:baseline;gap:10px}.cb-ct a{font-size:13px;font-weight:700;color:var(--acento);cursor:pointer;white-space:nowrap}
+.cb-tls{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-top:6px}
+.cb-tl{border:1px solid var(--linha);background:#fff;border-radius:14px;padding:10px 8px;text-align:center;cursor:pointer;min-width:0;transition:transform .12s}.cb-tl:hover{transform:translateY(-2px)}
+.cb-tl em{display:block;font-style:normal;font-size:28px;font-weight:700;line-height:1;color:var(--s1)}.cb-tl small{display:block;font-size:11px;color:var(--tinta-suave)}
+.cb-tl span{display:block;font-size:12.5px;font-weight:700;margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.cb-tl span.f{font-weight:400;font-size:11.5px;color:var(--tinta-suave);margin-top:1px}
+.cb-tl.r{background:#fdecec;border-color:#f1a7a7}.cb-tl.r em{color:#b3261e}.cb-tl.a{background:#fdf3df;border-color:#efc56f}.cb-tl.a em{color:#8a5a00}
+.cb-vcd{margin:10px 0 0;font-size:13px;color:#b3261e;font-weight:600;cursor:pointer}
+.cb-gr{width:100%;display:block;max-height:280px}.cb-gr g{cursor:pointer}.cb-gr rect{fill:#8cc58c;transition:fill .12s}.cb-gr g.u rect,.cb-gr g:hover rect{fill:var(--s1)}.cb-gl{stroke:var(--linha);stroke-dasharray:3 4}
+.cb-ax{font-size:12px;fill:var(--tinta-suave)}.cb-sd{font-size:10px;fill:#b0a090;font-style:italic}.cb-bl{font-size:12px;fill:#fff;font-weight:700}
+.cb-leg{display:flex;flex-wrap:wrap;gap:16px;font-size:12px;color:var(--tinta-suave);margin-top:2px}.cb-leg i{display:inline-block;width:11px;height:11px;border-radius:3px;background:#8cc58c;margin-right:5px;vertical-align:-1px}.cb-leg i.l{width:16px;height:3px;background:#c75a00;vertical-align:3px}
+.cb-meio{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.35fr);gap:14px;align-items:stretch}.cb-meio>.cb-c{margin-bottom:14px}
+.cb-ro{display:flex;align-items:center;gap:14px}.cb-ro path{cursor:pointer;transition:opacity .12s}.cb-ro path:hover{opacity:.8}.cb-rt{font-size:26px;font-weight:700;fill:var(--forte)}.cb-rs{font-size:11px;fill:var(--tinta-suave)}
+.cb-lg{flex:1;min-width:0}.cb-lg div{display:grid;grid-template-columns:12px 1fr auto 46px;gap:7px;align-items:center;padding:6px 2px;cursor:pointer;font-size:14px;border-radius:6px}.cb-lg div:hover{background:var(--hover)}.cb-lg i{width:11px;height:11px;border-radius:50%}.cb-lg small{color:var(--tinta-suave);text-align:right}
+.cb-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:8px 0 12px}.cb-tabs button{border:1px solid var(--linha);background:#fff;border-radius:10px;padding:8px 4px;font-weight:600;cursor:pointer;color:var(--tinta)}.cb-tabs button.on{background:var(--h1);border-color:var(--h1);color:#fff}
+.cb-rk>div{display:grid;grid-template-columns:1fr auto;gap:2px 10px;align-items:baseline;padding:4px 2px;cursor:pointer;border-radius:6px}.cb-rk>div:hover{background:var(--hover)}.cb-rk span{font-size:13.5px;font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.cb-rk span small{font-weight:400;color:var(--tinta-suave);font-size:11.5px}.cb-rk b{font-size:13.5px}
+.cb-rk i{grid-column:1/3;height:6px;border-radius:3px;background:var(--trilho)}.cb-rk em{display:block;height:6px;border-radius:3px;background:var(--s1)}
+.cb-c .dica{font-size:12px;margin:8px 0 0;color:var(--tinta-suave)}
+.cb-mais2{border:0;background:none;color:var(--acento);font-weight:700;cursor:pointer;padding:4px 0}
+.cb-conf .cf-chip{cursor:pointer;transition:transform .12s}.cb-conf .cf-chip:hover{transform:translateY(-2px)}.cb-conf .cf-chip.al{background:#fdecec}.cb-conf .cf-chip.av{background:#fdf3df}
+.cb-eq{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}.cb-eq>div{background:#fff;border:1px solid var(--borda);border-top:4px solid var(--s1);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:3px;font-size:13px}.cb-eq strong{font-size:24px}.cb-eq strong small{font-size:13px;font-weight:400}
 .cb-ft{display:grid;grid-template-columns:repeat(6,minmax(0,1fr)) auto;gap:8px;align-items:end;margin:0 0 10px}.cb-ft label{display:flex;flex-direction:column;gap:3px;font-size:12px;font-weight:600;color:var(--tinta-suave)}
-.cb-sel{position:relative;margin:-4px 0 12px;border:2px solid var(--acento);border-radius:16px}.cb-sel>.tabela-card{margin:0}.cb-fecha{position:absolute;right:14px;top:14px;z-index:2;border:1px solid var(--linha);background:#fff;border-radius:8px;padding:4px 10px;cursor:pointer}
+.cb-sel{position:relative;margin:-4px 0 14px;border:2px solid var(--acento);border-radius:16px}.cb-sel>.tabela-card{margin:0}.cb-fecha{position:absolute;right:14px;top:14px;z-index:2;border:1px solid var(--linha);background:#fff;border-radius:8px;padding:4px 10px;cursor:pointer}
 [data-ctrb]{cursor:pointer}
-@media(max-width:1100px){.cb-ks{grid-template-columns:repeat(2,minmax(0,1fr))}.cb-meio{grid-template-columns:1fr}.cb-ft{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:900px){.cb-hks{grid-template-columns:repeat(2,minmax(0,1fr))}.cb-meio{grid-template-columns:1fr}.cb-tls{grid-template-columns:repeat(3,minmax(0,1fr))}.cb-tls>div:nth-child(n+4){display:none}.cb-ft{grid-template-columns:repeat(3,minmax(0,1fr))}}
 </style>`;
 document.addEventListener('click', e => { if(e.target.closest('#mEquipe')){ CTRB.equipe = !CTRB.equipe; const m = document.getElementById('menu'); if(m) m.classList.remove('aberto'); render(); return; } });
 document.addEventListener('click', e => {
   const c = e.target.closest('[data-ctrb]'); if(c && VIEW && VIEW.id === 'contratos'){ const k = c.dataset.ctrb; CTRB.sel = CTRB.sel === k ? null : k; CTRB._rolar = true; if(TAB.ctrsel) TAB.ctrsel.ft = {}; render(); return; }
   if(e.target.closest('[data-ctrbfecha]')){ CTRB.sel = null; render(); return; }
-  const x = e.target.closest('[data-ctrbexp]'); if(x){ CTRB.exp = CTRB.exp === x.dataset.ctrbexp ? '' : x.dataset.ctrbexp; render(); return; }
+  const x = e.target.closest('[data-ctrbexp]'); if(x){ CTRB.exp = x.dataset.ctrbexp; CTRB.expTodos = false; render(); return; }
+  if(e.target.closest('[data-ctrbexptodos]')){ CTRB.expTodos = !CTRB.expTodos; render(); return; }
   if(e.target.closest('[data-ctrblimpa]')){ CTRB.ft = {}; render(); return; }
 });
 function secaoConfApi(rows){
@@ -10289,8 +10314,11 @@ window.__ctrPagoMensal = async objs => {
       if(v === 'exe'){ x.emp += +d.emp||0; x.pago += +d.pago||0; } else x.pago += (+d.ppPag||0) + (+d.npPag||0); M.set(c, x); }); return idx[k] = M; };
   const acum = (o, m, q) => { let s = 0; const vistos = new Set(); (o.nes||[]).forEach(e => { const c = neChaveTes(e.ug, e.ne); if(!c || vistos.has(c)) return; vistos.add(c);
     ['exe','rap'].forEach(v => { const x = ix(v, String(m)).get(c); if(x) s += x[q]||0; }); }); return s; };
-  const r = {meses, rot: meses.map(m => (MESES_TXT[m]||'').slice(0,3)), v: [], emp: [], pago: [], ult: MESES_TXT[ult]||''};
-  objs.forEach(o => { let ant = 0; const L = meses.map(m => { const a = acum(o, m, 'pago'), d = a - ant; ant = a; return d; });
+  // mês sem posição do Tesouro (detalhe não carregou): fica sem barra e o acumulado segue do último mês lido (antes caía tudo no mês seguinte)
+  const temDet = m => ['exe','rap'].some(v => (DADOS[v].det[m]||[]).length);
+  const NM = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+  const r = {meses, rot: meses.map(m => NM[m % 100 - 1]), falta: meses.filter(m => !temDet(m)), v: [], emp: [], pago: [], ult: MESES_TXT[ult]||''};
+  objs.forEach(o => { let ant = 0; const L = meses.map(m => { if(!temDet(m)) return null; const a = acum(o, m, 'pago'), d = a - ant; ant = a; return d; });
     r.v.push(L); r.pago.push(ant); r.emp.push(acum(o, ult, 'emp')); });
   _ctrPMCache = {k: chave, r}; return r;
 };
