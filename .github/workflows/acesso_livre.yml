@@ -1,0 +1,45 @@
+name: Acesso Livre (alterações dos instrumentos)
+
+on:
+  schedule:
+    - cron: '17 10,17 * * *'   # 7h17 e 14h17 (Brasília)
+  workflow_dispatch:
+    inputs:
+      instrumentos:
+        description: 'Nº dos instrumentos separados por vírgula (vazio = 420013 em execução / aguardando PC)'
+        default: ''
+        required: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: acesso-livre
+  cancel-in-progress: false
+
+jobs:
+  ler:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - run: pip install playwright && python -m playwright install --with-deps chromium
+      - name: Arquivos do robô e leitura anterior
+        run: |
+          R=https://raw.githubusercontent.com/${{ github.repository }}
+          curl -sfL "$R/dados/painel_instrumentos.csv" -o /tmp/painel.csv
+          curl -sfL "$R/dados/parc_links.json.gz" -o /tmp/links.json.gz
+          curl -sfL "$R/abas/acesso_livre.json" -o /tmp/ant.json || echo '{}' > /tmp/ant.json
+      - run: mkdir -p out && python scripts/acesso_livre.py /tmp/painel.csv /tmp/links.json.gz /tmp/ant.json out/acesso_livre.json "${{ github.event.inputs.instrumentos }}"
+      - name: Publicar na branch "abas"
+        run: |
+          cd out && git init -q && git checkout -q -b abas
+          git config user.name "robo-transferegov"; git config user.email "robo-transferegov@users.noreply.github.com"
+          date -u -d '-3 hours' '+%d/%m/%Y %H:%M' > lido_em.txt
+          git add -A && git commit -q -m "Acesso Livre · $(cat lido_em.txt)"
+          git push -q -f "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git" abas
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
