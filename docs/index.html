@@ -1810,6 +1810,7 @@ body[data-tema="fin"] .tabela-topo .acoes .btn:not(.btn-pdf){background:#1f6b3a}
     </select><button type="button" class="rel-btn" data-relabrir aria-label="Emitir relatório">📄 Relatório</button><button class="menu-btn" id="menuBtn" aria-label="Abrir menu" aria-expanded="false"><i></i></button></div>
     <div class="menu" id="menu" role="menu">
       <a href="#menu" data-ir="menu" role="menuitem">← Voltar ao menu</a>
+      <button type="button" id="mEquipe" role="menuitem" hidden>👥 Distribuição da Equipe</button>
       <button type="button" id="mLimpar" role="menuitem">Limpar todos os filtros</button>
       <button type="button" id="mAtualizar" role="menuitem">Atualizar dados da planilha</button>
       <button type="button" id="mImprimir" role="menuitem">📄 Extração em PDF</button>
@@ -2569,7 +2570,10 @@ const LEITORES = {
       form:col('FORMALIZACAO'), tipo:(()=>{const i=H.findIndex(h=>h==='TIPO'); return i!==-1?i:H.findIndex(h=>/(^| )TIPO$/.test(h));})(), cat:col('CATEGORIA'), cnpj:(()=>{const i=H.findIndex(h=>h==='CNPJ'); return i!==-1?i:H.findIndex(h=>/(^| )CNPJ$/.test(h));})(),
       fav:col('FORNECEDOR'), proc:col('PROCESSO RAIZ'), objeto:col('OBJETO'), ini:col('VIG. INICIO'), fim:col('VIG. FIM'),
       dias:col('DIAS A VENCER'), global:col('VALOR GLOBAL'), anual:col('VALOR ANUAL'), mensal:col('VALOR MENSAL'),
-      prev:col('PREVISAO GASTOS'), modal:col('MODALIDADE DA COMPRA')};
+      prev:col('PREVISAO GASTOS'), modal:col('MODALIDADE DA COMPRA'),
+      resp:(()=>{const i=H.findIndex(h=>h.startsWith('RESPONSAVEL')); return i!==-1?i:(H.length>25?25:-1);})(),
+      unid:(()=>{const i=H.findIndex(h=>h==='UNIDADE'); return i!==-1?i:(H.length>26?26:-1);})(),
+      ugc:col('UNIDADE DA COMPRA'), ne25:col('EMPENHO 2025'), ne26:col('EMPENHO 2026')};
     const g = (r,i) => i===-1 ? '' : (r[i]||'').trim();
     const out = [];
     for(const r of rows.slice(hi+1)){
@@ -2581,7 +2585,10 @@ const LEITORES = {
       const mAno = String(num).match(/(\d+)\s*\/\s*(\d{4})/);
       out.push({ano: mAno ? mAno[2] : '', ordCtr: mAno ? (+mAno[2])*100000 + (+mAno[1]) : 0, num, ug:g(r,ix.ug), uf:g(r,ix.uf), form:g(r,ix.form), tipo:g(r,ix.tipo), cat:g(r,ix.cat), cnpj:g(r,ix.cnpj),
         fav:g(r,ix.fav), proc:g(r,ix.proc), objeto:g(r,ix.objeto), ini:g(r,ix.ini), fim:g(r,ix.fim), dias, faixa,
-        global:toNum(g(r,ix.global)), anual:toNum(g(r,ix.anual)), mensal:toNum(g(r,ix.mensal)), prev:toNum(g(r,ix.prev)), modal:g(r,ix.modal)});
+        global:toNum(g(r,ix.global)), anual:toNum(g(r,ix.anual)), mensal:toNum(g(r,ix.mensal)), prev:toNum(g(r,ix.prev)), modal:g(r,ix.modal),
+        resp:g(r,ix.resp).replace(/\s+/g,' ').trim(), unid:g(r,ix.unid).replace(/\s+/g,' ').trim(),
+        // notas de empenho da Base (2025 inscritas em RP e 2026), da UG da compra · somam-se às que a API do Contratos.gov.br liga ao contrato
+        nesBase:(()=>{ const u = (g(r,ix.ugc).match(/\d{6}/)||g(r,ix.ug).match(/\d{6}/)||[])[0]; return u ? [...new Set((g(r,ix.ne25)+' '+g(r,ix.ne26)).toUpperCase().match(/\d{4}NE\d{6}/g)||[])].map(ne => ({ug:u, ne})) : []; })()});
     }
     if(!out.length) throw new Error('a aba Base Contratos foi lida, mas nenhum contrato foi encontrado.');
     return {linhas:out};
@@ -3606,6 +3613,144 @@ function anotarRespCtr(d, a){
   d.fiscAN = a ? (nomes(/^fiscal administrativo$/i) || '⚠ não cadastrado') : '—';
   d.lCompras = a ? a.link : ''; d.lPncp = a && a.pag ? (a.pag['Link PNCP'] || '') : ''; d.lEdital = a && a.pag ? (a.pag['Link edital PNCP'] || '') : '';
 }
+// =====================================================================
+// CONTRATOS CEPLAC · 2026 (aba Base Contratos) · layout aprovado em 29/10/2026
+// cards → situação + atenção à vigência → despesa × contratado → explorar por → conferência → contratos
+// todo card, fatia, barra ou número abre logo abaixo a lista dos contratos que ele representa
+// =====================================================================
+const CTRB = {sel:null, reg:{}, ft:{}, exp:'', equipe:false, tes:null, tesK:''};
+const ctrbSit = d => { const c = normAccent(d.cat); if(c !== 'ATIVO') return 'Encerrado'; if(d.dias !== null && d.dias < 0) return 'Vencido'; if(d.dias !== null && d.dias <= 90) return 'A vencer'; return 'Vigente'; };
+const CTRB_COR = {'Vigente':'#2e7d32', 'A vencer':'#e0a100', 'Vencido':'#c62828', 'Encerrado':'#9aa59a'};
+const ctrbDt = s => { const m = String(s||'').match(/(\d{2})\/(\d{2})\/(\d{4})/); return m ? new Date(+m[3], +m[2]-1, +m[1]) : null; };
+function ctrbReg(k, tit, lista, extra){ CTRB.reg[k] = {tit, lista, extra}; return ` data-ctrb="${esc(k)}" title="Clique para ver a lista"`; }
+// Tesouro (pago mês a mês e empenhado do ano), pelas notas da API do Contratos.gov.br + as da Base · vem do painel novo
+function ctrbTesouro(){
+  if(!(window.parent !== window && typeof parent.__ctrPagoMensal === 'function')) return null;
+  if(!API_CTR) return null;   // espera a API (as notas ligadas vêm dela); ela redesenha a tela quando chega
+  const L = DADOS.base.linhas, k = L.length+'|'+(API_CTR.lista||[]).length;
+  if(CTRB.tesK !== k){ CTRB.tesK = k; CTRB.tes = 'carregando';
+    const objs = L.map(b => { const a = API_CTR.erro ? null : apiDoContrato(b); const m = new Map();
+      (a && a.nes || []).concat(b.nesBase||[]).forEach(e => { const c = String(e.ug||'').match(/\d{6}/)?.[0]+'|'+String(e.ne||'').toUpperCase().match(/\d{4}NE\d{6}/)?.[0]; if(!/undefined/.test(c)) m.set(c, e); }); return {nes:[...m.values()]}; });
+    parent.__ctrPagoMensal(objs).then(r => { L.forEach((b, i) => { b._pm = r.v[i]; b._pago = r.pago[i]; b._emp = r.emp[i]; b._exec = b.prev > 0 ? r.pago[i]/b.prev : null; }); CTRB.tes = r; if(VIEW && VIEW.id === 'contratos') render(); })
+      .catch(e => { CTRB.tes = {erro: e.message}; if(VIEW && VIEW.id === 'contratos') render(); });
+  }
+  return CTRB.tes;
+}
+function ctrbRender(){
+  CTRB.reg = {};
+  const todos = DADOS.base.linhas, rows = filtrar(todos), semF = c => filtrar(todos, null, c);
+  const T = ctrbTesouro(), temT = T && T.meses;
+  const at = rows.filter(d => normAccent(d.cat) === 'ATIVO'), enc = rows.length - at.length;
+  const venc = at.filter(d => d.dias !== null && d.dias >= 0 && d.dias <= 90).sort((a,b) => a.dias-b.dias), vencidos = at.filter(d => d.dias !== null && d.dias < 0).sort((a,b) => a.dias-b.dias);
+  const prev = soma(rows,'prev'), pago = temT ? soma(rows,'_pago') : null;
+  const card = (k, ic, tit, val, nota, lista, cor) => `<div class="cb-k"${ctrbReg('kpi|'+k, tit, lista)}><div class="cb-ic" style="${cor ? 'background:'+cor+'22;color:'+cor : ''}">${ic}</div><div><span>${tit}</span><b>${val}</b><small>${nota}</small></div></div>`;
+  const kpis = `<div class="cb-ks">
+    ${card('at', '📄', 'Contratos ativos', at.length, `${rows.length} firmados · ${enc} encerrados/outros`, at)}
+    ${card('v90', '📅', 'Vencem em até 90 dias', venc.length, vencidos.length ? `<em class="cb-r">+ ${vencidos.length} ativo(s) já vencido(s)</em>` : 'nenhum ativo vencido', venc.concat(vencidos), '#c75a00')}
+    ${card('vg', '💰', 'Valor global', fmtC(soma(rows,'global')), `anual ${fmtC(soma(rows,'anual'))} · mensal ${fmtC(soma(rows,'mensal'))}`, rows)}
+    ${card('ex', '📈', 'Execução financeira 2026', temT ? (prev ? Math.round(100*pago/prev)+'%' : '—') : '…', temT ? `pago ${fmtC(pago)} de ${fmtC(prev)} previstos` : T && T.erro ? 'Tesouro indisponível' : 'lendo o Tesouro…', rows.filter(d => d._pago > 0).sort((a,b) => b._pago-a._pago))}
+  </div>`;
+  // situação (rosca)
+  const sits = ['Vigente','A vencer','Vencido','Encerrado'].map(s => [s, rows.filter(d => ctrbSit(d) === s)]);
+  let ang = -Math.PI/2; const R = 52, r0 = 32, tot = rows.length || 1;
+  const arco = (a0, a1) => { const p = (a, rr) => [60 + rr*Math.cos(a), 60 + rr*Math.sin(a)], g = a1 - a0 > Math.PI ? 1 : 0, [x0,y0] = p(a0,R), [x1,y1] = p(a1,R), [x2,y2] = p(a1,r0), [x3,y3] = p(a0,r0);
+    return `M${x0},${y0}A${R},${R} 0 ${g} 1 ${x1},${y1}L${x2},${y2}A${r0},${r0} 0 ${g} 0 ${x3},${y3}Z`; };
+  const fatias = sits.filter(([,l]) => l.length).map(([s, l]) => { const a1 = ang + 2*Math.PI*l.length/tot - (l.length === tot ? 1e-4 : 0), d = arco(ang, a1); ang = a1;
+    return `<path d="${d}" fill="${CTRB_COR[s]}"${ctrbReg('sit|'+s, 'Situação: '+s, l)}><title>${s}: ${l.length}</title></path>`; }).join('');
+  const rosca = `<section class="card grafico cb-box"><h3>Contratos por situação</h3><div class="cb-ro"><svg viewBox="0 0 120 120" width="140" height="140">${fatias}<text x="60" y="58" text-anchor="middle" class="cb-rt">${rows.length}</text><text x="60" y="74" text-anchor="middle" class="cb-rs">contratos</text></svg>
+    <div class="cb-lg">${sits.map(([s, l]) => `<div${ctrbReg('sit|'+s, 'Situação: '+s, l)}><i style="background:${CTRB_COR[s]}"></i>${s}<b>${l.length}</b><small>${rows.length ? Math.round(100*l.length/rows.length) : 0}%</small></div>`).join('')}</div></div></section>`;
+  const aten = `<section class="card grafico cb-box cb-aten"><h3>⚠ Atenção à vigência</h3><p class="dica">${venc.length} contrato(s) vencem nos próximos 90 dias</p>
+    ${venc.slice(0, 6).map(d => `<div class="cb-li"${ctrbReg('vc|'+d.num, 'Contrato '+d.num, [d])}><span><b>${esc(d.num)}</b> ${esc(d.fav)}</span><em class="${d.dias <= 30 ? 'r' : 'a'}">${d.dias} dias</em></div>`).join('') || '<p class="vazio">Nenhum contrato vence nos próximos 90 dias.</p>'}
+    ${venc.length > 6 ? `<div class="cb-li cb-mais"${ctrbReg('vc|todos', 'Vencem em até 90 dias', venc)}>Ver todos (${venc.length})</div>` : ''}
+    ${vencidos.length ? `<div class="cb-li cb-mais"${ctrbReg('vc|vencidos', 'Ativos com vigência vencida', vencidos)}><span>${vencidos.length} ativo(s) com a vigência já vencida</span><em class="r">ver</em></div>` : ''}</section>`;
+  // despesa realizada (pago no mês, Tesouro) × valor mensal contratado (contratos ativos naquele mês)
+  let graf;
+  if(!temT) graf = `<p class="dica">${T && T.erro ? 'Não foi possível ler o Tesouro: '+esc(T.erro) : T === null && !(window.parent !== window) ? 'Disponível no painel completo.' : 'Lendo o pagamento mês a mês no Tesouro…'}</p>`;
+  else {
+    const ano = Math.floor(T.meses[0]/100);
+    const pm = T.meses.map((m, i) => rows.reduce((s, d) => s + ((d._pm||[])[i]||0), 0));
+    const ct = T.meses.map(m => { const mm = m % 100, a = new Date(ano, mm-1, 1), b = new Date(ano, mm, 0);
+      return rows.reduce((s, d) => { const i0 = ctrbDt(d.ini), f0 = ctrbDt(d.fim), ind = !f0 || /INDETERMIN/i.test(d.fim); return s + ((!i0 || i0 <= b) && (ind || f0 >= a) ? d.mensal||0 : 0); }, 0); });
+    const mx = Math.max(1, ...pm, ...ct), H = 150, W = 52;
+    const barras = T.meses.map((m, i) => { const h = H*pm[i]/mx, x = 40 + i*W, lst = rows.filter(d => (d._pm||[])[i] > 0.005).map(d => Object.assign(Object.create(d), {_vm: d._pm[i]})).sort((a,b) => b._vm-a._vm);
+      return `<g${ctrbReg('mes|'+m, 'Pago em '+T.rot[i]+'/'+ano, lst, ['_vm','Pago no mês'])}><rect x="${x}" y="${H+10-h}" width="30" height="${Math.max(h,0)}" rx="3" fill="var(--s2)"><title>${T.rot[i]}: pago ${fmtBRL(pm[i])} · contratado ${fmtBRL(ct[i])}</title></rect>
+        <text x="${x+15}" y="${H+24}" text-anchor="middle" class="cb-ax">${T.rot[i]}</text><text x="${x+15}" y="${H+4-h}" text-anchor="middle" class="cb-vl">${fmtC(pm[i]).replace(/\s?Mil/,' mil')}</text></g>`; }).join('');
+    const linha = ct.map((v, i) => `${55 + i*W},${H+10-H*v/mx}`).join(' ');
+    graf = `<svg viewBox="0 0 ${50 + T.meses.length*W} ${H+32}" class="cb-gr">${barras}<polyline points="${linha}" fill="none" stroke="#c75a00" stroke-width="2.5"/>${ct.map((v, i) => `<circle cx="${55 + i*W}" cy="${H+10-H*v/mx}" r="3" fill="#c75a00"><title>${T.rot[i]}: valor mensal contratado ${fmtBRL(v)}</title></circle>`).join('')}</svg>
+      <div class="cb-leg"><span><i style="background:var(--s2)"></i>Despesa realizada (pago no mês · Tesouro, EXE + RAP)</span><span><i style="background:#c75a00;height:3px"></i>Valor mensal contratado (contratos vigentes no mês)</span><span>clique numa barra para ver os contratos pagos no mês</span></div>`;
+  }
+  const despesa = secao('Despesa realizada × valor contratado · '+(temT ? Math.floor(T.meses[0]/100) : '2026'), temT ? 'posição do Tesouro até '+esc(T.ult) : '', graf);
+  // explorar por (uma visão de cada vez, fechado até clicar)
+  const ordemFaixa = ['Vencido','Até 30 dias','31 a 60 dias','61 a 90 dias','91 a 365 dias','Mais de 1 ano','Indeterminado'];
+  const rF = semF('faixa'), faixas = ordemFaixa.map(x => [x, {n:rF.filter(d => d.faixa===x).length}]).filter(([,v]) => v.n);
+  const corFaixa = k => ({'Vencido':'#c62828','Até 30 dias':'#e0a100','31 a 60 dias':'#c9b020'})[k];
+  const EXP = [['vig','Status da vigência'],['tipo','Tipo'],['fav','Favorecido'],['uf','Estado (mapa)']];
+  const ex = CTRB.exp, corpoExp = !ex ? '' : ex === 'vig' ? colunas(faixas, [{k:'n',nome:'Contratos',cor:'var(--s1)',corFn:corFaixa,tip:v=>String(v)}], 'faixa', k => k, {altura:150, largura:26, gap:8, fmt:v=>String(v)})
+    : ex === 'tipo' ? bullet(agrupar(semF('tipo'),'tipo',['anual','global']).sort((a,b) => b[1].anual-a[1].anual),'tipo',[{k:'global',nome:'Valor global',curto:'Global',cor:'var(--s4)'},{k:'anual',nome:'Valor anual',curto:'Anual',cor:'var(--s1)'}],{limite:12})
+    : ex === 'fav' ? rankingCtr(agrupar(semF('fav'),'fav',['global','anual']).sort((a,b) => b[1].global-a[1].global),'fav',{k:'global', k2:'anual', rot2:'anual', limite:10})
+    : mapaBaseCtr(semF('uf'));
+  const explorar = `<section class="card grafico"><h3>Explorar por</h3><p class="dica">uma visão de cada vez · clique para abrir · clique num item para filtrar a tela</p>
+    <div class="cb-exp">${EXP.map(([k, r]) => `<button type="button" data-ctrbexp="${k}" class="${ex === k ? 'on' : ''}">${r}</button>`).join('')}${ex ? '<button type="button" data-ctrbexp="" class="x">Fechar ✕</button>' : ''}</div>${corpoExp}</section>`;
+  // distribuição da equipe (menu Opções) · por responsável (coluna Z da Base Contratos)
+  let equipe = '';
+  if(CTRB.equipe){
+    const totA = soma(rows,'anual') || 1;
+    const grupos = agrupar(rows.map(d => Object.assign(Object.create(d), {respG: d.resp || '(sem responsável)'})), 'respG', ['anual']).sort((a,b) => b[1]._n - a[1]._n);
+    equipe = `<section class="card grafico cb-eq-s"><h3>Distribuição da equipe</h3><p class="dica">por responsável (coluna "Responsável CEPLAC" da Base Contratos) · em construção: os próximos indicadores entram quando a equipe for estruturada</p>
+      <div class="cb-eq">${grupos.map(([n, v]) => { const l = rows.filter(d => (d.resp || '(sem responsável)') === n), v90 = l.filter(d => normAccent(d.cat) === 'ATIVO' && d.dias !== null && d.dias <= 90).length;
+        return `<div${ctrbReg('eq|'+n, 'Responsável: '+n, l)} style="border-top-color:${v90 ? '#c62828' : 'var(--s1)'}"><b>${esc(n)}</b><strong>${l.length}<small> contrato(s)</small></strong>
+          <span>Valor anual: <b>${fmtC(v.anual)}</b> (${Math.round(100*v.anual/totA)}%)</span><span class="${v90 ? 'cb-r' : ''}">Vencem em até 90 dias: <b>${v90}</b></span><span>Pendências: <b>0</b></span></div>`; }).join('')}</div></section>`;
+  }
+  // conferência com o Contratos.gov.br (mantida; cada número abre a lista)
+  const conf = secaoConfApi(rows);
+  // tabela: filtros próprios de escolha múltipla
+  const FT = [['num','Nº contrato'],['fav','Favorecido'],['tipo','Tipo'],['resp','Responsável'],['uf','UF'],['unid','Unidade']];
+  const passa = (d, ign) => FT.every(([c]) => c === ign || !(CTRB.ft[c]||[]).length || CTRB.ft[c].includes(String(d[c]||'')));
+  const lista = rows.filter(d => passa(d)).map(d => Object.assign(d, {sitP: ctrbSit(d), execP: d._exec === null || d._exec === undefined ? null : Math.round(100*d._exec)}));
+  const filtrosT = `<div class="cb-ft">${FT.map(([c, rot]) => `<label>${rot}${msxHTML('ctrb|'+c, {rot, todos:'Todos', opts:() => { const base = rows.filter(d => passa(d, c)); return [...new Set(rows.map(d => String(d[c]||'')).filter(Boolean))].sort((a,b) => a.localeCompare(b,'pt-BR',{numeric:true})).map(v => [v, v, base.filter(d => String(d[c]||'') === v).length]); },
+    get:() => CTRB.ft[c]||[], set:a => { CTRB.ft[c] = a; render(); }})}</label>`).join('')}<button type="button" class="btn-sec" data-ctrblimpa>Limpar</button></div>`;
+  const COLS = [['num','Contrato','ficha'],['fav','Favorecido'],['unid','Unidade'],['resp','Responsável'],['tipo','Tipo'],['uf','UF'],['sitP','Situação'],['fim','Vig. fim'],['dias','Dias a vencer','i'],
+    ['anual','Valor anual','n'],['prev','Previsão 2026','n']].concat(temT ? [['_emp','Empenhado 2026','n'],['_pago','Pago 2026','n'],['execP','Execução (%)','i']] : []).concat([
+    ['global','Valor global','n'],['mensal','Valor mensal','n'],['ug','UG Origem'],['form','Formalização'],['cat','Categoria'],['cnpj','CNPJ'],['proc','Processo'],['objeto','Objeto','txt'],['ini','Vig. início'],['modal','Modalidade'],
+    ['gestorN','Gestor','txt'],['fiscTN','Fiscal técnico','txt'],['fiscAN','Fiscal administrativo','txt']]);
+  const tab = tabela('contr', 'Contratos · '+lista.length+' de '+rows.length, COLS, lista, {ordem:{campo:'dias', dir:1}, arquivo:'contratos-ceplac'}).replace('<div data-bm="t-contr">', filtrosT+'<div data-bm="t-contr">');
+  // lista da seleção, logo abaixo do bloco clicado
+  const S = CTRB.sel && CTRB.reg[CTRB.sel], zona = CTRB.sel ? CTRB.sel.split('|')[0] : '';
+  const painel = z => { if(!S || !({kpi:['kpi'], meio:['sit','vc'], graf:['mes'], eq:['eq'], conf:['conf']})[z].includes(zona)) return '';
+    const cols = [['num','Contrato','ficha'],['fav','Favorecido'],['unid','Unidade'],['resp','Responsável'],['tipo','Tipo'],['uf','UF'],['sitP','Situação'],['fim','Vig. fim'],['dias','Dias a vencer','i']]
+      .concat(S.extra ? [[S.extra[0], S.extra[1], 'n']] : [['anual','Valor anual','n']].concat(temT ? [['_pago','Pago 2026','n']] : [])).concat(zona === 'conf' ? [['confTxt','Conferência','txt']] : []);
+    S.lista.forEach(d => { d.sitP = d.sitP || (d.cat !== undefined ? ctrbSit(d) : ''); });
+    return `<div class="cb-sel" id="cbSel"><button type="button" class="cb-fecha" data-ctrbfecha>Fechar ✕</button>${tabela('ctrsel', esc(S.tit)+' · '+S.lista.length+' contrato(s)', cols, S.lista, {ordem:{campo: S.extra ? S.extra[0] : 'dias', dir: S.extra ? -1 : 1}, arquivo:'contratos-selecao'})}</div>`; };
+  setTimeout(() => { const el = document.getElementById('cbSel'); if(el && CTRB._rolar){ CTRB._rolar = false; el.scrollIntoView({behavior:'smooth', block:'nearest'}); } }, 60);
+  return chips() + CSS_CTRSDR + CSS_CTRB + kpis + painel('kpi') + equipe + painel('eq')
+    + `<div class="cb-meio">${rosca}${aten}</div>` + painel('meio') + despesa + painel('graf') + explorar + conf + painel('conf') + tab
+    + `<p class="rodape">Fonte: aba Base Contratos${temT ? ' · pagamentos e empenhos: Tesouro Gerencial (posição até '+esc(T.ult)+'), pelas notas de empenho da Base e as ligadas ao contrato no Contratos.gov.br' : ''}</p>`;
+}
+const CSS_CTRB = `<style>
+.cb-ks{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:12px}
+.cb-k{display:flex;gap:12px;align-items:center;background:var(--card);border:1px solid var(--borda);border-radius:14px;padding:12px 14px;cursor:pointer;transition:border-color .15s}.cb-k:hover,.cb-k.on{border-color:var(--acento);box-shadow:0 0 0 2px var(--sel)}
+.cb-ic{width:42px;height:42px;border-radius:50%;background:var(--trilho);display:grid;place-items:center;font-size:20px;flex:none}.cb-k span{display:block;font-size:12.5px;color:var(--tinta-suave);font-weight:600}.cb-k b{display:block;font-size:26px;line-height:1.15;color:var(--forte)}.cb-k small{font-size:12px;color:var(--tinta-suave)}
+.cb-r{color:#c62828 !important;font-style:normal}.cb-meio{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}.cb-box{margin:0}
+.cb-ro{display:flex;align-items:center;gap:16px;flex-wrap:wrap}.cb-ro path{cursor:pointer}.cb-ro path:hover{opacity:.8}.cb-rt{font-size:22px;font-weight:700;fill:var(--forte)}.cb-rs{font-size:9px;fill:var(--tinta-suave)}
+.cb-lg{flex:1;min-width:170px}.cb-lg div{display:grid;grid-template-columns:14px 1fr auto 42px;gap:6px;align-items:center;padding:6px 4px;border-bottom:1px solid var(--linha);cursor:pointer;font-size:14px}.cb-lg div:hover{background:var(--hover)}.cb-lg i{width:11px;height:11px;border-radius:50%}.cb-lg small{color:var(--tinta-suave);text-align:right}
+.cb-aten{border:1.5px solid #e9a3a3}.cb-aten h3{color:#b3261e !important}.cb-li{display:flex;justify-content:space-between;gap:8px;align-items:center;padding:7px 4px;border-bottom:1px solid var(--linha);cursor:pointer;font-size:13.5px}.cb-li:hover{background:var(--hover)}
+.cb-li span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.cb-li em{font-style:normal;font-weight:700;font-size:12px;border-radius:10px;padding:2px 9px;white-space:nowrap}.cb-li em.r{background:#fde4e4;color:#b3261e}.cb-li em.a{background:#fdf0d5;color:#8a5a00}.cb-mais{color:var(--acento);font-weight:700}
+.cb-gr{width:100%;max-height:230px}.cb-gr g{cursor:pointer}.cb-gr g:hover rect{fill:var(--s1)}.cb-ax{font-size:11px;fill:var(--tinta-suave);font-weight:600}.cb-vl{font-size:9.5px;fill:var(--forte)}
+.cb-leg{display:flex;flex-wrap:wrap;gap:16px;font-size:12px;color:var(--tinta-suave);margin-top:4px}.cb-leg i{display:inline-block;width:14px;height:10px;border-radius:2px;margin-right:5px;vertical-align:middle}
+.cb-exp{display:flex;flex-wrap:wrap;gap:8px;margin:4px 0 10px}.cb-exp button{border:1.5px solid var(--acento);background:transparent;color:var(--acento);border-radius:18px;padding:6px 14px;font-weight:700;cursor:pointer}.cb-exp button.on{background:var(--acento);color:#fff}.cb-exp button.x{border-color:var(--linha);color:var(--tinta-suave)}
+.cb-eq{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px}.cb-eq>div{background:#fff;border:1px solid var(--borda);border-top:4px solid var(--s1);border-radius:12px;padding:10px 12px;cursor:pointer;display:flex;flex-direction:column;gap:3px;font-size:13px}.cb-eq>div:hover{box-shadow:0 0 0 2px var(--sel)}.cb-eq strong{font-size:24px}.cb-eq strong small{font-size:13px;font-weight:400}
+.cb-ft{display:grid;grid-template-columns:repeat(6,minmax(0,1fr)) auto;gap:8px;align-items:end;margin:0 0 10px}.cb-ft label{display:flex;flex-direction:column;gap:3px;font-size:12px;font-weight:600;color:var(--tinta-suave)}
+.cb-sel{position:relative;margin:-4px 0 12px;border:2px solid var(--acento);border-radius:16px}.cb-sel>.tabela-card{margin:0}.cb-fecha{position:absolute;right:14px;top:14px;z-index:2;border:1px solid var(--linha);background:#fff;border-radius:8px;padding:4px 10px;cursor:pointer}
+[data-ctrb]{cursor:pointer}
+@media(max-width:1100px){.cb-ks{grid-template-columns:repeat(2,minmax(0,1fr))}.cb-meio{grid-template-columns:1fr}.cb-ft{grid-template-columns:repeat(3,minmax(0,1fr))}}
+</style>`;
+document.addEventListener('click', e => { if(e.target.closest('#mEquipe')){ CTRB.equipe = !CTRB.equipe; const m = document.getElementById('menu'); if(m) m.classList.remove('aberto'); render(); return; } });
+document.addEventListener('click', e => {
+  const c = e.target.closest('[data-ctrb]'); if(c && VIEW && VIEW.id === 'contratos'){ const k = c.dataset.ctrb; CTRB.sel = CTRB.sel === k ? null : k; CTRB._rolar = true; if(TAB.ctrsel) TAB.ctrsel.ft = {}; render(); return; }
+  if(e.target.closest('[data-ctrbfecha]')){ CTRB.sel = null; render(); return; }
+  const x = e.target.closest('[data-ctrbexp]'); if(x){ CTRB.exp = CTRB.exp === x.dataset.ctrbexp ? '' : x.dataset.ctrbexp; render(); return; }
+  if(e.target.closest('[data-ctrblimpa]')){ CTRB.ft = {}; render(); return; }
+});
 function secaoConfApi(rows){
   if(!API_CTR){ rows.forEach(b => anotarRespCtr(b, null)); carregarApiCtr(); return secao('Conferência com o Contratos.gov.br','', '<p class="dica">Lendo a base da API de contratos…</p>'); }
   if(API_CTR.erro) return secao('Conferência com o Contratos.gov.br','', `<p class="dica">Não foi possível ler a base da API (${esc(API_CTR.erro)}).</p>`);
@@ -3617,15 +3762,17 @@ function secaoConfApi(rows){
   const ugsBase = new Set(rows.map(b => (String(b.ug||'').match(/\d{6}/)||[])[0]).filter(Boolean));
   const soApi = API_CTR.lista.filter(o => o.ativo && !naBase.has(o.id) && (o.ug === '130010' || ugsBase.has(o.ugo)));
   const cnt = f => L.filter(f).length;
-  const chip = (rot, v, cls) => `<div class="cf-chip ${cls||''}"><b>${v}</b><span>${rot}</span></div>`;
+  const baseDe = x => { const b = rows.find(d => d.num === x.num); return Object.assign(b ? Object.create(b) : {num:x.num, fav:x.fav, fim:x.fimA, dias:null, cat:'ATIVO'}, {confTxt:x.conf}); };
+  const chip = (rot, v, cls, f) => { const lst = f ? (f === 'so' ? div.filter(x => /fora da Base/.test(x.conf)) : L.filter(f)).map(baseDe) : null;
+    return `<div class="cf-chip ${cls||''}"${lst && typeof ctrbReg === 'function' && VIEW && VIEW.id === 'contratos' ? ctrbReg('conf|'+rot, 'Conferência: '+rot, lst) : ''}><b>${v}</b><span>${rot}</span></div>`; };
   const div = L.filter(x => x.n).concat(soApi.map(o => ({num:o.num, fav:o.forn, conf:'Ativo no Contratos.gov.br e fora da Base Contratos', n:1, fimB:'—', fimA:dataCtrBR(o.fim), vgB:null, vgA:o.vg,
     fisc:o.resAt.filter(r => /fiscal/i.test(r.f)).map(r => r.nome).join(' / ') || '—', fatv:o.fatVenc.length})));
   return `<style>.cf-g{display:flex;flex-wrap:wrap;gap:10px;margin:2px 0 12px}.cf-chip{background:#f4f8f5;border-radius:10px;padding:8px 12px;min-width:150px;border-left:4px solid #2e7d4f}.cf-chip b{display:block;font-size:20px}.cf-chip span{font-size:12px;color:#5f6f66}.cf-chip.al{border-left-color:#c62828}.cf-chip.av{border-left-color:#e0a100}</style>`
     + secao('Conferência com o Contratos.gov.br', 'Base Contratos (principal) × API do Contratos.gov.br · clique no contrato para abrir a ficha',
-      `<div class="cf-g">${chip('encontrados na API', nI2(cnt(x => x.vgA !== null)+''))}${chip('sem divergência', cnt(x => !x.n))}${chip('não encontrados na API', cnt(x => /Não encontrado/.test(x.conf)), 'av')}
-        ${chip('fim da vigência diferente', cnt(x => /Fim da vig/.test(x.conf)), 'av')}${chip('valor global diferente', cnt(x => /Valor global/.test(x.conf)), 'av')}
-        ${chip('ativos sem fiscal ativo', cnt(x => /Sem fiscal/.test(x.conf)), 'al')}${chip('ativos sem gestor ativo', cnt(x => /Sem gestor/.test(x.conf)), 'al')}${chip('ativos na API com vigência vencida', cnt(x => /vigência vencida/.test(x.conf)), 'av')}${chip('com fatura vencida pendente', cnt(x => /fatura/.test(x.conf)), 'al')}${chip('ativos na API e fora da Base', soApi.length, 'av')}</div>`)
-    + (div.length ? tabela('confapi', 'Contratos com divergência ou alerta', [['num','Contrato','ficha'],['fav','Fornecedor'],['conf','Conferência','txt'],['fimB','Fim (Base)'],['fimA','Fim (Contratos.gov.br)'],
+      `<div class="cf-g">${chip('encontrados na API', nI2(cnt(x => x.vgA !== null)+''), '', x => x.vgA !== null)}${chip('sem divergência', cnt(x => !x.n), '', x => !x.n)}${chip('não encontrados na API', cnt(x => /Não encontrado/.test(x.conf)), 'av', x => /Não encontrado/.test(x.conf))}
+        ${chip('fim da vigência diferente', cnt(x => /Fim da vig/.test(x.conf)), 'av', x => /Fim da vig/.test(x.conf))}${chip('valor global diferente', cnt(x => /Valor global/.test(x.conf)), 'av', x => /Valor global/.test(x.conf))}
+        ${chip('ativos sem fiscal ativo', cnt(x => /Sem fiscal/.test(x.conf)), 'al', x => /Sem fiscal/.test(x.conf))}${chip('ativos sem gestor ativo', cnt(x => /Sem gestor/.test(x.conf)), 'al', x => /Sem gestor/.test(x.conf))}${chip('ativos na API com vigência vencida', cnt(x => /vigência vencida/.test(x.conf)), 'av', x => /vigência vencida/.test(x.conf))}${chip('com fatura vencida pendente', cnt(x => /fatura/.test(x.conf)), 'al', x => /fatura/.test(x.conf))}${chip('ativos na API e fora da Base', soApi.length, 'av', 'so')}</div>`)
+    + (div.length && !(VIEW && VIEW.id === 'contratos') ? tabela('confapi', 'Contratos com divergência ou alerta', [['num','Contrato','ficha'],['fav','Fornecedor'],['conf','Conferência','txt'],['fimB','Fim (Base)'],['fimA','Fim (Contratos.gov.br)'],
         ['vgB','Valor global (Base)','n'],['vgA','Valor global (Contratos.gov.br)','n'],['fisc','Fiscal ativo','txt'],['fatv','Faturas vencidas','i']], div, {ordem:{campo:'num', dir:1}, arquivo:'conferencia-contratos-api'}) : '');
 }
 const nI2 = v => Number(v||0).toLocaleString('pt-BR');
@@ -7179,45 +7326,11 @@ const VIEWS = {
       const L = () => DADOS.base?.linhas||[];
       const f = (campo, rotulo) => ({campo, rotulo, opcoes:() => uniq(L(), campo)});
       const ordemFaixa = ['Vencido','Até 30 dias','31 a 60 dias','61 a 90 dias','91 a 365 dias','Mais de 1 ano','Indeterminado'];
-      return [f('ug','UG Origem'), f('uf','Local (UF)'), f('form','Formalização'), f('tipo','Tipo'), f('cat','Situação'),
+      return [f('unid','Unidade'), f('resp','Responsável'), f('ug','UG Origem'), f('uf','Local (UF)'), f('form','Formalização'), f('tipo','Tipo'), f('cat','Situação'),
         {campo:'faixa', rotulo:'Dias a vencer', opcoes:() => ordemFaixa.filter(x => L().some(d => d.faixa===x)).map(x => [x,x])},
         f('modal','Modalidade'), f('fav','Favorecido'), {campo:'ano', rotulo:'Ano do contrato', opcoes:() => uniq(L(),'ano').sort((a,b) => String(b[0]).localeCompare(String(a[0])))}];
     },
-    render(){
-      const rows = filtrar(DADOS.base.linhas);
-      const ativos = rows.filter(d => normAccent(d.cat)==='ATIVO').length;
-      const ordemFaixa = ['Vencido','Até 30 dias','31 a 60 dias','61 a 90 dias','91 a 365 dias','Mais de 1 ano','Indeterminado'];
-      const semF = c => filtrar(DADOS.base.linhas, null, c);
-      const rF = semF('faixa');
-      const faixas = ordemFaixa.map(x => [x, {n:rF.filter(d => d.faixa===x).length}]).filter(([,v]) => v.n);
-      const corFaixa = k => ({'Vencido':'#c62828','Até 30 dias':'#e0a100','31 a 60 dias':'#c9b020'})[k];
-      const venc = rows.filter(d => d.dias!==null && d.dias<=90 && normAccent(d.cat)!=='ENCERRADO').sort((a,b) => a.dias-b.dias);
-      const porTipo = agrupar(semF('tipo'),'tipo',['anual','global']).sort((a,b) => b[1].anual-a[1].anual);
-      const porFav = agrupar(semF('fav'),'fav',['global','anual']).sort((a,b) => b[1].global-a[1].global);
-      const porUF = agrupar(semF('uf'),'uf',['anual']).map(([k,v]) => [k, {anual:v.anual, n:v._n}]).sort((a,b) => b[1].anual-a[1].anual);
-            return chips() + `
-      ${CSS_CTRSDR}<div class="grade g4">
-        ${kpi({titulo:'Contratos Firmados', valor:String(rows.length), grande:1, nota:`${ativos} ativo(s) · ${rows.length-ativos} encerrado(s)/outros`})}
-        ${kpi({titulo:'Valor Global', valor:fmtC(soma(rows,'global')), tip:fmtBRL(soma(rows,'global')), sub:['Valor mensal', fmtC(soma(rows,'mensal')), fmtBRL(soma(rows,'mensal'))]})}
-        ${kpi({titulo:'Valor Anual (12 meses)', valor:fmtC(soma(rows,'anual')), tip:fmtBRL(soma(rows,'anual')), sub:['Vencem em até 90 dias', String(venc.length), '', venc.length?'neg':'']})}
-        ${kpi({titulo:'Previsão de gastos 2026', valor:fmtC(soma(rows,'prev')), tip:fmtBRL(soma(rows,'prev')), destaque:1, grande:1, sub:['Gasto médio/mês', fmtC(soma(rows,'prev')/12), fmtBRL(soma(rows,'prev')/12)+' (previsão 2026 ÷ 12 meses)']})}
-      </div>
-      <div class="grade g3">
-        ${secao('Status da vigência','Quantidade de contratos por prazo até o fim · clique para filtrar', colunas(faixas, [{k:'n',nome:'Contratos',cor:'var(--s1)',corFn:corFaixa,tip:v=>String(v)}], 'faixa', k => k, {altura:150, largura:26, gap:8, fmt:v=>String(v), semLegenda:1}))}
-        ${secao('Vencem em até 90 dias', venc.length ? 'Renovação ou nova contratação' : '', venc.length ? `<div class="lista-venc">${venc.map(d => `<div><b>${esc(d.fav)}</b><span class="d ${d.dias<0?'venc':''}">${d.dias<0 ? 'vencido há '+(-d.dias)+' d' : d.dias+' dias'}</span><span>${esc(d.num)} · ${esc(d.tipo)} · ${esc(d.uf)}</span><span style="text-align:right">fim ${esc(d.fim)}</span></div>`).join('')}</div>` : '<p class="vazio">Nenhum contrato vencendo nos próximos 90 dias.</p>')}
-        ${secao('Contratos por Tipo','Valor anual · clique para filtrar', bullet(porTipo,'tipo',[{k:'global',nome:'Valor global',curto:'Global',cor:'var(--s4)'},{k:'anual',nome:'Valor anual',curto:'Anual',cor:'var(--s1)'}],{limite:8, extraTip:t => '<br>Contratos: '+t._n}))}
-      </div>
-      <div class="grade g2">
-        ${secao('Maiores favorecidos','Valor global e valor anual · clique para filtrar', rankingCtr(porFav,'fav',{k:'global', k2:'anual', rot2:'anual', limite:8}))}
-        ${secao('Onde estão os contratos','Local de atuação · valor anual e quantidade · clique no estado para filtrar', mapaBaseCtr(semF('uf')))}
-      </div>
-      ${secaoConfApi(rows)}
-      ${tabela('contr','Contratos pactuados', [
-        ['num','Contrato','ficha'],['ano','Ano','i'],['fav','Favorecido'],['tipo','Tipo'],['ug','UG Origem'],['uf','UF'],['form','Formalização'],['cat','Situação'],['cnpj','CNPJ'],['proc','Processo'],
-        ['objeto','Objeto','txt'],['ini','Vig. início'],['fim','Vig. fim'],['dias','Dias a vencer','i'],['faixa','Status da vigência'],
-        ['global','Valor global','n'],['anual','Valor anual','n'],['mensal','Valor mensal','n'],['prev','Previsão 2026','n'],['modal','Modalidade'],['gestorN','Gestor','txt'],['fiscTN','Fiscal técnico','txt'],['fiscAN','Fiscal administrativo','txt'],['lCompras','Contratos.gov.br','link'],['lPncp','PNCP','link'],['lEdital','Edital (PNCP)','link'],['apiConf','Conferência Contratos.gov.br','txt']], rows, {ordem:{campo:'ordCtr',dir:-1}, arquivo:'contratos-pactuados'})}
-      <p class="rodape">Fonte: aba Base Contratos</p>`;
-    }
+    render(){ return ctrbRender(); }
   },
 
   // ===================================================================
@@ -7494,6 +7607,7 @@ function render(){
     if(tedAPI){ document.getElementById('conteudo').innerHTML = (VIEW.id==='tedapi' ? '' : navTedAPI()) + '<div id="tgPag"><p class="dica" style="padding:20px">Carregando a página de TED da API do Transferegov…</p></div>'; montarPaginaTG('ted'); return; }
     if(pagTG){ document.getElementById('conteudo').innerHTML = TG_PAGINAS[PARC_ABA] ? '<div id="tgPag"><p class="dica" style="padding:20px">Carregando a página do Transferegov…</p></div>' : paginaBreveTG(PARC_ABA); if(TG_PAGINAS[PARC_ABA]) montarPaginaTG(PARC_ABA); return; }
     if(KPI_ON && !KPI_ON.startsWith('kp'+VIEW.id+'|')) KPI_ON = null;
+    { const me = document.getElementById('mEquipe'); if(me){ me.hidden = VIEW.id !== 'contratos'; me.textContent = (typeof CTRB !== 'undefined' && CTRB.equipe ? '✓ ' : '')+'👥 Distribuição da Equipe'; } }
     document.getElementById('conteudo').innerHTML = atualizHTML() + VIEW.def.render.call(VIEW.def);
     kpiCaixa(); ppAtualizarModal();
     if(campoAberto){ const bx = document.querySelector(`.conteudo .ms[data-ms="${campoAberto}"]`); if(bx){ abrirMS(bx); const bu = bx.querySelector('.ms-busca'); bu.value = buscaAberta; bu.dispatchEvent(new Event('input',{bubbles:true})); } }
@@ -10162,6 +10276,27 @@ async function ctrExecTes(objs, rMes){
       const e = soma(o, 'exe', mQ, ['pago']) - (a ? soma(o, 'exe', a, ['pago']) : 0), r = soma(o, 'rap', mQ, rapPago) - (a ? soma(o, 'rap', a, rapPago) : 0); mes = {exe: e, rap: r, tot: e + r}; }
     return {emp, liq, pago: pagoE + pagoR, pagoE, pagoR, rapAb: Math.max(0, rapAb), mes, temMes: !mQ || meses.includes(mQ), ult}; });
 }
+// pago mês a mês do ano corrente (EXE + RAP) por contrato, pelas notas de empenho ligadas · tela Contratos CEPLAC do app antigo
+// objs = [{nes:[{ug, ne}]}] → {meses:[202601…], rot:['JAN'…], v:[[pago no mês…] por obj], emp:[empenhado no ano], pago:[pago no ano]}
+let _ctrPMCache = null;
+window.__ctrPagoMensal = async objs => {
+  const chave = JSON.stringify(objs.map(o => (o.nes||[]).map(e => e.ug+e.ne).sort()));
+  if(_ctrPMCache && _ctrPMCache.k === chave) return _ctrPMCache.r;
+  await Promise.all(['exe','rap'].map(v => carregarVisao(v).catch(() => {})));
+  const todos = Object.keys(MESES_TXT).map(Number).sort((a,b) => a-b), ult = todos[todos.length-1];
+  if(!ult) throw new Error('o Tesouro do painel não carregou');
+  const ano = Math.floor(ult/100), meses = todos.filter(m => Math.floor(m/100) === ano);
+  await Promise.all(meses.flatMap(m => ['exe','rap'].map(v => garantirDetalhe(v, String(m)).catch(() => {}))));
+  const idx = {}, ix = (v, m) => { const k = v+m; if(idx[k]) return idx[k]; const M = new Map();
+    (DADOS[v].det[m]||[]).forEach(d => { const c = neChaveTes(d.ug, d.ne); if(!c) return; const x = M.get(c) || {emp:0, pago:0};
+      if(v === 'exe'){ x.emp += +d.emp||0; x.pago += +d.pago||0; } else x.pago += (+d.ppPag||0) + (+d.npPag||0); M.set(c, x); }); return idx[k] = M; };
+  const acum = (o, m, q) => { let s = 0; const vistos = new Set(); (o.nes||[]).forEach(e => { const c = neChaveTes(e.ug, e.ne); if(!c || vistos.has(c)) return; vistos.add(c);
+    ['exe','rap'].forEach(v => { const x = ix(v, String(m)).get(c); if(x) s += x[q]||0; }); }); return s; };
+  const r = {meses, rot: meses.map(m => (MESES_TXT[m]||'').slice(0,3)), v: [], emp: [], pago: [], ult: MESES_TXT[ult]||''};
+  objs.forEach(o => { let ant = 0; const L = meses.map(m => { const a = acum(o, m, 'pago'), d = a - ant; ant = a; return d; });
+    r.v.push(L); r.pago.push(ant); r.emp.push(acum(o, ult, 'emp')); });
+  _ctrPMCache = {k: chave, r}; return r;
+};
 // ===== Tesouro do painel para os contratos (tela Contratos SDR e ficha do contrato do app antigo) =====
 const neChaveTes = (ug, ne) => { const m = String(ne||'').toUpperCase().match(/\d{4}NE\d{6}/), u = String(ug||'').match(/\d{6}/); return m && u ? u[0]+'|'+m[0] : ''; };
 const rapSaldoTes = x => (TEM.rap.ppApg || TEM.rap.npApg) ? (x.ppApg||0) + (x.npApg||0) : Math.max(0, (x.ppIns||0)+(x.ppRei||0)+(x.npIns||0)+(x.npRei||0)-(x.ppCan||0)-(x.npCan||0)-(x.ppPag||0)-(x.npPag||0));
