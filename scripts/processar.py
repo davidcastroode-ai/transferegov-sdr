@@ -368,6 +368,18 @@ def main(saida):
             n = prop_do_conv.get(a.get('ID_PROPOSTA'))
             if n:
                 aj_c.setdefault(n, []).append(a)
+    # Acesso Livre (robô acesso_livre, branch abas): situação atual dos ajustes do PT, que nos dados abertos pode estar dias atrasada
+    try:
+        import urllib.request
+        AL = json.load(urllib.request.urlopen('https://raw.githubusercontent.com/davidcastroode-ai/transferegov-sdr/abas/acesso_livre.json', timeout=60))
+    except Exception as e:
+        AL = {}
+        log(f'acesso livre indisponível: {e}')
+    def al_ajustes(n):
+        abas = (AL.get(n) or {}).get('abas')
+        if not abas:
+            return None
+        return [dict(zip(x.get('ths', []), row)) for x in abas.get('ajustes', []) for row in x.get('rows', [])]
     for r in inst:
         n = r['nr_instrumento']
         tas = [a for a in ta_c.get(n, []) if num(a.get('VL_REPASSE_TA')) or num(a.get('VL_GLOBAL_TA'))]
@@ -379,6 +391,9 @@ def main(saida):
         r['ultimo_ajuste_pt'] = br(max(datas)) if datas else ''
         # solicitações de ajuste do PT ainda em aberto (não aprovadas nem negadas)
         abertos = sorted({(a.get('SITUACAO_SOLICITACAO_AJUSTE_PT') or '').strip() for a in ajs} - {'', 'Ajustado e Aprovado', 'Não Autorizado'})
+        al = al_ajustes(n)
+        if al is not None:   # lido hoje no Acesso Livre: vale sobre os dados abertos
+            abertos = sorted({(x.get('Situação') or '').strip() for x in al} - {'', 'Ajustado e Aprovado', 'Não Autorizado', 'Cancelado', 'Rejeitado'})
         r['ajuste_pt_aberto'] = ' | '.join(abertos)
         rep_orig = num(r.get('valor_repasse_proposta'))
         r['reducao_repasse'] = v2(max(0.0, rep_orig - num(r['valor_repasse']))) if rep_orig else '0.00'
