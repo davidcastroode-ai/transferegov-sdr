@@ -599,6 +599,13 @@ def ted(pasta):
         cand = [porId[i] for i in idx.get((e['ug'], e['ptres']), ())]
         if not cand and e['ug'] in UGS_SDR and e.get('acao', '').upper() in porAcaoRec:
             cand = [porId[i] for i in porAcaoRec[e['acao'].upper()]]
+        # empenho que cita o nº do TED (ou o processo SEI) na descrição, da UG que recebeu: vale mesmo sem NC ligada
+        # (ex.: o relatório de NC do Tesouro ainda sem a NC do ano, ou a NC ligada a outro TED do mesmo PTRES)
+        txt0 = (e['desc'] + ' ' + e['processo']).upper()
+        porTexto = [o for o in linhas if o.get('ugr') == e['ug'] and ((o['n'] and re.search(r'\b' + re.escape(o['n'].upper()) + r'\b', txt0))
+                    or (len(dig(o['sei'])) > 10 and dig(o['sei']) in dig(txt0)))]
+        if not cand:
+            cand = porTexto
         if not cand:
             continue
         if len(cand) > 1:  # o mesmo UG+PTRES em mais de um TED: tenta pelo nº do TED ou pelo processo citado no empenho
@@ -614,7 +621,7 @@ def ted(pasta):
                 return True
             outrosSei = procs & seiTED.keys()
             return bool(outrosSei) and dig(o['sei']) not in procs
-        cand = [o for o in cand if not outro(o)]
+        cand = [o for o in cand if not outro(o)] or porTexto
         if len(cand) > 1:   # ainda em mais de um TED: o empenho é do TED que já tinha crédito na data da nota e, se der, do mesmo PI
             dne = _dt(e['data'])
             c2 = [o for o in cand if not (dne and ncIni.get(o['id']) and ncIni[o['id']] > dne)]
