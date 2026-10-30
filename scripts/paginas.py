@@ -602,8 +602,9 @@ def ted(pasta):
         # empenho que cita o nº do TED (ou o processo SEI) na descrição, da UG que recebeu: vale mesmo sem NC ligada
         # (ex.: o relatório de NC do Tesouro ainda sem a NC do ano, ou a NC ligada a outro TED do mesmo PTRES)
         txt0 = (e['desc'] + ' ' + e['processo']).upper()
-        porTexto = [o for o in linhas if o.get('ugr') == e['ug'] and ((o['n'] and re.search(r'\b' + re.escape(o['n'].upper()) + r'\b', txt0))
-                    or (len(dig(o['sei'])) > 10 and dig(o['sei']) in dig(txt0)))]
+        # nº do TED citado: vale de qualquer UG do recebedor (ex.: CODEVASF 195007 → 195006, campus de IF), menos as da SDR; processo SEI: só da UG que recebeu
+        porTexto = [o for o in linhas if (o['n'] and e['ug'] not in UGS_SDR and o['er'] == 'Enviado' and re.search(r'\b' + re.escape(o['n'].upper()) + r'\b', txt0))
+                    or (o.get('ugr') == e['ug'] and len(dig(o['sei'])) > 10 and dig(o['sei']) in dig(txt0))]
         if not cand:
             cand = porTexto
         if not cand:
