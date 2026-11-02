@@ -1,0 +1,136 @@
+"""Alertas por menu · Parcerias e TED (os de Gestão Contratual e Orçamento são calculados no painel, com os dados do navegador).
+Cada alerta: {menu, sev ('r' crítico, 'y' atenção, 'b' acompanhar), id, titulo, sugestao, itens:[{num, nome, uf, valor, info}]}
+Saída: alertas.json  {gerado_em, hoje, parc:[...], ted:[...]}
+Uso: python scripts/alertas.py saida
+"""
+import csv, datetime, gzip, json, os, re, sys
+
+HOJE = datetime.date.today()
+f = lambda v: float(str(v or '0').replace(',', '.') or 0) if re.match(r'^-?[\d.,]+$', str(v or '0').strip() or '0') else 0.0
+
+
+def ler(caminho):
+    if not os.path.exists(caminho):
+        return []
+    abre = gzip.open if caminho.endswith('.gz') else open
+    with abre(caminho, 'rt', encoding='utf-8-sig', newline='') as fh:
+        return list(csv.DictReader(fh))
+
+
+def data(s):
+    m = re.match(r'(\d{2})/(\d{2})/(\d{4})', str(s or ''))
+    return datetime.date(int(m[3]), int(m[2]), int(m[1])) if m else None
+
+
+def item(num, nome, uf='', valor=0.0, info=''):
+    return {'num': num, 'nome': (nome or '')[:90], 'uf': uf or '', 'valor': round(valor or 0, 2), 'info': info}
+
+
+def alerta(menu, sev, id_, titulo, sugestao, itens, base=None):
+    return {'menu': menu, 'sev': sev, 'id': id_, 'titulo': titulo, 'sugestao': sugestao, 'itens': itens, 'base': base}
+
+
+def parcerias(saida):
+    inst = ler(os.path.join(saida, 'painel_instrumentos.csv'))
+    obras = {r['nr_instrumento']: r for r in ler(os.path.join(saida, 'painel_obras.csv'))}
+    grupos = {'parc': lambda r: r['ug_emitente'] == '130141', 'conv': lambda r: r['ug_emitente'] == '420013', 'repasse': lambda r: r['ug_emitente'] == '135098'}
+    ATIVA = re.compile(r'Em execu|Aguardando Presta|Presta.*Complementa|Assinad|Proposta/Plano de Trabalho Aprovad', re.I)
+    out = []
+    for menu, filtro in grupos.items():
+        L = [r for r in inst if filtro(r) and ATIVA.search(r.get('situacao') or '')]
+        exe = [r for r in L if re.search(r'Em execu', r['situacao'], re.I)]
+        dias = lambda r: (data(r['fim_vigencia']) - HOJE).days if data(r['fim_vigencia']) else None
+        I = lambda r, info: item(r['nr_instrumento'], r['proponente'], r['uf'], f(r['valor_repasse']), info)
+        v_venc = [r for r in exe if dias(r) is not None and dias(r) < 0]
+        v30 = [r for r in exe if dias(r) is not None and 0 <= dias(r) <= 30]
+        v90 = [r for r in exe if dias(r) is not None and 30 < dias(r) <= 90]
+        out.append(alerta(menu, 'r', 'vigvenc', 'Em execução com a vigência vencida', 'Verificar se houve atraso no repasse (prorrogação de ofício) ou cobrar a prestação de contas; registrar no Transferegov.',
+                          [I(r, f'venceu há {-dias(r)} dia(s)') for r in sorted(v_venc, key=dias)]))
+        out.append(alerta(menu, 'r', 'vig30', 'Vigência vence em até 30 dias', 'Avaliar a execução: se o objeto não termina no prazo, o convenente deve pedir a prorrogação; se o atraso for do repasse, prorrogar de ofício.',
+                          [I(r, f'vence em {dias(r)} dia(s)') for r in sorted(v30, key=dias)]))
+        out.append(alerta(menu, 'y', 'vig90', 'Vigência vence em 31 a 90 dias', 'Acompanhar a execução física e financeira e alertar o convenente sobre o prazo.',
+                          [I(r, f'vence em {dias(r)} dia(s)') for r in sorted(v90, key=dias)]))
+        pcs = [r for r in L if re.search(r'Aguardando Presta', r['situacao'], re.I)]
+        pc_v = [r for r in pcs if data(r['limite_prestacao_contas']) and data(r['limite_prestacao_contas']) < HOJE]
+        pc_30 = [r for r in pcs if data(r['limite_prestacao_contas']) and 0 <= (data(r['limite_prestacao_contas']) - HOJE).days <= 30]
+        out.append(alerta(menu, 'r', 'pcvenc', 'Prestação de contas não enviada no prazo', 'Notificar o convenente; sem resposta, registrar a inadimplência e instaurar a Tomada de Contas Especial.',
+                          [I(r, 'prazo foi ' + r['limite_prestacao_contas']) for r in pc_v]))
+        out.append(alerta(menu, 'y', 'pc30', 'Prestação de contas vence em até 30 dias', 'Lembrar o convenente do prazo e dos documentos exigidos.',
+                          [I(r, 'prazo ' + r['limite_prestacao_contas']) for r in pc_30]))
+        cs = [r for r in exe if data(r['clausula_suspensiva_ate']) and (data(r['clausula_suspensiva_ate']) - HOJE).days <= 60]
+        out.append(alerta(menu, 'r', 'susp', 'Cláusula suspensiva vence em até 60 dias (ou já venceu)', 'Cobrar os documentos pendentes (projeto, licença, titularidade); vencida sem solução, o instrumento deve ser extinto.',
+                          [I(r, 'suspensiva até ' + r['clausula_suspensiva_ate']) for r in cs]))
+        sd = [r for r in exe if f(r['valor_a_desembolsar']) > 0 and str(r.get('dias_sem_desembolso') or '').isdigit() and int(r['dias_sem_desembolso']) > 180]
+        out.append(alerta(menu, 'y', 'semdes', 'Sem desembolso há mais de 180 dias', 'Verificar com o convenente a licitação e a execução; pedir o cronograma atualizado.',
+                          [I(r, f"{r['dias_sem_desembolso']} dias sem desembolso") for r in sorted(sd, key=lambda r: -int(r['dias_sem_desembolso']))]))
+        aj = [r for r in L if (r.get('ajuste_pt_aberto') or '').strip()]
+        out.append(alerta(menu, 'y', 'ajuste', 'Ajuste do plano de trabalho em aberto', 'Analisar a solicitação no Transferegov dentro do prazo.',
+                          [I(r, r['ajuste_pt_aberto']) for r in aj]))
+        ob = [(r, obras[r['nr_instrumento']]) for r in exe if r['nr_instrumento'] in obras and str(obras[r['nr_instrumento']].get('dias_sem_medicao') or '').isdigit()
+              and int(obras[r['nr_instrumento']]['dias_sem_medicao']) > 90 and not re.search(r'conclu|finaliz', obras[r['nr_instrumento']].get('situacao_obra') or '', re.I)]
+        out.append(alerta(menu, 'y', 'obra', 'Obra sem medição há mais de 90 dias', 'Pedir o boletim de medição e verificar se a obra está paralisada (Obrasgov).',
+                          [I(r, f"{o['dias_sem_medicao']} dias · {o.get('situacao_obra','')}") for r, o in ob]))
+        ina = [r for r in L if (r.get('inadimplente_desde') or '').strip()]
+        out.append(alerta(menu, 'r', 'inad', 'Convenente inadimplente', 'Conferir a causa e o prazo para regularização; não liberar recursos até a regularização.',
+                          [I(r, 'desde ' + r['inadimplente_desde']) for r in ina]))
+        par = [r for r in exe if f(r['saldo_em_conta']) > 0 and str(r.get('dias_sem_desembolso') or '').isdigit() and int(r['dias_sem_desembolso']) > 365]
+        out.append(alerta(menu, 'b', 'saldo', 'Saldo em conta parado há mais de 1 ano', 'Cobrar a aplicação do recurso no objeto ou a devolução do saldo.',
+                          [I(r, f"saldo R$ {f(r['saldo_em_conta']):,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')) for r in par]))
+        tce = [r for r in L if (r.get('em_processo_tce') or '').upper().startswith('SIM')]
+        out.append(alerta(menu, 'b', 'tce', 'Em Tomada de Contas Especial', 'Acompanhar o processo de TCE.', [I(r, 'TCE') for r in tce]))
+    # Propostas SDR (ano corrente)
+    props = ler(os.path.join(saida, 'propostas.csv.gz')) or ler(os.path.join(saida, 'propostas.csv'))
+    pa = [p for p in props if p.get('ano_proposta') == str(HOJE.year)]
+    P = lambda p, info: item(p.get('nr_proposta'), p.get('proponente'), p.get('uf'), f(p.get('valor_repasse_proposta')), info)
+    comp = [p for p in pa if re.search(r'Complementa', p.get('situacao_proposta') or '', re.I) and not re.search(r'Complementad', p.get('situacao_proposta') or '', re.I)]
+    anal = [p for p in pa if re.search(r'Complementad|Enviad[ao] para An|em An[aá]lise', p.get('situacao_proposta') or '', re.I)]
+    out.append(alerta('prop', 'y', 'complem', 'Propostas em complementação (com o proponente)', 'Cobrar a complementação do proponente dentro do prazo do programa.', [P(p, p['situacao_proposta']) for p in comp]))
+    out.append(alerta('prop', 'y', 'analise', 'Propostas aguardando análise da área técnica', 'Analisar e emitir parecer; observar o prazo de impedimento técnico das emendas.', [P(p, p['situacao_proposta']) for p in anal]))
+    # Captação de Emendas (SIOP)
+    try:
+        em = json.load(open(os.path.join(saida, 'emendas_siop.json'), encoding='utf-8'))
+        sem = [b for b in em.get('linhas', []) if b.get('ano') == str(HOJE.year) and not b.get('proposta') and b.get('modalidade') != 'Aplicação direta']
+        out.append(alerta('captacao', 'y', 'semprop', 'Emenda indicada sem proposta no Transferegov', 'Contatar o beneficiário para cadastrar a proposta ou avaliar o impedimento técnico.',
+                          [item(b['emenda'], b.get('entidade'), b.get('uf'), b.get('indicado'), b.get('autor', '')) for b in sem]))
+    except Exception:
+        pass
+    return out
+
+
+def ted(saida):
+    T = ler(os.path.join(saida, 'ted', 'ted_base_atualizada.csv'))
+    out = []
+    EQ = {'130010', '420013'}
+    for menu, filtro in (('ted', lambda r: r['UG descentralizadora'] in EQ or r['UG descentralizada'] in EQ),
+                         ('tedapi', lambda r: not (r['UG descentralizadora'] in EQ or r['UG descentralizada'] in EQ))):
+        L = [r for r in T if filtro(r)]
+        exe = [r for r in L if r.get('Fase (painel)') == 'Em execução']
+        d = lambda r: int(r['Dias para o fim']) if re.match(r'^-?\d+$', r.get('Dias para o fim') or '') else None
+        I = lambda r, info: item(r['Nº TED'] or r.get('Plano de ação'), r.get('Unidade descentralizada'), '', f(r.get('Valor firmado (API)')) or f(r.get('Valor firmado (Tesouro)')), info)
+        vv = [r for r in exe if d(r) is not None and d(r) < 0]
+        v30 = [r for r in exe if d(r) is not None and 0 <= d(r) <= 30]
+        v90 = [r for r in exe if d(r) is not None and 30 < d(r) <= 90]
+        out.append(alerta(menu, 'r', 'vigvenc', 'Em execução com a vigência vencida', 'Conferir se houve prorrogação não registrada; se não, cobrar o relatório de cumprimento do objeto (Decreto 10.426/2020).', [I(r, f'venceu há {-d(r)} dia(s)') for r in vv]))
+        out.append(alerta(menu, 'r', 'vig30', 'Vigência vence em até 30 dias', 'Avaliar com a unidade descentralizada a prorrogação ou o encerramento.', [I(r, f'vence em {d(r)} dia(s)') for r in v30]))
+        out.append(alerta(menu, 'y', 'vig90', 'Vigência vence em 31 a 90 dias', 'Acompanhar a execução e o prazo.', [I(r, f'vence em {d(r)} dia(s)') for r in v90]))
+        semnc = [r for r in exe if f(r.get('Descentralizado NC (API)')) == 0 and f(r.get('NC no Tesouro')) == 0 and r.get('Enviado / recebido') == 'Enviado']
+        out.append(alerta(menu, 'r', 'semnc', 'TED em execução sem crédito descentralizado (sem NC)', 'Emitir a nota de crédito ou conferir no Tesouro se a NC foi emitida e ainda não aparece no relatório.', [I(r, 'sem NC') for r in semnc]))
+        ncsemne = [r for r in exe if (f(r.get('Descentralizado NC (API)')) > 0 or f(r.get('NC no Tesouro')) > 0) and f(r.get('Empenhado pela unidade (NE)')) == 0 and r.get('Enviado / recebido') == 'Enviado']
+        out.append(alerta(menu, 'y', 'ncsemne', 'Crédito descentralizado sem empenho pela unidade', 'Cobrar da unidade descentralizada o empenho do crédito recebido.', [I(r, 'NC sem empenho') for r in ncsemne]))
+        comp = [r for r in L if f(r.get('A comprovar (Tesouro)')) > 0 and d(r) is not None and d(r) < -60]
+        out.append(alerta(menu, 'y', 'comprovar', 'Saldo a comprovar com a vigência encerrada há mais de 60 dias', 'Cobrar o relatório de cumprimento do objeto e a comprovação no SIAFI.', [I(r, 'a comprovar no Tesouro') for r in comp]))
+        div = [r for r in L if (r.get('Divergências API x Tesouro') or '').strip()]
+        out.append(alerta(menu, 'b', 'diverg', 'Diferença entre a API do TED e o Tesouro', 'Conferir qual registro está correto e ajustar (Transferegov ou SIAFI).', [I(r, r['Divergências API x Tesouro'][:80]) for r in div]))
+    return out
+
+
+def main(saida):
+    out = {'gerado_em': datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=-3))).strftime('%d/%m/%Y %H:%M'), 'hoje': HOJE.strftime('%d/%m/%Y'),
+           'parc': parcerias(saida), 'ted': ted(saida)}
+    json.dump(out, open(os.path.join(saida, 'alertas.json'), 'w', encoding='utf-8'), ensure_ascii=False, separators=(',', ':'))
+    for k in ('parc', 'ted'):
+        print(k, ' · '.join(f"{a['menu']}/{a['id']}={len(a['itens'])}" for a in out[k] if a['itens']), flush=True)
+
+
+if __name__ == '__main__':
+    main(sys.argv[1] if len(sys.argv) > 1 else 'saida')

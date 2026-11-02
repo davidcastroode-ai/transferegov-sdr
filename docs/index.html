@@ -3777,6 +3777,35 @@ document.addEventListener('click', e => {
   if(e.target.closest('[data-ctrbexptodos]')){ CTRB.expTodos = !CTRB.expTodos; render(); return; }
   if(e.target.closest('[data-ctrblimpa]')){ CTRB.ft = {}; render(); return; }
 });
+// ===== ALERTA · GESTÃO CONTRATUAL (usado pela página de Alerta do painel novo) =====
+window.__alertasCtr = async function(){
+  try{ await dados('base'); }catch(e){}
+  try{ await carregarApiCtr(); }catch(e){}
+  try{ pedirTesCtr(); if(_tesCtrP) await _tesCtrP; if(API_CTR) API_CTR._sdr = null; }catch(e){}
+  const out = [], A = (menu, sev, id, titulo, sugestao, itens) => out.push({menu, sev, id, titulo, sugestao, itens});
+  const B = (DADOS.base && DADOS.base.linhas || []), at = B.filter(d => normAccent(d.cat) === 'ATIVO');
+  const iB = (d, info) => { const a = apiDoContrato(d); return {num:d.num, nome:d.fav, uf:d.uf, valor:d.anual||d.global||0, info, ctr: a ? a.id : null}; };
+  A('contratos','r','venc','Contratos ativos com a vigência vencida','Regularizar: prorrogar (se ainda couber) ou encerrar o contrato e abrir nova contratação; atualizar a Base e o Contratos.gov.br.', at.filter(d => d.dias !== null && d.dias < 0).sort((a,b) => a.dias-b.dias).map(d => iB(d, 'venceu há '+(-d.dias)+' dia(s)')));
+  A('contratos','r','vig30','Vigência vence em até 30 dias','Confirmar no SEI se a prorrogação ou a nova contratação já foi aberta; se não, abrir hoje.', at.filter(d => d.dias !== null && d.dias >= 0 && d.dias <= 30).sort((a,b) => a.dias-b.dias).map(d => iB(d, 'vence em '+d.dias+' dia(s)')));
+  A('contratos','y','vig120','Vigência vence em 31 a 120 dias','Abrir o processo de prorrogação ou de nova contratação com antecedência (pesquisa de preços, termo aditivo).', at.filter(d => d.dias !== null && d.dias > 30 && d.dias <= 120).sort((a,b) => a.dias-b.dias).map(d => iB(d, 'vence em '+d.dias+' dia(s)')));
+  let L = []; try{ L = linhasCtrSdr() || []; }catch(e){}
+  const iS = (d, info) => ({num:d.num, nome:d.forn, uf:d.uf, valor:d.vg||0, info, ctr:d.id});
+  const ac = k => L.filter(d => (d.acoes||[]).includes(k));
+  A('ctrsdr','r','fatura','Faturas vencidas sem pagamento','Cobrar o ateste do fiscal e liquidar respeitando a ordem cronológica (Lei 14.133/2021, art. 141).', ac('fatura').map(d => iS(d, (d.fatVenc||0)+' fatura(s) vencida(s)')));
+  A('ctrsdr','r','vencido','Vencidos ainda ativos no Contratos.gov.br','Encerrar no Contratos.gov.br ou registrar o termo aditivo de prorrogação.', ac('vencido').map(d => iS(d, 'fim '+(d.fim||''))));
+  A('ctrsdr','y','empenho','Empenho insuficiente para o previsto do ano','Pedir o reforço de empenho ao financeiro antes do fechamento do exercício.', ac('empenho').map(d => iS(d, 'falta empenhar '+fmtBRL(d.falta||0))));
+  A('ctrsdr','y','semresp','Sem gestor ou sem fiscal designado','Publicar a portaria de designação e cadastrar no Contratos.gov.br (Lei 14.133/2021, art. 117).', ac('semresp').map(d => iS(d, [d.gestor === 'Não' ? 'sem gestor' : '', d.fiscal === 'Não' ? 'sem fiscal' : ''].filter(Boolean).join(' e ') || 'sem responsável')));
+  A('ctrsdr','b','renovar','Vencem em até 120 dias (todas as UGs)','Acompanhar a renovação junto ao gestor de cada contrato.', ac('renovar').map(d => iS(d, 'vence em '+d.dias+' dia(s)')));
+  if(API_CTR && !API_CTR.erro){
+    const C = B.map(b => ({b, c: confCtr(b)}));
+    A('conferencia','y','naoenc','Na Base, mas não encontrados no Contratos.gov.br','Conferir o número do contrato na Base (digitação) ou cadastrar no Contratos.gov.br.', C.filter(x => /Não encontrado/.test(x.c.txt)).map(x => iB(x.b, 'não encontrado')));
+    A('conferencia','b','fimdif','Fim da vigência diferente entre a Base e o Contratos.gov.br','Atualizar a data que estiver errada (último termo aditivo).', C.filter(x => /Fim da vig/.test(x.c.txt)).map(x => iB(x.b, 'Base '+(x.b.fim||'—'))));
+    A('conferencia','b','vgdif','Valor global diferente entre a Base e o Contratos.gov.br','Atualizar o valor depois do último termo aditivo ou apostilamento.', C.filter(x => /Valor global/.test(x.c.txt)).map(x => iB(x.b, 'Base '+fmtBRL(x.b.global||0))));
+    const naBase = new Set(C.map(x => x.c.a && x.c.a.id).filter(Boolean)), ugs = new Set(B.map(b => (String(b.ug||'').match(/\d{6}/)||[])[0]).filter(Boolean));
+    A('conferencia','b','fora','Ativos no Contratos.gov.br e fora da Base','Cadastrar na Base Contratos (ou marcar que não são da CEPLAC).', API_CTR.lista.filter(o => o.ativo && !naBase.has(o.id) && (o.ug === '130010' || ugs.has(o.ugo))).map(o => ({num:o.num, nome:o.forn, uf:'', valor:o.vg||0, info:'só no Contratos.gov.br', ctr:o.id})));
+  }
+  return {itens: out, base: B.length, ativos: at.length, sdr: L.length};
+};
 function secaoConfApi(rows){
   if(!API_CTR){ rows.forEach(b => anotarRespCtr(b, null)); carregarApiCtr(); return secao('Conferência com o Contratos.gov.br','', '<p class="dica">Lendo a base da API de contratos…</p>'); }
   if(API_CTR.erro) return secao('Conferência com o Contratos.gov.br','', `<p class="dica">Não foi possível ler a base da API (${esc(API_CTR.erro)}).</p>`);
@@ -9638,9 +9667,7 @@ function marcarHash(t){ try{ if(location.hash !== '#'+t) history.replaceState(nu
 // =====================================================================
 const RAW_DADOS = 'https://raw.githubusercontent.com/davidcastroode-ai/transferegov-sdr/dados/';
 // telas reservadas no menu: o conteúdo entra quando a equipe passar a estrutura
-const TELAS_CONSTR = {alertactr:['ALERTA · CONTRATOS','alertas da gestão de contratos'], alertaorc:['ALERTA · ORÇAMENTO E FINANÇAS','alertas da execução orçamentária e financeira'],
-  alertaparc:['ALERTA · PARCERIAS','alertas de convênios, termos de fomento e contratos de repasse'], alertated:['ALERTA · TED','alertas dos termos de execução descentralizada'],
-};
+const TELAS_CONSTR = {};
 // ===== PORTFÓLIO E CARTILHAS SDR =====
 const PORT_GOV = 'https://www.gov.br/agricultura/pt-br/centrais-de-conteudo/publicacoes/cartilhas-emendas-parlamentares';
 const PORT_PDF = 'https://davidcastroode-ai.github.io/transferegov-sdr/cartilhas/';
@@ -9836,6 +9863,90 @@ document.addEventListener('click', e => {
 @media(max-width:1100px){.em-gg{grid-template-columns:1fr}.em-2,.em-3{grid-column:auto}}
 .em-cl{background:#eef5f0;color:#155a30;border:1px solid #cfe3d5}.em-mais{margin-top:8px;border:1px solid #cfe3d5;background:#fff;border-radius:8px;padding:6px 12px;cursor:pointer;color:#155a30;font-weight:700}
 @media(max-width:1000px){.em-fun{grid-template-columns:repeat(2,minmax(0,1fr))}.em-fun>div{clip-path:none;border-radius:12px;padding:10px 12px}.em-fil{grid-template-columns:repeat(2,minmax(0,1fr))}}`; document.head.appendChild(st); })();
+// ===== ALERTA · por área (Gestão Contratual, Orçamento e Finanças, Parcerias, TED) · alertas por menu + sugestão + autocrítica =====
+const AL = {cache:{}, sel:null, filtroSev:''};
+const AL_AREA = {alertactr:['GESTÃO CONTRATUAL', [['contratos','📑','Base Contratos (CEPLAC)'],['ctrsdr','📄','Contratos SDR'],['conferencia','✔','Conferência de Contratos'],['despesas','🧾','Despesas previstas']]],
+  alertaorc:['ORÇAMENTO E FINANÇAS', [['orcacao','🏛','Orçamento por ações'],['exe','$','Financeiro EXE'],['rap','⏱','Financeiro RAP']]],
+  alertaparc:['PARCERIAS', [['parc','🤝','Parceria SDR · convênios e termos (130141)'],['conv','📋','Execução Convênio/TF 420013'],['repasse','🏠','Contrato de Repasse (135098)'],['prop','📝','Propostas SDR'],['captacao','💡','Captação de Emendas']]],
+  alertated:['TED', [['tedapi','✉','TED GERAL SDR (130141, 130255, 135098)'],['ted','👥','TED EQUIPE SDR (130010 e 420013)']]]};
+// causa provável de cada alerta (para a autocrítica): o que a quantidade diz sobre a nossa rotina
+const AL_CAUSA = {venc:'a renovação começou tarde', vig30:'o prazo está no limite e a providência precisa ser hoje', vig120:'é a janela certa para abrir a renovação', vig90:'o prazo se aproxima e a execução precisa ser acompanhada', fatura:'o ateste do fiscal está atrasando a liquidação',
+  vencido:'o Contratos.gov.br não foi atualizado depois do fim do contrato', empenho:'o empenho do ano não acompanhou o previsto', semresp:'a designação de gestor e fiscal não está sendo cadastrada na assinatura',
+  naoenc:'a Base tem número de contrato que não bate com o Contratos.gov.br', fimdif:'os termos aditivos não foram lançados nas duas bases', vgdif:'os termos aditivos não foram lançados nas duas bases', fora:'contratos novos não estão sendo cadastrados na Base',
+  vigvenc:'instrumentos seguem "em execução" depois do fim da vigência, sem prorrogação ou prestação de contas registrada', pcvenc:'as notificações de prestação de contas não estão sendo feitas no prazo', pc30:'o convenente precisa ser lembrado do prazo',
+  susp:'as pendências da cláusula suspensiva não estão sendo cobradas', semdes:'há execução parada (licitação ou obra) sem acompanhamento', ajuste:'há solicitações de ajuste esperando análise', obra:'obras sem medição podem estar paralisadas',
+  inad:'há convenentes inadimplentes', saldo:'há recurso parado na conta do convenente', tce:'há processos de TCE em curso', complem:'as propostas voltam para complementação e ficam paradas com o proponente', analise:'a fila de análise está grande', semprop:'beneficiários de emenda não cadastraram proposta',
+  semnc:'o crédito não foi descentralizado ou o relatório do Tesouro está sem as NCs do ano', ncsemne:'a unidade recebeu o crédito e não empenhou', comprovar:'o relatório de cumprimento do objeto não foi cobrado depois do fim da vigência', diverg:'API e Tesouro registram valores ou datas diferentes',
+  dotpar:'há dotação disponível sem empenho perto do fim do exercício', bloq:'há crédito bloqueado na dotação', aliq:'há empenho sem liquidação (execução atrasada)', apagar:'há despesa liquidada esperando pagamento', rapnp:'RAP não processado sem liquidação corre risco de bloqueio e cancelamento', rapp:'há RAP processado ainda a pagar'};
+async function alAbrir(tela){
+  desenharAlerta(tela);
+  if(AL.cache[tela] && !AL.cache[tela].erro) return;
+  AL.cache[tela] = {carregando:true}; desenharAlerta(tela);
+  try{ AL.cache[tela] = {itens: await alCarregar(tela)}; }catch(e){ AL.cache[tela] = {erro: e.message}; }
+  desenharAlerta(tela);
+}
+async function alCarregar(tela){
+  if(tela === 'alertactr'){ const w = await garantirAntigo(); const r = await w.__alertasCtr(); return r.itens; }
+  if(tela === 'alertaparc' || tela === 'alertated'){ const r = await fetch(RAW_DADOS+'alertas.json?v='+new Date().toISOString().slice(0,13), {cache:'no-store'}); if(!r.ok) throw new Error(r.status === 404 ? 'o robô ainda não gerou os alertas' : 'HTTP '+r.status); const j = lgpdObj(await r.json()); return tela === 'alertaparc' ? j.parc : j.ted; }
+  // orçamento e finanças: SIOP SDR (dotação) + Tesouro (EXE e RAP do último mês)
+  const out = [], A = (menu, sev, id, titulo, sugestao, itens) => out.push({menu, sev, id, titulo, sugestao, itens});
+  const w = await garantirAntigo(); let S = []; try{ await w.dados('siop'); S = w.eval('DADOS.siop && DADOS.siop.linhas') || []; }catch(e){}
+  const hoje = new Date(), fimAno = new Date(hoje.getFullYear(), 11, 31), diasFim = Math.round((fimAno - hoje)/864e5);
+  const iS = (d, info) => ({num: d.acao+' · '+(d.po||''), nome: d.poNome || d.acaoNome || '', uf: d.depto || '', valor: d.disp || 0, info});
+  A('orcacao', diasFim <= 90 ? 'r' : 'y', 'dotpar', 'Dotação disponível sem empenho', `Empenhar ou remanejar o saldo · faltam ${diasFim} dia(s) para o fim do exercício.`, S.filter(d => (d.disp||0) > 1000 && !(d.emp > 0)).sort((a,b) => b.disp - a.disp).map(d => iS(d, 'disponível '+fmtBRL(d.disp))));
+  A('orcacao', 'y', 'dotpar', 'Saldo disponível acima de 30% da dotação', 'Rever a programação de empenhos da ação/PO até o fim do ano.', S.filter(d => d.emp > 0 && (d.atual||0) > 0 && (d.disp||0) > 0.3*d.atual).sort((a,b) => b.disp - a.disp).map(d => iS(d, Math.round(100*d.disp/d.atual)+'% da dotação disponível')));
+  A('orcacao', 'b', 'bloq', 'Crédito bloqueado', 'Pedir o desbloqueio à SPOA/SOF ou ajustar a programação.', S.filter(d => (d.bloq||0) > 0).map(d => ({...iS(d, 'bloqueado '+fmtBRL(d.bloq)), valor: d.bloq})));
+  try{ await Promise.all(['exe','rap'].map(v => carregarVisao(v).catch(() => {}))); const ms = Object.keys(MESES_TXT).map(Number).sort((a,b) => a-b), ult = ms[ms.length-1];
+    if(ult){ await Promise.all(['exe','rap'].map(v => garantirDetalhe(v, String(ult)).catch(() => {})));
+      const porNE = (v, f) => { const M = new Map(); (DADOS[v].det[ult]||[]).forEach(d => { const k = d.ug+'|'+d.ne; const x = M.get(k) || {d, v:0}; x.v += f(d); M.set(k, x); }); return [...M.values()].filter(x => x.v > 0.5).sort((a,b) => b.v - a.v); };
+      const iN = (x, info) => ({num: x.d.ne, nome: x.d.favN || x.d.fav || '', uf: 'UG '+x.d.ug+' · '+(x.d.acao||''), valor: x.v, info});
+      A('exe', 'y', 'apagar', 'Liquidado e ainda não pago', 'Pagar respeitando a ordem cronológica e o limite financeiro (PF).', porNE('exe', d => +d.apagar || 0).map(x => iN(x, 'a pagar')));
+      A('exe', 'b', 'aliq', 'Empenhado a liquidar', 'Cobrar a execução do contrato ou instrumento; avaliar a anulação do saldo sem uso antes do fim do ano.', porNE('exe', d => +d.aliq || 0).map(x => iN(x, 'a liquidar')));
+      A('rap', 'r', 'rapnp', 'RAP não processado a liquidar', 'Liquidar ou justificar a manutenção; sem liquidação, o RAP é bloqueado e cancelado (Decreto 93.872/1986, art. 68).', porNE('rap', d => +d.npAlq || 0).map(x => iN(x, 'não processado a liquidar')));
+      A('rap', 'y', 'rapp', 'RAP a pagar', 'Programar o pagamento com o limite financeiro.', porNE('rap', d => (+d.ppApg || 0) + (+d.npApg || 0)).map(x => iN(x, 'a pagar')));
+      AL.mesOrc = MESES_TXT[ult] || ''; } }catch(e){}
+  if(!S.length && !AL.mesOrc) throw new Error('o SIOP SDR e o Tesouro não carregaram agora; tente de novo em instantes');
+  return out;
+}
+function desenharAlerta(tela){
+  const el = document.getElementById('v-extra'); if(!el || el.dataset.tela !== tela) return;
+  const [area, menus] = AL_AREA[tela], C = AL.cache[tela] || {};
+  const topo = `<div class="vx-top"><div><h1>ALERTA · ${area}</h1><small>alertas de cada menu da área · sugestão de correção · autocrítica</small></div></div>`;
+  if(!C.itens){ el.innerHTML = topo + `<div class="vx-card" style="margin-top:14px">${C.erro ? 'Não foi possível montar os alertas: '+esc(C.erro) : 'Juntando os alertas da área…'}</div>`; return; }
+  const I = C.itens.filter(a => a.itens && a.itens.length), soma = (s) => I.filter(a => a.sev === s).reduce((t, a) => t + a.itens.length, 0);
+  const sv = [['r','Crítico','vence ou já venceu'],['y','Atenção','precisa de providência'],['b','Acompanhar','informativo']];
+  const tot = `<div class="al-sv">${sv.map(([s, r, d]) => `<button type="button" class="al-s ${s} ${AL.filtroSev === s ? 'on' : ''}" data-alsev="${s}"><span>${r}</span><b>${soma(s).toLocaleString('pt-BR')}</b><small>${d}</small></button>`).join('')}</div>`;
+  // autocrítica: os alertas mais pesados viram frases com a causa provável e a correção
+  const peso = a => ({r:3, y:2, b:1})[a.sev] * Math.log10(1 + a.itens.length);
+  const ag = {}; I.forEach(a => { const g = ag[a.id] || (ag[a.id] = {...a, itens: []}); g.itens = g.itens.concat(a.itens); if(({r:3, y:2, b:1})[a.sev] > ({r:3, y:2, b:1})[g.sev]) g.sev = a.sev; });   // o mesmo alerta em vários menus conta uma vez
+  const top = Object.values(ag).sort((a,b) => peso(b) - peso(a)).slice(0, 4);
+  const auto = top.length ? `<div class="al-auto"><b>Autocrítica da área</b><small> · o que os números dizem sobre a nossa rotina e como resolver</small><ol>${top.map(a => `<li><b>${a.itens.length.toLocaleString('pt-BR')} · ${esc(a.titulo)}</b>${a.base ? ' em '+a.base : ''}: ${esc(AL_CAUSA[a.id] || 'precisa de providência')}. <span>Correção: ${esc(a.sugestao)}</span></li>`).join('')}</ol></div>`
+    : `<div class="al-auto ok"><b>Nenhum alerta nesta área.</b> Tudo em dia pelos dados de hoje.</div>`;
+  const ordem = {r:0, y:1, b:2};
+  const secs = menus.map(([m, ic, nome]) => { const L = I.filter(a => a.menu === m && (!AL.filtroSev || a.sev === AL.filtroSev)).sort((a,b) => ordem[a.sev] - ordem[b.sev] || b.itens.length - a.itens.length);
+    return `<div class="al-sec"><div class="al-st"><span>${ic} ${esc(nome)}</span><button type="button" class="al-ir" data-alir="${m}">abrir o menu →</button></div>${L.length ? `<div class="al-g">${L.map(a => { const k = tela+'|'+a.menu+'|'+a.id+'|'+a.titulo, aberto = AL.sel === k;
+      return `<div class="al-a ${a.sev} ${aberto ? 'ab' : ''}"><button type="button" class="al-h" data-alsel="${esc(k)}"><em>${a.itens.length.toLocaleString('pt-BR')}</em><b>${esc(a.titulo)}</b><small>Sugestão: ${esc(a.sugestao)}</small><i>${aberto ? 'fechar ▴' : 'ver lista ▾'}</i></button>
+        ${aberto ? `<div class="al-l">${a.itens.slice(0, 200).map(x => `<div><span class="n">${x.ctr ? `<a href="#" data-alctr="${esc(x.ctr)}">${esc(x.num)}</a>` : /^\d{6}$|^[1-9]AA/.test(String(x.num)) && tela === 'alertaparc' ? `<a href="#" data-alinst="${esc(x.num)}">${esc(x.num)}</a>` : esc(x.num)}</span><span class="t">${esc(x.nome||'')}${x.uf ? ' <small>'+esc(x.uf)+'</small>' : ''}</span><span class="i">${esc(x.info||'')}</span><span class="v">${x.valor ? fmtC(x.valor) : ''}</span></div>`).join('')}${a.itens.length > 200 ? `<p class="al-mais">+ ${a.itens.length - 200} · abra o menu para ver todos</p>` : ''}</div>` : ''}</div>`; }).join('')}</div>` : '<p class="al-vazio">✓ Sem alertas neste menu.</p>'}</div>`; }).join('');
+  el.innerHTML = topo + tot + auto + secs + `<p class="em-n">Alertas calculados com os dados de hoje${tela === 'alertaorc' && AL.mesOrc ? ' (Tesouro: posição de '+esc(AL.mesOrc)+')' : ''}. Clique no número para abrir a ficha ou o relatório.</p>`;
+}
+document.addEventListener('click', e => {
+  const s = e.target.closest('[data-alsev]'); if(s){ AL.filtroSev = AL.filtroSev === s.dataset.alsev ? '' : s.dataset.alsev; desenharAlerta(document.getElementById('v-extra').dataset.tela); return; }
+  const a = e.target.closest('[data-alsel]'); if(a){ AL.sel = AL.sel === a.dataset.alsel ? null : a.dataset.alsel; desenharAlerta(document.getElementById('v-extra').dataset.tela); return; }
+  const m = e.target.closest('[data-alir]'); if(m){ ir(m.dataset.alir); return; }
+  const c = e.target.closest('[data-alctr]'); if(c){ e.preventDefault(); ir('relctr', {id: c.dataset.alctr}); return; }
+  const n = e.target.closest('[data-alinst]'); if(n){ e.preventDefault(); ir('relinst', {nr: n.dataset.alinst}); return; }
+});
+(function(){ const st = document.createElement('style'); st.textContent = `
+.al-sv{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:14px}.al-s{border:0;border-radius:14px;padding:12px 16px;text-align:left;cursor:pointer;font:inherit}.al-s span{display:block;font-weight:700;font-size:13px}.al-s b{display:block;font-size:30px;line-height:1.1}.al-s small{font-size:12px}
+.al-s.r{background:#fdecec;color:#8a1c1c}.al-s.y{background:#fdf3df;color:#6b4500}.al-s.b{background:#e6f1fb;color:#0c447c}.al-s.on{box-shadow:0 0 0 3px #f2b33d}
+.al-auto{margin-top:12px;background:#fff8e6;border:1px solid #efc56f;border-radius:14px;padding:12px 16px;color:#412402;font-size:13.5px}.al-auto.ok{background:#eaf6eb;border-color:#9fd08a;color:#1d5e2c}.al-auto small{color:#7a5a20}.al-auto ol{margin:8px 0 0;padding-left:20px}.al-auto li{margin:4px 0;line-height:1.45}.al-auto li span{color:#5c4a28}
+.al-sec{margin-top:16px}.al-st{display:flex;justify-content:space-between;align-items:center;font-weight:800;color:#155a30;font-size:15px;border-bottom:2px solid #cfe3d5;padding-bottom:5px;margin-bottom:8px}.al-ir{border:0;background:none;color:#1e7a3c;font-weight:700;cursor:pointer;font:inherit;font-size:13px}
+.al-g{display:grid;gap:8px}.al-a{background:#fff;border-radius:12px;border-left:5px solid;overflow:hidden}.al-a.r{border-left-color:#d93636}.al-a.y{border-left-color:#e0a100}.al-a.b{border-left-color:#378add}
+.al-h{display:grid;grid-template-columns:70px 1fr auto;grid-template-rows:auto auto;gap:2px 12px;width:100%;border:0;background:none;text-align:left;padding:10px 14px;cursor:pointer;font:inherit}.al-h:hover{background:#f6faf7}
+.al-h em{grid-row:1/3;font-style:normal;font-size:26px;font-weight:800;align-self:center}.al-a.r em{color:#b3261e}.al-a.y em{color:#8a5a00}.al-a.b em{color:#185fa5}.al-h b{font-size:14.5px;color:#1d2b24}.al-h small{grid-column:2;font-size:12.5px;color:#4c5c53}.al-h i{grid-row:1/3;grid-column:3;align-self:center;font-style:normal;font-size:12px;font-weight:700;color:#1e7a3c}
+.al-l{border-top:1px solid #e3ebe5;max-height:380px;overflow:auto}.al-l>div{display:grid;grid-template-columns:150px minmax(0,1fr) 220px 110px;gap:10px;padding:6px 14px;font-size:12.5px;border-bottom:1px solid #f0f4f1}.al-l>div:nth-child(even){background:#f8fbf9}
+.al-l .t{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.al-l .t small{color:#5f6f66}.al-l .i{color:#4c5c53}.al-l .v{text-align:right;font-weight:700}.al-l a{color:#1e7a3c;font-weight:700}.al-mais,.al-vazio{font-size:12.5px;color:#5f6f66;margin:8px 14px}
+@media(max-width:900px){.al-l>div{grid-template-columns:1fr 1fr}.al-sv{grid-template-columns:1fr}}`; document.head.appendChild(st); })();
 function desenharConstr(tela){ const [t, s] = TELAS_CONSTR[tela];
   document.getElementById('v-extra').innerHTML = `<div class="vx-top"><div><h1>${esc(t)}</h1><small>${esc(s)}</small></div></div>
     <div class="vx-card" style="margin-top:16px;text-align:center;padding:40px 20px"><div style="font-size:40px">🚧</div><h2 style="margin:8px 0 4px;color:#155a30">Em construção</h2><p style="color:#5f6f66;margin:0">Esta página será montada a partir das orientações da equipe.</p></div>`; }
@@ -9845,7 +9956,7 @@ function telaExtra(tela){
   ['v-antigo','v-visao','v-menu','v-painel'].forEach(id => { const x = document.getElementById(id); if(x) x.hidden = true; });
   document.body.style.overflow = ''; document.body.dataset.tema = '';
   el.hidden = false; el.dataset.tela = tela; window.scrollTo(0,0); marcarHash(tela);
-  if(tela === 'captacao') emiAbrir(); else if(tela === 'portmapa' || tela === 'acoessdr') desenharPortfolio(tela); else if(TELAS_CONSTR[tela]) desenharConstr(tela); else if(tela === 'indic') desenharIndic(); else if(tela === 'assist') desenharAssist(); else if(tela === 'relinst') desenharRelInst(); else if(tela === 'relctr') desenharRelCtr(); else desenharMetodo();
+  if(/^alerta/.test(tela)) alAbrir(tela); else if(tela === 'captacao') emiAbrir(); else if(tela === 'portmapa' || tela === 'acoessdr') desenharPortfolio(tela); else if(TELAS_CONSTR[tela]) desenharConstr(tela); else if(tela === 'indic') desenharIndic(); else if(tela === 'assist') desenharAssist(); else if(tela === 'relinst') desenharRelInst(); else if(tela === 'relctr') desenharRelCtr(); else desenharMetodo();
 }
 (function(){ const st = document.createElement('style'); st.textContent = `
 .vx{box-sizing:border-box;max-width:100%;overflow-x:hidden;padding:18px 24px 40px;background:#e9efe9;min-height:100vh;font-family:Barlow,'Segoe UI',Arial,sans-serif;color:#1d2b24}
@@ -12006,7 +12117,7 @@ window.relExtrasParc = relExtrasParc; window.rgAbrir = rgAbrir;
 async function ir(tela, sel){
   if(!tela || tela==='menu') tela = 'visao';
   { const vx = document.getElementById('v-extra'); if(vx) vx.hidden = true; }
-  if(tela==='indic' || tela==='metodo' || tela==='assist' || tela==='relinst' || tela==='relctr' || tela==='portmapa' || tela==='acoessdr' || tela==='captacao' || TELAS_CONSTR[tela]){ fecharMS(); VISAO = 'menu'; telaExtra(tela); if(tela==='relinst' && sel && sel.nr) riAbrir(sel.nr); if(tela==='relctr' && sel && sel.id) rcAbrir(sel.id); return; }   // a barra lateral substitui a página de MENU: o painel abre na Visão geral
+  if(tela==='indic' || tela==='metodo' || tela==='assist' || tela==='relinst' || tela==='relctr' || tela==='portmapa' || tela==='acoessdr' || tela==='captacao' || /^alerta/.test(tela) || TELAS_CONSTR[tela]){ fecharMS(); VISAO = 'menu'; telaExtra(tela); if(tela==='relinst' && sel && sel.nr) riAbrir(sel.nr); if(tela==='relctr' && sel && sel.id) rcAbrir(sel.id); return; }   // a barra lateral substitui a página de MENU: o painel abre na Visão geral
   if(TELAS_ANTIGAS.includes(tela)){
     marcarHash(tela);
     fecharMS(); VISAO = 'menu'; abrirAntiga(tela, sel); return;
