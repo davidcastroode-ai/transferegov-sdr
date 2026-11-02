@@ -9640,7 +9640,7 @@ const RAW_DADOS = 'https://raw.githubusercontent.com/davidcastroode-ai/transfere
 // telas reservadas no menu: o conteúdo entra quando a equipe passar a estrutura
 const TELAS_CONSTR = {alertactr:['ALERTA · CONTRATOS','alertas da gestão de contratos'], alertaorc:['ALERTA · ORÇAMENTO E FINANÇAS','alertas da execução orçamentária e financeira'],
   alertaparc:['ALERTA · PARCERIAS','alertas de convênios, termos de fomento e contratos de repasse'], alertated:['ALERTA · TED','alertas dos termos de execução descentralizada'],
-  captacao:['CAPTAÇÃO DE EMENDAS','captação de emendas parlamentares para as ações da SDR']};
+};
 // ===== PORTFÓLIO E CARTILHAS SDR =====
 const PORT_GOV = 'https://www.gov.br/agricultura/pt-br/centrais-de-conteudo/publicacoes/cartilhas-emendas-parlamentares';
 const PORT_PDF = 'https://davidcastroode-ai.github.io/transferegov-sdr/cartilhas/';
@@ -9697,6 +9697,80 @@ function desenharPortfolio(tela){
 .pf-a p{margin:0;font-size:13px;color:#4c5c53}.pf-meta{display:flex;flex-direction:column;gap:2px;font-size:12px;color:#33433a}.pf-meta em{font-style:normal;font-weight:700;color:#5f6f66;margin-right:6px}
 .pf-bts{display:flex;flex-wrap:wrap;gap:6px;margin-top:auto}.pf-bt{background:#1e7a3c;color:#fff;border-radius:8px;padding:6px 11px;font-size:12.5px;font-weight:700;text-decoration:none}.pf-bt.cl{background:#eef5f0;color:#155a30;border:1px solid #cfe3d5}.vx-top .pf-bt.cl{background:#fff}
 .pf-n{font-size:12px;color:#5f6f66;margin-top:14px}`; document.head.appendChild(st); })();
+// ===== CAPTAÇÃO DE EMENDAS · EMENDA INDIVIDUAL (extrator do SIOP × Transferegov × EXE) =====
+const EMI = {d:null, erro:'', f:{}, sel:null, exe:null, carregando:false};
+const EMI_ACAO = {'20ZV':'Fomento ao Setor Agropecuário','8622':'Cooperativismo, Associativismo e Agroindústria','215A':'Cadeias Produtivas da Agropecuária','8593':'Produção Agropecuária Sustentável','214Z':'Tecnologia Agropecuária e Recursos Genéticos','00PN':'Cooperação OCDE','21B6':'ATER','8606':'Pró-Orgânico','20ZY':'Cadeia Produtiva do Cacau','2000':'Administração da Unidade'};
+async function emiAbrir(){
+  desenharEmi();
+  if(EMI.d || EMI.carregando) return; EMI.carregando = true;
+  try{ const r = await fetch(RAW_DADOS+'emendas_siop.json?v='+new Date().toISOString().slice(0,13), {cache:'no-store'}); if(!r.ok) throw new Error(r.status === 404 ? 'o robô ainda não gerou os dados das emendas' : 'HTTP '+r.status); EMI.d = lgpdObj(await r.json()); }
+  catch(e){ EMI.erro = e.message; }
+  EMI.carregando = false; desenharEmi();
+  // EXE (Tesouro): empenhado e pago pelas notas cujo PI traz o nº da emenda (cobre também a aplicação direta)
+  try{ await carregarVisao('exe'); const ms = Object.keys(MESES_TXT).map(Number).sort((a,b) => a-b), ult = ms[ms.length-1]; if(ult){ await garantirDetalhe('exe', String(ult));
+    const M = {}; (DADOS.exe.det[ult]||[]).forEach(x => { const m = String(x.pi||'').match(/(\d{8})/); if(!m) return; const o = M[m[1]] || (M[m[1]] = {emp:0, liq:0, pago:0, nes:new Set()}); o.emp += +x.emp||0; o.liq += +x.liq||0; o.pago += +x.pago||0; if(x.ne) o.nes.add(x.ne); });
+    EMI.exe = {M, mes: MESES_TXT[ult]||''}; desenharEmi(); } }catch(e){}
+}
+const emiCod = n => String(n||'').slice(4);   // 202613390014 → 13390014 (o PI das notas é I13390014)
+function emiFiltrar(L, ign){ return L.filter(b => Object.entries(EMI.f).every(([k, v]) => k === ign || !v.length || v.includes(String(b[k]||'')))); }
+function desenharEmi(){
+  const el = document.getElementById('v-extra'); if(!el || el.dataset.tela !== 'captacao') return;
+  const topo = `<div class="vx-top"><div><h1>CAPTAÇÃO DE EMENDAS</h1><small>Emenda Individual · SIOP (indicação) × Transferegov (proposta e instrumento) × Tesouro (empenho e pagamento) · ações das UGs 130010, 130141, 130255, 135098 e 420013</small></div></div>
+    <div class="em-tabs"><button class="on">Emenda Individual</button></div>`;
+  if(!EMI.d){ el.innerHTML = topo + `<div class="vx-card" style="margin-top:14px">${EMI.erro ? 'Não foi possível ler os dados: '+esc(EMI.erro) : 'Lendo as emendas…'}</div>`; return; }
+  const X = EMI.exe && EMI.exe.M;
+  const L0 = EMI.d.linhas.map(b => Object.assign(b, {autorP: b.autor+' · '+b.partido, acaoN: b.acao+' · '+(EMI_ACAO[b.acao]||'')}));
+  const L = emiFiltrar(L0), nums = new Set(L.map(b => b.emenda)), E = EMI.d.emendas.filter(e => nums.has(e.emenda) || (!Object.values(EMI.f).some(v => v.length) ));
+  const soma = (A, k) => A.reduce((s, x) => s + (+x[k]||0), 0);
+  const exeE = c => X && X[c] || null, emT = X ? E.reduce((s, e) => s + ((exeE(emiCod(e.emenda))||{}).emp||0), 0) : soma(E, 'empenhado_siop'), pgT = X ? E.reduce((s, e) => s + ((exeE(emiCod(e.emenda))||{}).pago||0), 0) : null;
+  const ind = soma(L, 'indicado'), aut = soma(E, 'autorizado'), empS = soma(E, 'empenhado_siop');
+  const reg = {}; const R = (k, tit, lista) => { reg[k] = {tit, lista}; return ` data-emi="${esc(k)}" title="Clique para ver a lista"`; };
+  const card = (k, t, v, n, lista) => `<div class="em-k"${R('k|'+k, t, lista)}><span>${t}</span><b>${v}</b><small>${n}</small></div>`;
+  const kpis = `<div class="em-ks">${card('em','Emendas',E.length,`${new Set(E.map(e => e.autor)).size} parlamentares`, L)}
+    ${card('ind','Valor indicado',fmtC(ind),`${L.filter(b => b.indicado > 0).length} beneficiários`, L.filter(b => b.indicado > 0))}
+    ${card('emp','Empenhado (SIOP)',fmtC(empS),aut ? Math.round(100*empS/aut)+'% do autorizado ('+fmtC(aut)+')' : '', L.filter(b => b.ne))}
+    ${card('pag', X ? 'Pago (Tesouro · EXE)' : 'Pago', pgT === null ? '…' : fmtC(pgT), X ? 'posição de '+esc(EMI.exe.mes) : 'lendo o Tesouro…', L.filter(b => b.desembolsado > 0))}
+    ${card('sp','Sem proposta','' + L.filter(b => /Sem proposta/.test(b.situacao)).length, 'beneficiários sem proposta no Transferegov', L.filter(b => /Sem proposta/.test(b.situacao)))}</div>`;
+  // filtros de escolha múltipla
+  const FT = [['ano','Ano'],['acaoN','Ação'],['autorP','Parlamentar'],['partido','Partido'],['uf','UF'],['modalidade','Modalidade'],['area','Área técnica'],['situacao','Situação']];
+  const filtros = `<div class="vx-card em-fil">${FT.map(([k, r]) => `<label>${r}${msxHTML('emi|'+k, {rot:r, todos:'Todos', opts:() => { const B = emiFiltrar(L0, k); return [...new Set(L0.map(b => String(b[k]||'')).filter(Boolean))].sort((a,b) => a.localeCompare(b,'pt-BR',{numeric:true})).map(v => [v, v, B.filter(b => String(b[k]||'') === v).length]); },
+    get:() => EMI.f[k]||[], set:a => { EMI.f[k] = a; EMI.sel = null; desenharEmi(); }})}</label>`).join('')}<button type="button" class="vx-btn" data-emilimpa>Limpar</button></div>`;
+  // rankings
+  const rank = (tit, k, val, lim) => { const g = {}; L.forEach(b => { const c = b[k] || '—'; (g[c] = g[c] || {v:0, l:[]}).v += b[val]||0; g[c].l.push(b); });
+    const G = Object.entries(g).sort((a,b) => b[1].v - a[1].v), mx = Math.max(1, ...G.map(([,x]) => x.v));
+    return `<div class="vx-card em-r"><h3>${tit}</h3>${G.slice(0, lim||8).map(([c, x]) => `<div${R('r|'+k+'|'+c, tit+': '+c, x.l)}><span>${esc(c)} <small>${new Set(x.l.map(b => b.emenda)).size} emenda(s)</small></span><b>${fmtC(x.v)}</b><i><em style="width:${(100*x.v/mx).toFixed(1)}%"></em></i></div>`).join('')}${G.length > (lim||8) ? `<p class="em-n">+ ${G.length - (lim||8)} · use o filtro acima</p>` : ''}</div>`; };
+  const ranks = `<div class="em-g">${rank('Por parlamentar (indicado)','autorP','indicado',10)}${rank('Por ação','acaoN','indicado')}</div><div class="em-g">${rank('Por UF','uf','indicado',10)}${rank('Por modalidade','modalidade','indicado')}${rank('Por situação no Transferegov','situacao','indicado')}</div>`;
+  // lista (colunas da planilha CADASTRO DE EMENDAS)
+  const COLS = [['ano','Ano'],['emenda','Número Emenda'],['autor','Autor'],['partido','Partido'],['modalidade','Modalidade'],['acao','Ação'],['area','Área técnica'],['gnd','GND'],['ma','MA'],['programa','Programa'],['cnpj','Beneficiário'],['instrumento','Instrumento'],['proposta','Proposta'],['situacao','Situação'],['tipo_despesa','Tipo de despesa'],['entidade','Entidade'],['processo','Processo SEI'],['tp_entidade','TP Entidade'],['uf','Estado'],['pi','PI'],['ptres','PTRES'],['indicado','Valor indicado','n'],['nd','ND'],['ne','NE'],['empenhado','Empenhado (NE)','n'],['desembolsado','Desembolsado','n']];
+  const S = EMI.sel && reg[EMI.sel], LT = S ? S.lista : L;
+  EMI._tab = {COLS, LT, tit: S ? S.tit : 'Todas as emendas'};
+  const lin = LT.slice(0, 400).map(b => `<tr>${COLS.map(([k,,n]) => k === 'proposta' && b.link ? `<td><a href="${esc(b.link)}" target="_blank" rel="noopener">${esc(b[k])}</a></td>` : `<td class="${n ? 'n' : ''}">${n ? fmtBRL(+b[k]||0).replace('R$','').trim() : esc(b[k]||'—')}</td>`).join('')}</tr>`).join('');
+  const tab = `<div class="vx-card em-tc" id="emiTab"><div class="em-th"><h3>${esc(EMI._tab.tit)} · ${LT.length} beneficiário(s)${S ? ' <button type="button" class="em-x" data-emisel="">mostrar todas ✕</button>' : ''}</h3><button type="button" class="vx-btn" data-emixls>Extração em Excel</button></div>
+    <div class="em-tw"><table class="em-t"><thead><tr>${COLS.map(([,r,n]) => `<th class="${n ? 'n' : ''}">${r}</th>`).join('')}</tr></thead><tbody>${lin || `<tr><td colspan="${COLS.length}">Nenhuma emenda com esses filtros.</td></tr>`}</tbody>
+    <tfoot><tr><td colspan="21">Total</td><td class="n">${fmtBRL(soma(LT,'indicado')).replace('R$','').trim()}</td><td></td><td></td><td class="n">${fmtBRL(soma(LT,'empenhado')).replace('R$','').trim()}</td><td class="n">${fmtBRL(soma(LT,'desembolsado')).replace('R$','').trim()}</td></tr></tfoot></table></div>
+    ${LT.length > 400 ? '<p class="em-n">Mostrando 400 linhas · a extração em Excel leva todas.</p>' : ''}</div>`;
+  EMI._reg = reg;
+  el.innerHTML = topo + filtros + kpis + ranks + tab + `<p class="em-n">Fontes: SIOP (extrator de emendas · ${esc((EMI.d.anos||[]).join(', '))}), Transferegov (propostas, instrumentos e empenhos, ligados pelo nº da emenda + CNPJ do beneficiário)${X ? ' e Tesouro Gerencial (EXE, posição de '+esc(EMI.exe.mes)+', pelo PI das notas)' : ''} · robô de ${esc(EMI.d.gerado_em||'')}. Modalidade 90 = aplicação direta pelo MAPA.</p>`;
+}
+document.addEventListener('click', e => {
+  const k = e.target.closest('[data-emi]'); if(k){ EMI.sel = EMI.sel === k.dataset.emi ? null : k.dataset.emi; desenharEmi(); const t = document.getElementById('emiTab'); if(t) t.scrollIntoView({behavior:'smooth', block:'start'}); return; }
+  if(e.target.closest('[data-emisel]')){ EMI.sel = null; desenharEmi(); return; }
+  if(e.target.closest('[data-emilimpa]')){ EMI.f = {}; EMI.sel = null; desenharEmi(); return; }
+  if(e.target.closest('[data-emixls]') && EMI._tab){ const T = EMI._tab; baixarXlsx({titulo:'Emenda Individual · '+T.tit, sub:'Captação de Emendas · SIOP × Transferegov', filtros:Object.entries(EMI.f).filter(([,v]) => v.length).map(([k,v]) => k+': '+v.join(', ')), cab:T.COLS.map(c => c[1]), linhas:T.LT.map(b => T.COLS.map(([k,,n]) => n ? +b[k]||0 : String(b[k]||''))), fonte:'SIOP e Transferegov', arquivo:'emendas_individuais'}); }
+});
+(function(){ const st = document.createElement('style'); st.textContent = `
+.em-tabs{display:flex;gap:6px;margin:12px 0 0}.em-tabs button{border:1px solid #2e7d4f;background:#1e7a3c;color:#fff;border-radius:9px;padding:7px 16px;font:inherit;font-weight:700}
+.em-fil{display:grid;grid-template-columns:repeat(4,minmax(0,1fr)) ;gap:8px 12px;margin-top:12px;align-items:end}.em-fil label{display:flex;flex-direction:column;gap:3px;font-size:12px;font-weight:600}
+.em-ks{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-top:12px}.em-k{background:linear-gradient(135deg,#155a30,#22743d);color:#fff;border-radius:14px;padding:12px 14px;cursor:pointer}.em-k:hover{filter:brightness(1.08)}
+.em-k span{display:block;font-size:12.5px;color:#d6efd8;font-weight:600}.em-k b{display:block;font-size:26px;line-height:1.15}.em-k small{font-size:12px;color:#eaf6eb}
+.em-g{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px;margin-top:12px}.em-r h3{margin:0 0 8px;font-size:15px;color:#155a30}
+.em-r>div{display:grid;grid-template-columns:1fr auto;gap:2px 10px;padding:4px 2px;cursor:pointer;border-radius:6px;font-size:13px}.em-r>div:hover{background:#eef5f0}.em-r span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}.em-r small{font-weight:400;color:#5f6f66}
+.em-r i{grid-column:1/3;height:6px;background:#e3f1da;border-radius:3px}.em-r em{display:block;height:6px;background:#3f7f22;border-radius:3px}
+.em-tc{margin-top:12px}.em-th{display:flex;justify-content:space-between;align-items:center;gap:10px}.em-th h3{margin:0;font-size:15px;color:#155a30}.em-x{border:1px solid #cfd8e3;background:#fff;border-radius:7px;padding:2px 8px;cursor:pointer;font-size:12px}
+.em-tw{overflow:auto;max-height:620px;margin-top:8px}.em-t{border-collapse:collapse;font-size:12px;min-width:2400px}.em-t th{position:sticky;top:0;background:#1f6b3a;color:#fff;text-align:left;padding:6px;white-space:nowrap}.em-t td{padding:5px 6px;border-bottom:1px solid #e3ebe5;vertical-align:top}
+.em-t .n{text-align:right;white-space:nowrap}.em-t tfoot td{background:#1f6b3a;color:#fff;font-weight:700;position:sticky;bottom:0}.em-t tbody tr:nth-child(even){background:#f4f9f5}
+.em-n{font-size:12px;color:#5f6f66;margin-top:10px}
+@media(max-width:1000px){.em-ks{grid-template-columns:repeat(2,minmax(0,1fr))}.em-fil{grid-template-columns:repeat(2,minmax(0,1fr))}}`; document.head.appendChild(st); })();
 function desenharConstr(tela){ const [t, s] = TELAS_CONSTR[tela];
   document.getElementById('v-extra').innerHTML = `<div class="vx-top"><div><h1>${esc(t)}</h1><small>${esc(s)}</small></div></div>
     <div class="vx-card" style="margin-top:16px;text-align:center;padding:40px 20px"><div style="font-size:40px">🚧</div><h2 style="margin:8px 0 4px;color:#155a30">Em construção</h2><p style="color:#5f6f66;margin:0">Esta página será montada a partir das orientações da equipe.</p></div>`; }
@@ -9706,7 +9780,7 @@ function telaExtra(tela){
   ['v-antigo','v-visao','v-menu','v-painel'].forEach(id => { const x = document.getElementById(id); if(x) x.hidden = true; });
   document.body.style.overflow = ''; document.body.dataset.tema = '';
   el.hidden = false; el.dataset.tela = tela; window.scrollTo(0,0); marcarHash(tela);
-  if(tela === 'portmapa' || tela === 'acoessdr') desenharPortfolio(tela); else if(TELAS_CONSTR[tela]) desenharConstr(tela); else if(tela === 'indic') desenharIndic(); else if(tela === 'assist') desenharAssist(); else if(tela === 'relinst') desenharRelInst(); else if(tela === 'relctr') desenharRelCtr(); else desenharMetodo();
+  if(tela === 'captacao') emiAbrir(); else if(tela === 'portmapa' || tela === 'acoessdr') desenharPortfolio(tela); else if(TELAS_CONSTR[tela]) desenharConstr(tela); else if(tela === 'indic') desenharIndic(); else if(tela === 'assist') desenharAssist(); else if(tela === 'relinst') desenharRelInst(); else if(tela === 'relctr') desenharRelCtr(); else desenharMetodo();
 }
 (function(){ const st = document.createElement('style'); st.textContent = `
 .vx{box-sizing:border-box;max-width:100%;overflow-x:hidden;padding:18px 24px 40px;background:#e9efe9;min-height:100vh;font-family:Barlow,'Segoe UI',Arial,sans-serif;color:#1d2b24}
@@ -11867,7 +11941,7 @@ window.relExtrasParc = relExtrasParc; window.rgAbrir = rgAbrir;
 async function ir(tela, sel){
   if(!tela || tela==='menu') tela = 'visao';
   { const vx = document.getElementById('v-extra'); if(vx) vx.hidden = true; }
-  if(tela==='indic' || tela==='metodo' || tela==='assist' || tela==='relinst' || tela==='relctr' || tela==='portmapa' || tela==='acoessdr' || TELAS_CONSTR[tela]){ fecharMS(); VISAO = 'menu'; telaExtra(tela); if(tela==='relinst' && sel && sel.nr) riAbrir(sel.nr); if(tela==='relctr' && sel && sel.id) rcAbrir(sel.id); return; }   // a barra lateral substitui a página de MENU: o painel abre na Visão geral
+  if(tela==='indic' || tela==='metodo' || tela==='assist' || tela==='relinst' || tela==='relctr' || tela==='portmapa' || tela==='acoessdr' || tela==='captacao' || TELAS_CONSTR[tela]){ fecharMS(); VISAO = 'menu'; telaExtra(tela); if(tela==='relinst' && sel && sel.nr) riAbrir(sel.nr); if(tela==='relctr' && sel && sel.id) rcAbrir(sel.id); return; }   // a barra lateral substitui a página de MENU: o painel abre na Visão geral
   if(TELAS_ANTIGAS.includes(tela)){
     marcarHash(tela);
     fecharMS(); VISAO = 'menu'; abrirAntiga(tela, sel); return;
@@ -12182,7 +12256,7 @@ function preCarregar(){
     ['GESTÃO CONTRATUAL', [['contratos','📑','Base Contratos (CEPLAC)'],['ctrsdr','📄','Contratos SDR'],['despesas','🧾','Despesas previstas'],['conferencia','✔','Conferência de Contratos'],['relctr','📄','Relatório do contrato'],['_relctr','📊','Relatório de gestão de contratos'],['alertactr','🔔','Alerta']]],
     ['ORÇAMENTO E FINANÇAS', [['orcacao','🏛','Orçamento por ações'],['exe','$','Financeiro EXE'],['rap','⏱','Financeiro RAP'],['exerap','⇄','EXE + RAP'],['_relorc','📊','Relatório de gestão orçamentária e financeira'],['alertaorc','🔔','Alerta']]],
     ['PARCERIAS', [['parc','🤝','Parceria SDR',[['geral','Visão geral'],['prop','Propostas'],['inst','Instrumentos vigentes'],['pc','Prestação de contas']]],
-                   ['prop','📝','Propostas SDR'],['conv','📋','Execução Convênio/TF 420013'],['repasse','🏠','Contrato de Repasse'],['relinst','📄','Relatório do instrumento'],['captacao','💡','Captação de Emendas'],['indic','🎯','Indicadores'],['_rel','📊','Relatório de gestão de parcerias'],['alertaparc','🔔','Alerta']]],
+                   ['prop','📝','Propostas SDR'],['conv','📋','Execução Convênio/TF 420013'],['repasse','🏠','Contrato de Repasse'],['relinst','📄','Relatório do instrumento'],['captacao','💡','Captação de Emendas',[['ind','Emenda Individual']]],['indic','🎯','Indicadores'],['_rel','📊','Relatório de gestão de parcerias'],['alertaparc','🔔','Alerta']]],
     ['TED', [['tedapi','✉','TED GERAL SDR'],['ted','👥','TED EQUIPE SDR'],['_relted','📊','Relatório de gestão de TED'],['alertated','🔔','Alerta']]],
     ['PORTFÓLIO E CARTILHAS SDR', [['portmapa','📘','Portfólio MAPA 2026'],['acoessdr','🌱','Ações SDR 2026']]],
     ['AJUDA', [['assist','🤖','Assistente virtual'],['metodo','📚','Metodologia e fontes']]],
@@ -12278,7 +12352,7 @@ function preCarregar(){
     if(id.startsWith('_')) return;
     if(id === 'menu'){ ir('visao'); marcar(); return; }
     await ir(id);
-    if(aba){ await esperar(() => est().id === id); const w = W(); try{ if(id === 'parc' && w.irAbaParcTG) w.irAbaParcTG(aba); }catch(e){} }
+    if(aba && id !== 'captacao'){ await esperar(() => est().id === id); const w = W(); try{ if(id === 'parc' && w.irAbaParcTG) w.irAbaParcTG(aba); }catch(e){} }
     marcar();
   }
   function est(){ try{ const w = W(); return (w && w.__estado && w.__estado()) || {}; }catch(e){ return {}; } }

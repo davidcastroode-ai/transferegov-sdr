@@ -69,6 +69,10 @@ jobs:
         continue-on-error: true
         run: python scripts/assistente_banco.py saida
 
+      - name: Captação de Emendas · Emenda Individual (extrator do SIOP × Transferegov)
+        continue-on-error: true
+        run: python scripts/emendas_siop.py saida
+
       - name: Gerar as páginas do painel (Propostas, Empenho, Programas, Movimentação, Obras, Prestação de contas)
         run: python scripts/paginas.py saida
 
