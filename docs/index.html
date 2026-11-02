@@ -12174,7 +12174,8 @@ function preCarregar(){
 // =====================================================================
 (function(){
   const GRUPOS = [
-    ['GESTÃO', [['visao','▦','Visão geral'],['contratos','📑','Base Contratos (CEPLAC)'],['ctrsdr','📄','Contratos SDR'],['despesas','🧾','Despesas previstas'],['conferencia','✔','Conferência de Contratos'],['relctr','📄','Relatório do contrato'],['_relctr','📊','Relatório de gestão de contratos'],['alertactr','🔔','Alerta']]],
+    ['', [['visao','▦','Visão geral']]],
+    ['GESTÃO CONTRATUAL', [['contratos','📑','Base Contratos (CEPLAC)'],['ctrsdr','📄','Contratos SDR'],['despesas','🧾','Despesas previstas'],['conferencia','✔','Conferência de Contratos'],['relctr','📄','Relatório do contrato'],['_relctr','📊','Relatório de gestão de contratos'],['alertactr','🔔','Alerta']]],
     ['ORÇAMENTO E FINANÇAS', [['orcacao','🏛','Orçamento por ações'],['exe','$','Financeiro EXE'],['rap','⏱','Financeiro RAP'],['exerap','⇄','EXE + RAP'],['_relorc','📊','Relatório de gestão orçamentária e financeira'],['alertaorc','🔔','Alerta']]],
     ['PARCERIAS', [['parc','🤝','Parceria SDR',[['geral','Visão geral'],['prop','Propostas'],['inst','Instrumentos vigentes'],['pc','Prestação de contas']]],
                    ['prop','📝','Propostas SDR'],['conv','📋','Execução Convênio/TF 420013'],['repasse','🏠','Contrato de Repasse'],['relinst','📄','Relatório do instrumento'],['captacao','💡','Captação de Emendas'],['indic','🎯','Indicadores'],['_rel','📊','Relatório de gestão de parcerias'],['alertaparc','🔔','Alerta']]],
@@ -12234,7 +12235,7 @@ function preCarregar(){
   const nav = document.createElement('nav'); nav.id = 'sbar'; nav.setAttribute('aria-label','Menu do painel');
   nav.innerHTML = `<div class="sb-top"><div class="sb-bars" data-sbir="menu" title="Visão geral"><i></i><i></i><i></i></div><div class="sb-marca"><b>SDR · MAPA</b><small>Painel SDR 2026</small></div><button type="button" class="sb-col" title="Recolher / abrir a barra" aria-label="Recolher a barra lateral">⟨</button></div>
     <input class="sb-busca" type="search" placeholder="🔍 Buscar no menu…" aria-label="Buscar no menu">
-    <div class="sb-lista">${GRUPOS.map(([g, itens], gi) => `<button type="button" class="sb-gr" data-sbgr="${gi}" aria-expanded="false"><span>${g}</span><i>▾</i></button><div class="sb-grc" data-sbgrc="${gi}">` + itens.map(([id, ic, tx, subs, badge]) => {
+    <div class="sb-lista">${GRUPOS.map(([g, itens], gi) => (g ? `<button type="button" class="sb-gr" data-sbgr="${gi}" aria-expanded="false"><span>${g}</span><i>▾</i></button><div class="sb-grc" data-sbgrc="${gi}">` : `<div class="sb-solo" style="margin-top:8px">`) + itens.map(([id, ic, tx, subs, badge]) => {
       const off = !!badge;
       return `<button type="button" class="sb-it ${off?'off':''}" data-sbir="${id}" title="${esc2(tx)}"><span class="ic">${ic}</span><span class="tx">${esc2(tx)}</span>${badge?`<em>${badge}</em>`:''}</button>`
         + (subs ? `<div class="sb-subs" data-pai="${id}">${subs.map(([a,t]) => `<button type="button" class="sb-sub" data-sbaba="${a}" data-sbpai="${id}">${esc2(t)}</button>`).join('')}</div>` : '');
