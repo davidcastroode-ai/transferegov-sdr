@@ -9674,8 +9674,8 @@ function desenharPortfolio(tela){
       <p class="pf-n">Fonte: gov.br/agricultura · Centrais de conteúdo · Publicações · Cartilhas de emendas parlamentares.</p>`;
   } else {
     el.innerHTML = `<div class="vx-top"><div><h1>AÇÕES SDR 2026</h1><small>as 8 ações orçamentárias da SDR e da CEPLAC · cartilhas de emendas parlamentares</small></div></div>
-      <div class="pf-geral"><span class="pf-ic">📕</span><div><b>Portfólio Estratégico Geral · Ações MAPA (Órgão 22000) 2026 · ações da equipe SDR · UGs 130010 e 420013</b><small>as 8 ações, 21 planos orçamentários, valores mínimos e máximos por instrumento e capacitação/eventos</small></div>
-        <div class="pf-bts">${bt(PORT_PDF+'portfolio_sdr_2026.pdf', 'Portfólio geral (PDF)')}${bt(PORT_DRIVE, 'Pasta no Drive ↗', 'cl')}</div></div>
+      <div class="pf-geral"><span class="pf-ic">📕</span><div><b>Portfólio Estratégico SDR 2026 · ações da equipe SDR · UGs 130010 e 420013</b><small>elaborado pela COAPI/SDR · as 8 ações, 21 planos orçamentários, valores mínimos e máximos por instrumento</small></div>
+        <div class="pf-bts">${bt(PORT_PDF+'portfolio_sdr_2026.pdf', 'Portfólio SDR (PDF)')}${bt(PORT_DRIVE, 'Pasta no Drive ↗', 'cl')}</div></div>
       <div class="pf-ac">${PORT_ACOES.map(([c, n, r, po, u, ev]) => `<div class="pf-a"><div class="pf-ah"><span class="pf-cod">${c}</span><b>${esc(n)}</b></div><p>${esc(r)}</p>
         <div class="pf-meta"><span><em>POs</em>${esc(po)}</span><span><em>Unidade</em>${esc(u)}</span></div>
         <div class="pf-bts">${bt(PORT_PDF+'cartilha_'+c+'.pdf', 'Cartilha da ação (PDF)')}</div></div>`).join('')}</div>
