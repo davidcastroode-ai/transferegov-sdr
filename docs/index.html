@@ -9678,8 +9678,8 @@ function desenharPortfolio(tela){
         <div class="pf-bts">${bt(PORT_PDF+'portfolio_sdr_2026.pdf', 'Portfólio geral (PDF)')}${bt(PORT_DRIVE, 'Pasta no Drive ↗', 'cl')}</div></div>
       <div class="pf-ac">${PORT_ACOES.map(([c, n, r, po, u, ev]) => `<div class="pf-a"><div class="pf-ah"><span class="pf-cod">${c}</span><b>${esc(n)}</b></div><p>${esc(r)}</p>
         <div class="pf-meta"><span><em>POs</em>${esc(po)}</span><span><em>Unidade</em>${esc(u)}</span></div>
-        <div class="pf-bts">${bt(PORT_PDF+'cartilha_'+c+'.pdf', 'Cartilha da ação (PDF)')}${ev ? bt(PORT_GOV+'/cartilha-capacitacao-e-eventos', 'Capacitação e eventos (MAPA) ↗', 'cl') : ''}${bt(PORT_GOV+'/PLOA2025versofinal.pdf', 'Portfólio MAPA ↗', 'cl')}</div></div>`).join('')}</div>
-      <p class="pf-n">Cartilhas elaboradas pela COAPI/SDR (outubro de 2026). Capacitação e eventos: as 7 ações finalísticas financiam (IN MAPA nº 25/2023); a 00PN é operação especial e não financia.</p>`;
+        <div class="pf-bts">${bt(PORT_PDF+'cartilha_'+c+'.pdf', 'Cartilha da ação (PDF)')}</div></div>`).join('')}</div>
+      <p class="pf-n">Cartilhas elaboradas pela COAPI/SDR (outubro de 2026).</p>`;
   }
 }
 (function(){ const st = document.createElement('style'); st.textContent = `
