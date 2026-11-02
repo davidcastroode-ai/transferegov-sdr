@@ -3655,6 +3655,7 @@ function ctrbRender(){
     ${card('at', 'Ativos', at.length, `de ${rows.length} firmados`, at)}
     ${card('v90', 'Vencem em 90 dias', venc.length, venc.length ? `próximo em ${venc[0].dias} dia(s)` : (vencidos.length ? vencidos.length+' ativo(s) vencido(s)' : 'nenhum'), venc.concat(vencidos))}
     ${card('vg', 'Valor global', fmtC(soma(rows,'global')), `${fmtC(soma(rows,'mensal'))} por mês`, rows)}
+    ${(() => { const emp = temT ? soma(rows,'_emp') : null, cp = rows.filter(d => (d.prev||0) > 0); return card('pv', 'Previsto para 2026', fmtC(prev), emp === null ? `${cp.length} contrato(s) com previsão` : `empenhado ${fmtC(emp)} · falta ${fmtC(Math.max(0, prev - emp))}`, cp.slice().sort((a,b) => (b.prev||0) - (a.prev||0))); })()}
     ${card('ex', 'Execução 2026', pctEx === null ? (temT ? '—' : '…') : pctEx+'%', temT ? `${fmtC(pago)} de ${fmtC(prev)}` : T && T.erro ? 'Tesouro indisponível' : 'lendo o Tesouro…', rows.filter(d => d._pago > 0).sort((a,b) => b._pago-a._pago),
       pctEx === null ? '' : `<div class="cb-pb"><i style="width:${Math.min(100, pctEx)}%"></i></div>`)}
   </div></div>`;
@@ -3741,7 +3742,7 @@ function ctrbRender(){
 const CSS_CTRB = `<style>
 .cb-hero{background:linear-gradient(135deg,var(--h1),var(--h2));border-radius:18px;padding:16px 18px 18px;color:#fff;margin-bottom:14px}
 .cb-ht small{display:block;font-size:12.5px;color:#d6efd8;margin:0 0 10px}
-.cb-hks{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.cb-hks{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
 .cb-hk{background:rgba(255,255,255,.12);border-radius:14px;padding:11px 13px;cursor:pointer;transition:background .15s}.cb-hk:hover{background:rgba(255,255,255,.22)}
 .cb-hk span{display:block;font-size:12.5px;color:#d6efd8;font-weight:600}.cb-hk b{display:block;font-size:28px;line-height:1.15;font-weight:700}.cb-hk small{font-size:12px;color:#eaf6eb}
 .cb-pb{height:6px;background:rgba(255,255,255,.25);border-radius:3px;margin:5px 0 3px}.cb-pb i{display:block;height:6px;border-radius:3px;background:#a6e88a}
