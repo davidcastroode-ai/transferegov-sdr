@@ -9740,7 +9740,7 @@ function desenharEmi(){
     <label class="em-bus">Buscar<input type="search" id="emiBusca" value="${esc(EMI.q||'')}" placeholder="entidade, CNPJ, proposta, NE…"></label><button type="button" class="vx-btn" data-emilimpa>Limpar</button></div>`;
   // gráficos (sob demanda) · visuais: colunas por ano, rosca por modalidade, top parlamentares, mapa do Brasil, blocos por ação, barra por situação
   let graf = '';
-  if(EMI.graf){
+  {   // gráficos sempre visíveis
     const grp = k => { const g = {}; LF.forEach(b => { const c = b[k] || '—'; const x = g[c] || (g[c] = {v:0, e:0, l:[]}); x.v += b.indicado||0; x.e += b.empenhado||0; x.l.push(b); }); return g; };
     const PAL = ['#1d5e2c','#3f7f22','#8cc58c','#e0a100','#b8650a','#9aa59a','#1f6d86','#c75a00'];
     // por ano (indicado × empenhado no SIOP, por emenda)
@@ -9787,7 +9787,7 @@ function desenharEmi(){
   const cel = (b, [k,,n]) => k === 'proposta' && b.link ? `<td><a href="${esc(b.link)}" target="_blank" rel="noopener">${esc(b[k])}</a></td>` : k === 'situacao' ? `<td><span class="em-pl ${corS(b[k])}">${esc(b[k]||'—')}</span></td>` : `<td class="${n ? 'n' : ''}"${n ? '' : ` title="${esc(b[k]||'')}"`}>${n ? fmtBRL(+b[k]||0).replace('R$','').trim() : esc(b[k]||'—')}</td>`;
   const lim = EMI.lim || 300, tot = k => fmtBRL(soma(LT, k)).replace('R$','').trim();
   const tab = `<div class="vx-card em-tc" id="emiTab"><div class="em-th"><h3>${esc(EMI._tab.tit)} · ${LT.length.toLocaleString('pt-BR')} linha(s)${S ? ' <button type="button" class="em-x" data-emisel="">mostrar todas ✕</button>' : ''}</h3>
-      <div><button type="button" class="vx-btn em-cl" data-emigraf>${EMI.graf ? 'Esconder gráficos' : 'Ver gráficos'}</button> <button type="button" class="vx-btn" data-emixls>Extração em Excel</button></div></div>
+      <div><button type="button" class="vx-btn" data-emixls>Extração em Excel</button></div></div>
     <div class="em-tw"><table class="em-t"><thead><tr><th>QD</th>${COLS.map(([,r,n]) => `<th class="${n ? 'n' : ''}">${r}</th>`).join('')}</tr></thead>
     <tbody>${LT.slice(0, lim).map((b, i) => `<tr><td>${i+1}</td>${COLS.map(c => cel(b, c)).join('')}</tr>`).join('') || `<tr><td colspan="${COLS.length+1}">Nenhuma emenda com esses filtros.</td></tr>`}</tbody>
     <tfoot><tr><td colspan="23">Total</td><td class="n">${tot('indicado')}</td><td></td><td></td><td class="n">${tot('empenhado')}</td><td class="n">${tot('desembolsado')}</td></tr></tfoot></table></div>
