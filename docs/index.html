@@ -10544,7 +10544,7 @@ function asEntidades(txt){
   const s = asN(txt), S = String(txt).toUpperCase(), e = {};
   const ne = S.match(/\b(\d{4}NE\d{3,6})\b/); if(ne) e.ne = ne[1];
   const pr = s.match(/\b(\d{3,6}\/20\d{2})\b/); if(pr) e.prop = pr[1];
-  const nums = (s.match(/\b\d{6}\b/g)||[]), ndCtx = /natureza de despesa|elemento|\bnd\b/.test(s); nums.forEach(n => { if(UGS_AS.includes(n)) (e.ug = e.ug || []).push(n); else if(ndCtx && /^[34][1-6]\d{4}$/.test(n)) e.nd = n; else if(!e.num) e.num = n; });
+  const nums = [...new Set(s.match(/\b\d{6}\b/g)||[])], ndCtx = /natureza de despesa|elemento|\bnd\b/.test(s); ugTxt = new Set([...s.matchAll(/\b(?:ug|unidade gestora)\s*(?:n[ºo°]?\s*)?(\d{6})\b/g)].map(m => m[1])); nums.forEach(n => { if(UGS_AS.includes(n) || ugTxt.has(n)) (e.ug = e.ug || []).push(n); else if(ndCtx && /^[34][1-6]\d{4}$/.test(n)) e.nd = n; else if(!e.num) e.num = n; });
   const ted = S.match(/\b(1[A-Z]{5}|[0-9][A-Z0-9]{5})\b/); if(ted && /[A-Z]/.test(ted[1]) && !/NE/.test(ted[1])) e.ted = ted[1];
   const ctr = s.match(/\b(\d{1,5}\/20\d{2})\b/); if(ctr && !e.prop) e.ctr = ctr[1];
   const ufs = []; Object.entries(UF_N).forEach(([u, n]) => { if(new RegExp('(^|\\W)'+n+'(\\W|$)').test(s) || new RegExp('(^|[^a-z])(uf|estado|no|na|em|do|da)\\s+'+u.toLowerCase()+'(\\W|$)').test(s) || new RegExp('(^|\\s)'+u+'(\\s|$|[?.,])').test(String(txt))) ufs.push(u); });
@@ -11041,7 +11041,12 @@ async function asResponderParc2(txt, ent){
 }
 async function asResponderFin(txt, ent){
   const E = (await asTesouro('exe')).linhas, R = (await asTesouro('rap')).linhas;
-  if(ent.ne){ const ne = ent.ne.toUpperCase(), le = E.filter(d => String(d.ne).toUpperCase().endsWith(ne)), lr = R.filter(d => String(d.ne).toUpperCase().endsWith(ne));
+  if(ent.ne){ const ne = ent.ne.toUpperCase(), daNE = d => String(d.ne).toUpperCase().endsWith(ne) && (!ent.ug || ent.ug.includes(String(d.ug)));
+    let le = E.filter(daNE), lr = R.filter(daNE);
+    // o mesmo número de NE existe em várias UGs: sem a UG na pergunta, pergunta de qual é (antes somava todas)
+    const ugsNE = [...new Set(le.concat(lr).map(d => String(d.ug)))];
+    if(!ent.ug && ugsNE.length > 1) return asCard('Nota de empenho '+esc(ne), 'Tesouro Gerencial', `<p>Essa nota de empenho existe em <b>${ugsNE.length} UGs</b>. De qual UG?</p>`,
+      ugsNE.map(u => `<button class="sec" data-asq="${esc('nota de empenho '+ne+' da UG '+u)}">UG ${esc(u)}</button>`).join(''), '');
     if(!le.length && !lr.length) return asCard('Nota de empenho '+esc(ne), '', '<p>Não encontrei essa nota de empenho no EXE nem no RAP das 5 UGs (posição mais recente).</p>', '', '');
     const te = somar(le, 'exe'), tr = somar(lr, 'rap'), d0 = (le[0]||lr[0]);
     const k = le.length ? [['Empenhado', fmtV(te.emp)],['Liquidado', fmtV(te.liq)],['Pago', fmtV(te.pago)],['A pagar', fmtV(te.emp - te.pago), '', '#b8650a']] : [['RAP inscrito', fmtV(tr.ins)],['Pago', fmtV(tr.pago)],['Cancelado', fmtV(tr.canc)],['A pagar', fmtV(tr.apagar), '', '#b8650a']];
