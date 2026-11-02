@@ -9639,7 +9639,60 @@ const RAW_DADOS = 'https://raw.githubusercontent.com/davidcastroode-ai/transfere
 // telas reservadas no menu: o conteúdo entra quando a equipe passar a estrutura
 const TELAS_CONSTR = {alertactr:['ALERTA · CONTRATOS','alertas da gestão de contratos'], alertaorc:['ALERTA · ORÇAMENTO E FINANÇAS','alertas da execução orçamentária e financeira'],
   alertaparc:['ALERTA · PARCERIAS','alertas de convênios, termos de fomento e contratos de repasse'], alertated:['ALERTA · TED','alertas dos termos de execução descentralizada'],
-  cartilhas:['PORTFÓLIO E CARTILHAS SDR','portfólio de ações e cartilhas da SDR'], captacao:['CAPTAÇÃO DE EMENDAS','captação de emendas parlamentares para as ações da SDR']};
+  captacao:['CAPTAÇÃO DE EMENDAS','captação de emendas parlamentares para as ações da SDR']};
+// ===== PORTFÓLIO E CARTILHAS SDR =====
+const PORT_GOV = 'https://www.gov.br/agricultura/pt-br/centrais-de-conteudo/publicacoes/cartilhas-emendas-parlamentares';
+const PORT_PDF = 'https://davidcastroode-ai.github.io/transferegov-sdr/cartilhas/';
+const PORT_DRIVE = 'https://drive.google.com/drive/folders/1uSA_wT4G8u34CrzmJ4rUpqmu_5z8XKpS';
+const PORT_MAPA = [
+  ['Portfólio de ações MAPA 2026', 'todas as ações do Ministério que podem receber emendas', PORT_GOV+'/PLOA2025versofinal.pdf', '📗'],
+  ['Cartilha Capacitação e Eventos', 'exposições, feiras, cursos, dias de campo (IN MAPA nº 25/2023)', PORT_GOV+'/cartilha-capacitacao-e-eventos', '🎤'],
+  ['Cartilha Insumos', 'aquisição de insumos agropecuários', PORT_GOV+'/cartilhas-insumos', '🌾'],
+  ['Cartilha Obras de Fomento', 'obras de infraestrutura produtiva', PORT_GOV+'/cartilha-obras-de-fomento', '🏗'],
+  ['Cartilha Energia Fotovoltaica', 'energia solar para o desenvolvimento rural', PORT_GOV+'/energia-fotovoltaica-para-o-desenvolvimento-rural', '☀'],
+  ['Cartilhas Hortas Comunitárias', 'hortas comunitárias e urbanas', PORT_GOV+'/cartilhas-hortas-comunitarias', '🥬'],
+  ['PROMAQ', 'máquinas e equipamentos agrícolas', PORT_GOV+'/cartilha-promaq.pdf/view', '🚜'],
+  ['PRONER', 'estradas vicinais e recuperação de estradas rurais', PORT_GOV+'/proner', '🛣'],
+  ['Transferências Especiais (Ação 0EC2)', 'cartilha técnica de orientação', PORT_GOV+'/CartilhaTransfernciasEspeciaisAo0EC2.pdf', '💸'],
+  ['Catálogo de projetos Embrapa', 'projetos da Embrapa para emendas parlamentares', 'https://www.embrapa.br/busca-de-publicacoes/-/publicacao/1167976/catalogo-de-projetos-embrapa-emendas-parlamentares', '🔬'],
+  ['Tutorial Transferegov', 'passo a passo do cadastro na nova gestão das transferências', PORT_GOV+'/passo_a_passo_cadastro_nova_gestao_tranferencias_voluntarias.pdf', '🧭']];
+// [código, nome, resumo (eixo), POs, unidade, financia capacitação e eventos]
+const PORT_ACOES = [
+  ['215A', 'Desenvolvimento das Cadeias Produtivas da Agropecuária', 'Fomento produtivo, eventos e agregação de valor', '0000 · 0004 · 0005 · 0006 · 0007 · 0008', 'SDR · Depto. de Desenvolvimento das Cadeias Produtivas', 1],
+  ['8593', 'Apoio ao Desenvolvimento da Produção Agropecuária Sustentável', 'Plano ABC+, solo, água, irrigação e capacitação', '0001 · 0003 · 0004 · 0006', 'SDR · Depto. de Produção Sustentável e Irrigação', 1],
+  ['214Z', 'Fomento à Tecnologia Agropecuária e Recursos Genéticos', 'Inovação, bioinsumos, AgTechs e conectividade rural', '000C · 0001 · 0003 · 0005', 'SDR', 1],
+  ['00PN', 'Cooperação com a OCDE (país não membro)', 'Cota do Brasil nos Códigos de Tratores da OCDE · não financia eventos', '0003', 'SCRI / SDR', 0],
+  ['8622', 'Promoção do Cooperativismo, Associativismo e Agroindústria', 'Cooperativismo, gestão, inclusão produtiva e eventos', '0000 · 000D', 'SDR', 1],
+  ['21B6', 'Assistência Técnica e Extensão Rural (ATER)', 'Extensão rural, capacitação, eventos e difusão tecnológica', '0001', 'SDR / CEPLAC', 1],
+  ['8606', 'Agricultura Orgânica · Pró-Orgânico', 'Produção orgânica, feiras, capacitação e certificação', '0001', 'SDR e SDA / SFAs', 1],
+  ['20ZY', 'Desenvolvimento Sustentável da Cadeia Produtiva do Cacau', 'Cacauicultura sustentável, pesquisa, bioeconomia e eventos', '0002 · 0003 · 0004', 'CEPLAC / SDR', 1]];
+function desenharPortfolio(tela){
+  const el = document.getElementById('v-extra'), bt = (u, t, cls) => `<a class="pf-bt ${cls||''}" href="${esc(u)}" target="_blank" rel="noopener">${t}</a>`;
+  if(tela === 'portmapa'){
+    el.innerHTML = `<div class="vx-top"><div><h1>PORTFÓLIO MAPA 2026</h1><small>cartilhas de emendas parlamentares do Ministério da Agricultura e Pecuária</small></div>${bt(PORT_GOV, 'Abrir no gov.br ↗', 'cl')}</div>
+      <div class="pf-g">${PORT_MAPA.map(([t, d, u, ic]) => `<a class="pf-c" href="${esc(u)}" target="_blank" rel="noopener"><span class="pf-ic">${ic}</span><b>${esc(t)}</b><small>${esc(d)}</small><i>abrir ↗</i></a>`).join('')}</div>
+      <p class="pf-n">Fonte: gov.br/agricultura · Centrais de conteúdo · Publicações · Cartilhas de emendas parlamentares.</p>`;
+  } else {
+    el.innerHTML = `<div class="vx-top"><div><h1>AÇÕES SDR 2026</h1><small>as 8 ações orçamentárias da SDR e da CEPLAC · cartilhas de emendas parlamentares</small></div></div>
+      <div class="pf-geral"><span class="pf-ic">📕</span><div><b>Portfólio Estratégico Geral · Ações MAPA (Órgão 22000) 2026</b><small>as 8 ações, 21 planos orçamentários, valores mínimos e máximos por instrumento e capacitação/eventos</small></div>
+        <div class="pf-bts">${bt(PORT_PDF+'portfolio_sdr_2026.pdf', 'Portfólio geral (PDF)')}${bt(PORT_DRIVE, 'Pasta no Drive ↗', 'cl')}</div></div>
+      <div class="pf-ac">${PORT_ACOES.map(([c, n, r, po, u, ev]) => `<div class="pf-a"><div class="pf-ah"><span class="pf-cod">${c}</span><b>${esc(n)}</b></div><p>${esc(r)}</p>
+        <div class="pf-meta"><span><em>POs</em>${esc(po)}</span><span><em>Unidade</em>${esc(u)}</span></div>
+        <div class="pf-bts">${bt(PORT_PDF+'cartilha_'+c+'.pdf', 'Cartilha da ação (PDF)')}${ev ? bt(PORT_GOV+'/cartilha-capacitacao-e-eventos', 'Capacitação e eventos (MAPA) ↗', 'cl') : ''}${bt(PORT_GOV+'/PLOA2025versofinal.pdf', 'Portfólio MAPA ↗', 'cl')}</div></div>`).join('')}</div>
+      <p class="pf-n">Cartilhas elaboradas pela COAPI/SDR (outubro de 2026). Capacitação e eventos: as 7 ações finalísticas financiam (IN MAPA nº 25/2023); a 00PN é operação especial e não financia.</p>`;
+  }
+}
+(function(){ const st = document.createElement('style'); st.textContent = `
+.pf-g{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px;margin-top:16px}
+.pf-c{display:flex;flex-direction:column;gap:4px;background:#fff;border-radius:14px;padding:14px 16px;text-decoration:none;color:#1d2b24;border:1px solid #d7e5da;transition:transform .12s,box-shadow .12s}.pf-c:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(20,60,40,.12)}
+.pf-c b{font-size:15px;color:#155a30}.pf-c small{font-size:12.5px;color:#5f6f66;flex:1}.pf-c i{font-style:normal;font-size:12px;font-weight:700;color:#2e7d4f;margin-top:4px}.pf-ic{font-size:26px}
+.pf-geral{display:flex;align-items:center;gap:14px;flex-wrap:wrap;background:#fff;border-radius:14px;padding:14px 18px;margin-top:16px;border-left:5px solid #c0392b}.pf-geral>div:nth-child(2){flex:1;min-width:220px}.pf-geral b{display:block;font-size:15.5px;color:#155a30}.pf-geral small{color:#5f6f66;font-size:12.5px}
+.pf-ac{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;margin-top:14px}
+.pf-a{background:#fff;border-radius:14px;padding:14px 16px;border-top:4px solid #2e7d4f;display:flex;flex-direction:column;gap:8px}
+.pf-ah{display:flex;gap:10px;align-items:flex-start}.pf-ah b{font-size:14.5px;color:#163d26;line-height:1.3}.pf-cod{background:#155a30;color:#fff;font-weight:800;border-radius:8px;padding:3px 9px;font-size:13px;letter-spacing:.04em;flex:none}
+.pf-a p{margin:0;font-size:13px;color:#4c5c53}.pf-meta{display:flex;flex-direction:column;gap:2px;font-size:12px;color:#33433a}.pf-meta em{font-style:normal;font-weight:700;color:#5f6f66;margin-right:6px}
+.pf-bts{display:flex;flex-wrap:wrap;gap:6px;margin-top:auto}.pf-bt{background:#1e7a3c;color:#fff;border-radius:8px;padding:6px 11px;font-size:12.5px;font-weight:700;text-decoration:none}.pf-bt.cl{background:#eef5f0;color:#155a30;border:1px solid #cfe3d5}.vx-top .pf-bt.cl{background:#fff}
+.pf-n{font-size:12px;color:#5f6f66;margin-top:14px}`; document.head.appendChild(st); })();
 function desenharConstr(tela){ const [t, s] = TELAS_CONSTR[tela];
   document.getElementById('v-extra').innerHTML = `<div class="vx-top"><div><h1>${esc(t)}</h1><small>${esc(s)}</small></div></div>
     <div class="vx-card" style="margin-top:16px;text-align:center;padding:40px 20px"><div style="font-size:40px">🚧</div><h2 style="margin:8px 0 4px;color:#155a30">Em construção</h2><p style="color:#5f6f66;margin:0">Esta página será montada a partir das orientações da equipe.</p></div>`; }
@@ -9649,7 +9702,7 @@ function telaExtra(tela){
   ['v-antigo','v-visao','v-menu','v-painel'].forEach(id => { const x = document.getElementById(id); if(x) x.hidden = true; });
   document.body.style.overflow = ''; document.body.dataset.tema = '';
   el.hidden = false; el.dataset.tela = tela; window.scrollTo(0,0); marcarHash(tela);
-  if(TELAS_CONSTR[tela]) desenharConstr(tela); else if(tela === 'indic') desenharIndic(); else if(tela === 'assist') desenharAssist(); else if(tela === 'relinst') desenharRelInst(); else if(tela === 'relctr') desenharRelCtr(); else desenharMetodo();
+  if(tela === 'portmapa' || tela === 'acoessdr') desenharPortfolio(tela); else if(TELAS_CONSTR[tela]) desenharConstr(tela); else if(tela === 'indic') desenharIndic(); else if(tela === 'assist') desenharAssist(); else if(tela === 'relinst') desenharRelInst(); else if(tela === 'relctr') desenharRelCtr(); else desenharMetodo();
 }
 (function(){ const st = document.createElement('style'); st.textContent = `
 .vx{box-sizing:border-box;max-width:100%;overflow-x:hidden;padding:18px 24px 40px;background:#e9efe9;min-height:100vh;font-family:Barlow,'Segoe UI',Arial,sans-serif;color:#1d2b24}
@@ -11810,7 +11863,7 @@ window.relExtrasParc = relExtrasParc; window.rgAbrir = rgAbrir;
 async function ir(tela, sel){
   if(!tela || tela==='menu') tela = 'visao';
   { const vx = document.getElementById('v-extra'); if(vx) vx.hidden = true; }
-  if(tela==='indic' || tela==='metodo' || tela==='assist' || tela==='relinst' || tela==='relctr' || TELAS_CONSTR[tela]){ fecharMS(); VISAO = 'menu'; telaExtra(tela); if(tela==='relinst' && sel && sel.nr) riAbrir(sel.nr); if(tela==='relctr' && sel && sel.id) rcAbrir(sel.id); return; }   // a barra lateral substitui a página de MENU: o painel abre na Visão geral
+  if(tela==='indic' || tela==='metodo' || tela==='assist' || tela==='relinst' || tela==='relctr' || tela==='portmapa' || tela==='acoessdr' || TELAS_CONSTR[tela]){ fecharMS(); VISAO = 'menu'; telaExtra(tela); if(tela==='relinst' && sel && sel.nr) riAbrir(sel.nr); if(tela==='relctr' && sel && sel.id) rcAbrir(sel.id); return; }   // a barra lateral substitui a página de MENU: o painel abre na Visão geral
   if(TELAS_ANTIGAS.includes(tela)){
     marcarHash(tela);
     fecharMS(); VISAO = 'menu'; abrirAntiga(tela, sel); return;
@@ -12126,7 +12179,7 @@ function preCarregar(){
     ['PARCERIAS', [['parc','🤝','Parceria SDR',[['geral','Visão geral'],['prop','Propostas'],['inst','Instrumentos vigentes'],['pc','Prestação de contas']]],
                    ['prop','📝','Propostas SDR'],['conv','📋','Execução Convênio/TF 420013'],['repasse','🏠','Contrato de Repasse'],['relinst','📄','Relatório do instrumento'],['captacao','💡','Captação de Emendas'],['indic','🎯','Indicadores'],['_rel','📊','Relatório de gestão de parcerias'],['alertaparc','🔔','Alerta']]],
     ['TED', [['tedapi','✉','TED GERAL SDR'],['ted','👥','TED EQUIPE SDR'],['_relted','📊','Relatório de gestão de TED'],['alertated','🔔','Alerta']]],
-    ['PORTFÓLIO E CARTILHAS SDR', [['cartilhas','📘','Portfólio e Cartilhas SDR']]],
+    ['PORTFÓLIO E CARTILHAS SDR', [['portmapa','📘','Portfólio MAPA 2026'],['acoessdr','🌱','Ações SDR 2026']]],
     ['AJUDA', [['assist','🤖','Assistente virtual'],['metodo','📚','Metodologia e fontes']]],
   ];
   const st = document.createElement('style');
@@ -12143,7 +12196,9 @@ function preCarregar(){
   #sbar .sb-busca{margin:10px 10px 4px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);border-radius:8px;padding:7px 10px;color:#fff;font:inherit;font-size:12.5px;width:calc(100% - 20px);box-sizing:border-box}
   #sbar .sb-busca::placeholder{color:#9fc7ab}
   #sbar .sb-lista{flex:1;overflow-y:auto;padding:0 8px 10px;scrollbar-width:thin}
-  #sbar .sb-gr{font-size:10.5px;letter-spacing:.14em;color:#8fb89b;margin:12px 8px 4px;font-weight:700}
+  #sbar .sb-gr{display:flex;align-items:center;justify-content:space-between;width:100%;border:0;background:none;cursor:pointer;font:inherit;font-size:11.5px;letter-spacing:.12em;color:#cfe6d6;margin:4px 0 0;padding:9px 9px;font-weight:700;border-radius:8px;text-align:left}
+  #sbar .sb-gr:hover{background:rgba(255,255,255,.07)}#sbar .sb-gr i{font-style:normal;transition:transform .18s;color:#8fb89b}#sbar .sb-gr[aria-expanded="true"] i{transform:rotate(180deg)}#sbar .sb-gr.tem{color:#fff}#sbar .sb-gr.tem span::before{content:"● ";color:#f2b33d}
+  #sbar .sb-grc{display:none;padding:0 0 6px}#sbar .sb-grc.ab{display:block}body.sb-min:not(.sb-hov) #sbar .sb-grc{display:block}
   #sbar .sb-it{display:flex;align-items:center;gap:9px;padding:7px 9px;border-radius:8px;cursor:pointer;color:#dfeee3;border:0;background:none;width:100%;text-align:left;font:inherit}
   #sbar .sb-it:hover{background:rgba(255,255,255,.08)}#sbar .sb-it .ic{width:20px;text-align:center;flex:none}
   #sbar .sb-it.on{background:#c0392b;color:#fff;font-weight:600}
@@ -12179,11 +12234,11 @@ function preCarregar(){
   const nav = document.createElement('nav'); nav.id = 'sbar'; nav.setAttribute('aria-label','Menu do painel');
   nav.innerHTML = `<div class="sb-top"><div class="sb-bars" data-sbir="menu" title="Visão geral"><i></i><i></i><i></i></div><div class="sb-marca"><b>SDR · MAPA</b><small>Painel SDR 2026</small></div><button type="button" class="sb-col" title="Recolher / abrir a barra" aria-label="Recolher a barra lateral">⟨</button></div>
     <input class="sb-busca" type="search" placeholder="🔍 Buscar no menu…" aria-label="Buscar no menu">
-    <div class="sb-lista">${GRUPOS.map(([g, itens]) => `<div class="sb-gr">${g}</div>` + itens.map(([id, ic, tx, subs, badge]) => {
+    <div class="sb-lista">${GRUPOS.map(([g, itens], gi) => `<button type="button" class="sb-gr" data-sbgr="${gi}" aria-expanded="false"><span>${g}</span><i>▾</i></button><div class="sb-grc" data-sbgrc="${gi}">` + itens.map(([id, ic, tx, subs, badge]) => {
       const off = !!badge;
       return `<button type="button" class="sb-it ${off?'off':''}" data-sbir="${id}" title="${esc2(tx)}"><span class="ic">${ic}</span><span class="tx">${esc2(tx)}</span>${badge?`<em>${badge}</em>`:''}</button>`
         + (subs ? `<div class="sb-subs" data-pai="${id}">${subs.map(([a,t]) => `<button type="button" class="sb-sub" data-sbaba="${a}" data-sbpai="${id}">${esc2(t)}</button>`).join('')}</div>` : '');
-    }).join('')).join('')}</div>
+    }).join('') + '</div>').join('')}</div>
     <div class="sb-pe">COAPI · SDR/MAPA<br><span id="sb-atu"></span></div>`;
   document.body.appendChild(nav);
   const abrirBt = document.createElement('button'); abrirBt.id = 'sb-abrir'; abrirBt.type = 'button'; abrirBt.textContent = '☰ Menu'; document.body.appendChild(abrirBt);
@@ -12234,8 +12289,17 @@ function preCarregar(){
     if(!document.getElementById('v-visao').hidden) return 'visao';
     try{ return VISAO || 'menu'; }catch(e){ return 'menu'; }
   }
+  let ABERTOS = {}; try{ ABERTOS = JSON.parse(localStorage.getItem('sdr_sb_grupos') || '{}'); }catch(e){}
+  const grAbrir = (gi, ab) => { const c = nav.querySelector(`[data-sbgrc="${gi}"]`), b = nav.querySelector(`[data-sbgr="${gi}"]`); if(!c) return; c.classList.toggle('ab', ab); b.setAttribute('aria-expanded', ab); };
+  Object.keys(ABERTOS).forEach(gi => grAbrir(gi, !!ABERTOS[gi]));
+  nav.addEventListener('click', e => { const g = e.target.closest('[data-sbgr]'); if(!g) return; const gi = g.dataset.sbgr, ab = g.getAttribute('aria-expanded') !== 'true';
+    grAbrir(gi, ab); ABERTOS[gi] = ab ? 1 : 0; try{ localStorage.setItem('sdr_sb_grupos', JSON.stringify(ABERTOS)); }catch(x){} });
+  nav.querySelector('.sb-busca').addEventListener('input', e => { const q = e.target.value.trim(); nav.querySelectorAll('[data-sbgrc]').forEach(c => { if(q) c.classList.add('ab'); else grAbrir(c.dataset.sbgrc, !!ABERTOS[c.dataset.sbgrc]); }); });
+  let _ultTela = null;
   function marcar(){
     const t = telaAtual(); const aba = t === 'parc' ? (est().aba || '') : '';
+    nav.querySelectorAll('[data-sbgr]').forEach(b => { const c = nav.querySelector(`[data-sbgrc="${b.dataset.sbgr}"]`); b.classList.toggle('tem', !!c.querySelector(`[data-sbir="${CSS.escape(t)}"]`)); });
+    // grupos fechados: só abre o que a pessoa clicar; o grupo da tela atual fica marcado com ●
     nav.querySelectorAll('.sb-it').forEach(b => b.classList.toggle('on', b.dataset.sbir === t));
     nav.querySelectorAll('.sb-subs').forEach(d => d.style.display = d.dataset.pai === t ? '' : 'none');
     nav.querySelectorAll('.sb-sub').forEach(b => b.classList.toggle('on', b.dataset.sbpai === t && (b.dataset.sbaba === aba || (['inst','emp','prog','mov','obras'].includes(aba) && b.dataset.sbaba === 'inst'))));
