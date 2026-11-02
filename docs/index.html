@@ -3555,14 +3555,15 @@ function carregarApiCtr(){
       const rows = parseCSV(await r.text()); const h = (rows.shift()||[]).map(x => String(x||'').trim());
       T[k] = rows.filter(x => x.some(v => String(v||'').trim())).map(x => { const o = {}; h.forEach((c,i) => o[c] = String(x[i]??'').trim()); return o; });
     }));
-    await Promise.all(['arq','itn','cro','pag','ith'].map(async k => { try{ const ra = await robo('contratos_api_'+k+'.csv'); FONTE[k] = ra ? 'robô' : 'não carregou';
+    await Promise.all(['arq','itn','cro','pag','ith','oco','gar'].map(async k => { try{ const ra = await robo('contratos_api_'+k+'.csv'); FONTE[k] = ra ? 'robô' : 'não carregou';
       if(ra && ra.ok){ const rows = parseCSV(await ra.text()); const h = (rows.shift()||[]).map(x => String(x||'').trim());
         T[k] = rows.filter(x => x.some(v => String(v||'').trim())).map(x => { const o = {}; h.forEach((c,i) => o[c] = String(x[i]??'').trim()); return o; }); } }catch(e){} T[k] = T[k] || []; }));
     const por = l => { const m = new Map(); l.forEach(x => { const id = x['ID contrato (API)']; if(!m.has(id)) m.set(id, []); m.get(id).push(x); }); return m; };
-    const E = por(T.emp), F = por(T.fat), H = por(T.his), R = por(T.res), A = por(T.arq), IT = por(T.itn), CR = por(T.cro), PG = por(T.pag), ITH = por(T.ith||[]), HOJE0 = new Date(); HOJE0.setHours(0,0,0,0);
+    const E = por(T.emp), F = por(T.fat), H = por(T.his), R = por(T.res), A = por(T.arq), IT = por(T.itn), CR = por(T.cro), PG = por(T.pag), ITH = por(T.ith||[]), OC = por(T.oco||[]), GA = por(T.gar||[]), HOJE0 = new Date(); HOJE0.setHours(0,0,0,0);
     const lista = T.ctr.map(x => { const id = x['ID contrato (API)'];
       const o = {id, ug:x['UG atual'], ugo:x['UG de origem'], ugoN:x['Nome UG origem'], num:x['Nº contrato'], sit:x['Situação'], forn:x['Fornecedor'], cnpj:x['CNPJ/CPF'],
         ini:dataCtr(x['Início vigência']), fim:dataCtr(x['Fim vigência']), vi:toNum(x['Valor inicial']), vg:toNum(x['Valor global']), np:+(x['Nº parcelas']||0)||0, vp:toNum(x['Valor parcela']), link:x['Link transparência'], cat:x['Categoria'], obj:x['Objeto']||'', proc:x['Processo']||'', mod:x['Modalidade']||'',
+        oco:(OC.get(id)||[]).map(x => ({n:x['Nº ocorrência'], data:x['Data'], sit:x['Situação'], desc:x['Descrição']})), gar:(GA.get(id)||[]).map(x => ({tipo:x['Tipo'], v:toNum(x['Valor']), venc:dataCtr(x['Vencimento']), sit:x['Situação']})), temOcoGar: !!(T.oco && T.oco.length || T.gar && T.gar.length || FONTE.oco === 'robô'),
         nes:(E.get(id)||[]).map(e => ({ug:e['UG da NE'], ne:e['Nota de empenho']})),
         fat:(F.get(id)||[]).map(f => ({n:f['Nº fatura'], em:dataCtr(f['Emissão']), venc:dataCtr(f['Vencimento']), v:toNum(f['Valor (− glosa)']), sit:f['Situação'], liq:dataCtr(f['Data liquidação']), np:f['NP / documento SIAFI']})),
         his:(H.get(id)||[]).map(h => ({tipo:h['Tipo do termo'], n:h['Nº do termo'], ass:dataCtr(h['Data assinatura']), fim:dataCtr(h['Fim vigência']), v:toNum(h['Valor global (novo)']), obs:h['Observação'],
@@ -10542,7 +10543,7 @@ function asEntidades(txt){
   const s = asN(txt), S = String(txt).toUpperCase(), e = {};
   const ne = S.match(/\b(\d{4}NE\d{3,6})\b/); if(ne) e.ne = ne[1];
   const pr = s.match(/\b(\d{3,6}\/20\d{2})\b/); if(pr) e.prop = pr[1];
-  const nums = (s.match(/\b\d{6}\b/g)||[]); nums.forEach(n => { if(UGS_AS.includes(n)) (e.ug = e.ug || []).push(n); else if(!e.num) e.num = n; });
+  const nums = (s.match(/\b\d{6}\b/g)||[]), ndCtx = /natureza de despesa|elemento|\bnd\b/.test(s); nums.forEach(n => { if(UGS_AS.includes(n)) (e.ug = e.ug || []).push(n); else if(ndCtx && /^[34][1-6]\d{4}$/.test(n)) e.nd = n; else if(!e.num) e.num = n; });
   const ted = S.match(/\b(1[A-Z]{5}|[0-9][A-Z0-9]{5})\b/); if(ted && /[A-Z]/.test(ted[1]) && !/NE/.test(ted[1])) e.ted = ted[1];
   const ctr = s.match(/\b(\d{1,5}\/20\d{2})\b/); if(ctr && !e.prop) e.ctr = ctr[1];
   const ufs = []; Object.entries(UF_N).forEach(([u, n]) => { if(new RegExp('(^|\\W)'+n+'(\\W|$)').test(s) || new RegExp('(^|[^a-z])(uf|estado|no|na|em|do|da)\\s+'+u.toLowerCase()+'(\\W|$)').test(s) || new RegExp('(^|\\s)'+u+'(\\s|$|[?.,])').test(String(txt))) ufs.push(u); });
@@ -10551,6 +10552,7 @@ function asEntidades(txt){
   if(ufs.includes('MS')){ const i = ufs.indexOf('MT'); if(i >= 0 && !/mato grosso(?! do sul)/.test(s)) ufs.splice(i, 1); }
   if(ufs.length) e.uf = [...new Set(ufs)];
   const ac = S.match(/\b(20ZV|20ZY|2000|215A|8593|214Z|00PN|8622|21B6|8606|7H17|8611|21GE|00SX|214Z)\b/g); if(ac) e.acao = [...new Set(ac)];
+  { const ga = [...S.matchAll(/\bA[ÇC][ÃA]O(?: OR[ÇC]AMENT[ÁA]RIA)?\s+(?:N[ºO°]\s*)?([0-9][0-9A-Z]{3})\b/g)].map(m => m[1]); if(ga.length) e.acao = [...new Set((e.acao||[]).concat(ga))]; }
   { const ms = []; if(/\btermos? de fomento|\bfomento\b|\btf\b|\bconvenios?,? (e |ou )?termos?\b/.test(s)) ms.push('FOMENTO'); if(/contratos? de repasse|\brepasses?\b/.test(s)) ms.push('REPASSE'); if(/convenio/.test(s)) ms.push('CONVENIO');
     if(ms.length && ms.length < 3) e.mod = ms.length === 1 ? ms[0] : ms; }   // as três modalidades = sem filtro   // "convênios e termos de fomento" = as duas modalidades
   const d = s.match(/(\d{1,3})\s*dias/); if(d) e.dias = +d[1];
@@ -10739,6 +10741,303 @@ async function asResponderOrc(ent, campo){
   return asCard('Orçamento · '+esc(filt), 'Tesouro Gerencial · posição de '+rotMes(+mes), `<p class="as-dest">${dest}</p>${asK([['Crédito', fmtV(t.temDot ? t.dotAt : t.exec)],['Empenhado', fmtV(t.emp)],['Pago', fmtV(t.pago)],['Disponível', fmtV(t.disp), '', '#b8650a']])}${extra}`,
     `<button data-asir="exe">Abrir Financeiro EXE</button>${campo==='rap' ? '<button data-asir="rap">Abrir Financeiro RAP</button>' : ''}`, 'posição mais recente do Tesouro · '+esc(filt));
 }
+// ===== ASSISTENTE · ORÇAMENTO E FINANCEIRO (mapa de intenções O01–O20, base de 6.000 perguntas de 02/11/2026) =====
+// cada resposta mostra o caminho percorrido (UG → ação → PTRES/PI → notas de empenho → favorecido) para conferir de onde veio o número
+const asTrilha = passos => `<div class="as-tr"><small>Caminho:</small>${passos.filter(Boolean).map(p => `<span>${p}</span>`).join('<i>→</i>')}</div>`;
+const asNeBt = d => `<button class="sec" data-asq="${esc('nota de empenho '+String(d.ne).match(/\d{4}NE\d{6}/)?.[0]+' da UG '+d.ug)}">${esc(String(d.ne).match(/\d{4}NE\d{6}/)?.[0]||d.ne)}</button>`;
+const asNeAno = d => +((String(d.ne||'').match(/(\d{4})NE/)||[])[1]) || 0;
+// tabela curta (até n linhas) com a nota de empenho clicável: a pergunta seguinte já sai pronta
+function asTabNE(L, cols, n){ n = n || 8;
+  return `<table class="as-t as-l"><tr><th>NE</th>${cols.map(c => `<th${c[2] ? ' class="n"' : ''}>${c[0]}</th>`).join('')}</tr>${L.slice(0, n).map(x => `<tr><td>${x.d ? `<a href="#" data-asq="${esc('nota de empenho '+(String(x.d.ne).match(/\d{4}NE\d{6}/)||[''])[0]+' da UG '+x.d.ug)}">${esc((String(x.d.ne).match(/\d{4}NE\d{6}/)||[x.d.ne])[0])}</a>` : '—'}</td>${cols.map(c => `<td${c[2] ? ' class="n"' : ''}>${c[1](x)}</td>`).join('')}</tr>`).join('')}</table>${L.length > n ? `<p class="as-ent">+ ${(L.length - n).toLocaleString('pt-BR')} nota(s) · a lista completa está no Financeiro.</p>` : ''}`; }
+// agrupa por nota de empenho (UG + NE), somando os campos pedidos
+function asPorNE(L, campos){ const M = new Map(); L.forEach(d => { if(!d.ne) return; const k = d.ug+'|'+d.ne, x = M.get(k) || M.set(k, {d, n:0}).get(k); campos.forEach(c => x[c] = (x[c]||0) + (typeof c === 'function' ? 0 : +d[c] || 0)); }); return [...M.values()]; }
+function asGrupo(L, chave, campos){ const M = new Map(); L.forEach(d => { const k = chave(d); if(!k) return; const x = M.get(k) || M.set(k, {k, d, n:new Set()}).get(k); if(d.ne) x.n.add(d.ug+'|'+d.ne); campos.forEach(c => x[c] = (x[c]||0) + (+d[c] || 0)); }); return [...M.values()]; }
+// entidades de orçamento que a pergunta pode trazer
+function asEntOrc(txt){ const S = String(txt), s = asN(txt), e = {};
+  const nd = S.match(/natureza de despesa\s*(?:n[ºo°]?\s*)?(\d{6,8})/i) || S.match(/\b([34][1-6]\d{4})(?:\d{2})?\b/); if(nd && !UGS_AS.includes(nd[1])) e.nd = nd[1].slice(0, 6);
+  const gnd = s.match(/\bgnd\s*(\d)\b|grupo de natureza de despesa\s*(?:gnd)?\s*(\d)/); if(gnd) e.gnd = gnd[1] || gnd[2];
+  const pi = S.match(/plano interno\s*(?:n[ºo°]?\s*)?([A-Z0-9]{5,11})/i) || S.match(/\b(I\d{8}|[A-Z]\d{3}[A-Z]\d{2}[A-Z0-9]{0,4})\b/); if(pi) e.pi = pi[1].toUpperCase();
+  const fo = s.match(/\bfonte\s*(?:de recursos?\s*)?(\d{3,10})\b/); if(fo) e.fonte = fo[1];
+  const cnpj = S.match(/\b(\d{2}\.?\d{3}\.?\d{3}\/?\d{4}-?\d{2})\b/); if(cnpj) e.cnpj = cnpj[1].replace(/\D/g,'');
+  const n = s.match(/\b(\d{1,2}) maiores\b|\btop\s*(\d{1,2})\b/); if(n) e.top = +(n[1] || n[2]);
+  const ptres = s.match(/\bptres\s*(\d{5,6})\b/); if(ptres) e.ptres = ptres[1];
+  return e; }
+const asFiltroTes = (L, ent, eo) => L.filter(d => (!ent.ug || ent.ug.includes(d.ug)) && (!ent.acao || ent.acao.includes(d.acao)) && (!eo.nd || String(d.nd).startsWith(eo.nd)) && (!eo.gnd || String(d.gnd||d.nd).startsWith(eo.gnd))
+  && (!eo.pi || String(d.pi).toUpperCase() === eo.pi) && (!eo.fonte || String(d.fonte).includes(eo.fonte)) && (!eo.ptres || String(d.ptres) === eo.ptres) && (!eo.cnpj || String(d.fav).replace(/\D/g,'').includes(eo.cnpj)));
+const asRotFiltro = (ent, eo) => [ent.ug ? 'UG '+ent.ug.join(', ') : '', ent.acao ? 'ação '+ent.acao.join(', ') : '', eo.nd ? 'ND '+eo.nd : '', eo.gnd ? 'GND '+eo.gnd : '', eo.pi ? 'PI '+eo.pi : '', eo.fonte ? 'fonte '+eo.fonte : '', eo.ptres ? 'PTRES '+eo.ptres : '', eo.cnpj ? 'favorecido '+eo.cnpj : ''].filter(Boolean);
+const asSemTes = (txt) => asCard('Orçamento e Financeiro', '', `<p>O Tesouro Gerencial do painel não carregou agora (${esc(txt)}). Tente de novo em instantes ou abra o Financeiro EXE.</p>`, '<button data-asir="exe">Abrir Financeiro EXE</button>', '');
+// o que o painel não tem: diz de onde viria, em vez de "não entendi"
+const AS_SEM_DADO_ORC = [
+  [/ordem bancaria|\bob\b/, 'Ordem Bancária', 'O painel não tem as ordens bancárias (só o pago acumulado por nota de empenho, do Tesouro Gerencial). A OB se consulta no SIAFI (CONOB) ou no Tesouro Gerencial com a dimensão "Documento".'],
+  [/limite de (movimentacao|empenho)/, 'Limite de movimentação e empenho', 'O limite de empenho por GND não está nas planilhas do Tesouro do painel. Ele é distribuído pela SPOA e se consulta no SIAFI (limite de empenho) ou no SIOP.'],
+  [/evolucao da dotacao|exercicio anterior \(|entre o exercicio anterior/, 'Evolução da dotação entre anos', 'O painel tem só a dotação de 2026. Para comparar com 2025 é preciso incluir a aba do Tesouro (ou do SIOP) do ano anterior.'],
+  [/saldo (financeiro|de limite)|limite de saque|disponibilidade financeira .*fonte|para pagamento .*fonte/, 'Saldo financeiro por fonte', 'O limite de saque/financeiro por fonte não está nas planilhas do painel. Ele se consulta no SIAFI (CONLIMSAQ) ou com a CGOF/SPOA.'],
+  [/movimentacao de credito|\bnc\b.*plano interno|notas? de credito .*plano interno/, 'Notas de crédito por PI', 'As NCs de provisão entre UGs não estão no painel (só as NCs de TED, no menu TED). Elas se consultam no SIAFI (CONNC) ou no Tesouro Gerencial.']];
+async function asResponderOrc2(txt, ent){
+  const s = asN(txt), eo = asEntOrc(txt);
+  for(const [rx, tit, msg] of AS_SEM_DADO_ORC) if(rx.test(s) && !eo.nd) return asCard(tit, 'sem dado no painel', `<p>${esc(msg)}</p>`, '<button data-asir="exe">Abrir Financeiro EXE</button>', '');
+  const ehRap = /restos a pagar|\brap\b|inscrit/.test(s);
+  let E, R, mes;
+  try{ const x = await asTesouro('exe'); E = x.linhas; mes = x.mes; R = (await asTesouro('rap')).linhas; }catch(e){ return asSemTes(e.message); }
+  const LE = asFiltroTes(E, ent, eo), LR = asFiltroTes(R, ent, eo), filt = asRotFiltro(ent, eo), fonteTxt = 'Tesouro Gerencial · posição de '+rotMes(+mes);
+  const ANO = Math.floor(+mes/100) || new Date().getFullYear();
+  const tr0 = filt.length ? filt.map(esc) : ['todas as 5 UGs'];
+  if(ent.acao && !LE.length && !LR.length){ const tem = [...new Set(E.concat(R).filter(d => !ent.ug || ent.ug.includes(d.ug)).map(d => d.acao).filter(Boolean))].sort();
+    return asCard('Ação '+esc(ent.acao.join(', ')), fonteTxt, `<p>A ação <b>${esc(ent.acao.join(', '))}</b> não aparece no Tesouro ${ent.ug ? 'da UG '+esc(ent.ug.join(', ')) : 'das 5 UGs da SDR'} em ${esc(rotMes(+mes))}.</p><p class="as-ent">Ações com dados${ent.ug ? ' nessa UG' : ''}: ${tem.map(esc).join(' · ') || '—'}.</p>`, '<button data-asir="exe">Abrir Financeiro EXE</button>', ''); }
+  // O08 · RAP sujeito a bloqueio/cancelamento (farol pela idade da nota)
+  if(/bloqueio|cancelamento|prescri|sujeit/.test(s) && ehRap){
+    const G = asPorNE(LR.filter(d => (+d.npAlq||0) > 0.004), ['npAlq']).sort((a,b) => asNeAno(a.d) - asNeAno(b.d) || b.npAlq - a.npAlq);
+    const ver = G.filter(x => asNeAno(x.d) && asNeAno(x.d) <= ANO-2), am = G.filter(x => asNeAno(x.d) === ANO-1), sv = ver.reduce((t,x) => t + x.npAlq, 0), sa = am.reduce((t,x) => t + x.npAlq, 0);
+    return asCard('RAP não processado sujeito a bloqueio ou cancelamento', fonteTxt, `<p class="as-dest">🔴 <b>${ver.length}</b> nota(s) de ${ANO-2} ou antes (${fmtV(sv)}): o prazo de 30/06/${ANO} já passou, liquidar ou serão canceladas em 31/12/${ANO}. 🟡 <b>${am.length}</b> nota(s) de ${ANO-1} (${fmtV(sa)}): bloqueio em 30/06/${ANO+1} se não liquidar.</p>
+      ${asTrilha(tr0.concat(['RAP não processado a liquidar', G.length+' nota(s)', 'farol pela idade da nota (Decreto 93.872/1986, art. 68)']))}
+      ${asTabNE(G, [['UG', x => esc(x.d.ug)], ['Ano', x => asNeAno(x.d)], ['Favorecido', x => esc(x.d.favN||x.d.fav||'')], ['A liquidar', x => fmtV(x.npAlq), 1]])}<p class="as-ent">Há exceções no decreto (algumas emendas e obras): confira a situação da nota no SIAFI.</p>`,
+      '<button data-asir="alertaorc">Abrir o Alerta de Orçamento</button><button data-asir="rap">Abrir Financeiro RAP</button>', 'RAP não processado a liquidar, pela idade da nota'); }
+  // O10 · notas anuladas/canceladas
+  if(/anulad|cancelad/.test(s)){
+    const G = asPorNE(LR.filter(d => ((+d.ppCan||0) + (+d.npCan||0)) > 0.004), ['ppCan','npCan']).map(x => ({...x, c: x.ppCan + x.npCan})).sort((a,b) => b.c - a.c);
+    return asCard('Notas de empenho com cancelamento de RAP', fonteTxt, `<p class="as-dest"><b>${G.length}</b> nota(s) com RAP cancelado neste ano: <b>${fmtV(G.reduce((t,x) => t + x.c, 0))}</b>.</p>
+      ${asTrilha(tr0.concat(['RAP', 'cancelados no ano']))}${asTabNE(G, [['UG', x => esc(x.d.ug)], ['Ação', x => esc(x.d.acao||'')], ['Favorecido', x => esc(x.d.favN||'')], ['Cancelado', x => fmtV(x.c), 1]])}
+      <p class="as-ent">A anulação de empenho do próprio ano (EXE) não vem nas planilhas do Tesouro do painel; aqui estão os cancelamentos de restos a pagar.</p>`, '<button data-asir="rap">Abrir Financeiro RAP</button>', 'cancelamentos de RAP'); }
+  // O11 · Despesas de Exercícios Anteriores (elemento 92)
+  if(/exercicios anteriores|\bdea\b/.test(s)){
+    const D = LE.filter(d => String(d.el).replace(/\D/g,'').endsWith('92') || String(d.nd).slice(4, 6) === '92'), t = somar(D, 'exe'), G = asPorNE(D, ['emp','pago']).sort((a,b) => b.emp - a.emp);
+    return asCard('Despesas de Exercícios Anteriores (elemento 92)', fonteTxt, `<p class="as-dest">Empenhado <b>${fmtV(t.emp)}</b> e pago <b>${fmtV(t.pago)}</b> em DEA neste ano (${G.length} nota(s)).</p>${asTrilha(tr0.concat(['elemento de despesa 92 (DEA)', G.length+' nota(s)']))}
+      ${G.length ? asTabNE(G, [['UG', x => esc(x.d.ug)], ['Favorecido', x => esc(x.d.favN||'')], ['Empenhado', x => fmtV(x.emp), 1], ['Pago', x => fmtV(x.pago), 1]]) : ''}`, '<button data-asir="exe">Abrir Financeiro EXE</button>', 'DEA = elemento 92'); }
+  // O17 · maiores favorecidos
+  if(/maiores favorecidos|maiores credores|ranking .*favorecid|favorecidos em volume|quem (mais )?recebeu mais/.test(s)){
+    const n = eo.top || 10, G = asGrupo(LE, d => d.fav || d.favN, ['emp','pago']).sort((a,b) => (/pag/.test(s) ? b.pago - a.pago : b.emp - a.emp)).slice(0, n);
+    return asCard(`Os ${n} maiores favorecidos`, fonteTxt, `${asTrilha(tr0.concat(['notas de empenho do ano', 'agrupadas por favorecido']))}<table class="as-t as-l"><tr><th>Favorecido</th><th class="n">Notas</th><th class="n">Empenhado</th><th class="n">Pago</th></tr>${G.map(x => `<tr><td><a href="#" data-asq="${esc('pagamentos ao favorecido '+(x.d.fav||x.d.favN))}">${esc(x.d.favN||x.k)}</a><small> ${esc(x.d.fav||'')}</small></td><td class="n">${x.n.size}</td><td class="n">${fmtV(x.emp)}</td><td class="n">${fmtV(x.pago)}</td></tr>`).join('')}</table>`,
+      '<button data-asir="exe">Abrir Financeiro EXE</button>', 'ordenado pelo '+(/pag/.test(s) ? 'pago' : 'empenhado')); }
+  // O18 · favorecido (CNPJ): notas ativas, processos, pago no ano
+  if(eo.cnpj){
+    const FE = LE, FR = LR; if(!FE.length && !FR.length) return asCard('Favorecido '+esc(eo.cnpj), fonteTxt, '<p>Não encontrei notas de empenho desse CNPJ nas 5 UGs (EXE e RAP da posição mais recente).</p>', '', '');
+    const ge = asPorNE(FE, ['emp','liq','pago']), gr = asPorNE(FR, ['ppPag','npPag','ppApg','npApg']), nome = (FE[0]||FR[0]).favN || '';
+    const ativas = ge.filter(x => x.emp - x.pago > 0.01).concat(gr.filter(x => x.ppApg + x.npApg > 0.01)), procs = [...new Set(FE.concat(FR).map(d => d.proc).filter(Boolean))];
+    const pe = ge.reduce((t,x) => t + x.pago, 0), pr = gr.reduce((t,x) => t + x.ppPag + x.npPag, 0);
+    return asCard('Favorecido · '+esc(nome || eo.cnpj), fonteTxt, `<p class="as-dest"><b>${ativas.length}</b> nota(s) com saldo a pagar. Pago em ${ANO}: <b>${fmtV(pe)}</b> de notas do ano e <b>${fmtV(pr)}</b> de restos a pagar (notas de anos anteriores).</p>
+      ${asTrilha(tr0.concat([esc(nome || eo.cnpj), ge.length+gr.length+' nota(s)', procs.length+' processo(s)']))}${asTabNE(ativas.map(x => ({...x, sal: (x.emp||0) - (x.pago||0) + (x.ppApg||0) + (x.npApg||0)})), [['UG', x => esc(x.d.ug)], ['Processo', x => esc(x.d.proc||'—')], ['Ação', x => esc(x.d.acao||'')], ['A pagar', x => fmtV(x.sal), 1]])}
+      ${procs.length ? `<p class="as-ent"><b>Processos:</b> ${procs.slice(0, 15).map(esc).join(' · ')}${procs.length > 15 ? ' …' : ''}</p>` : ''}<p class="as-ent">O pago em ${ANO-1} (exercício anterior completo) não está no painel: o Tesouro do painel é de ${ANO}.</p>`, '<button data-asir="exerap">Abrir EXE + RAP</button>', 'favorecido pelo CNPJ'); }
+  // O16 · emendas por resultado primário
+  if(/emenda/.test(s) && /percentual|execucao|executad|alocad|empenhad|pag/.test(s)){
+    const G = asGrupo(LE.filter(d => ['6','7','8','9'].includes(String(d.rp))), d => String(d.rp), ['emp','pago','disp','indisp','pre']).sort((a,b) => a.k.localeCompare(b.k));
+    if(!G.length) return asCard('Emendas parlamentares', fonteTxt, `<p>Não há crédito de emenda (RP 6, 7, 8 ou 9) no recorte ${esc(filt.join(' · ') || 'das 5 UGs')}.</p>`, '', '');
+    return asCard('Execução das emendas parlamentares', fonteTxt, `${asTrilha(tr0.concat(['resultado primário 6, 7, 8 e 9', 'crédito × empenhado × pago']))}<table class="as-t as-l"><tr><th>Resultado primário</th><th class="n">Crédito</th><th class="n">Empenhado</th><th class="n">% emp.</th><th class="n">Pago</th><th class="n">% pago</th></tr>${G.map(x => { const cr = x.emp + x.disp + x.indisp + x.pre;
+      return `<tr><td>${esc(RP_NOME[x.k] || 'RP '+x.k)}</td><td class="n">${fmtV(cr)}</td><td class="n">${fmtV(x.emp)}</td><td class="n">${pct(x.emp, cr)}</td><td class="n">${fmtV(x.pago)}</td><td class="n">${pct(x.pago, x.emp)}</td></tr>`; }).join('')}</table>`, '<button data-asir="exe">Abrir Financeiro EXE</button>', 'crédito = empenhado + disponível + indisponível'); }
+  // O19 · provisão / destaque recebido
+  if(/recebeu de|provisao recebida|destaque recebido|recebeu .*(provisao|destaque|credito|descentraliza)/.test(s)){
+    const t = somar(LE, 'exe');
+    return asCard('Créditos recebidos', fonteTxt, `<p class="as-dest">Provisão recebida <b>${fmtV(t.prov)}</b> · destaque recebido <b>${fmtV(t.dr)}</b> · destaque concedido ${fmtV(t.dc)}.</p>${asTrilha(tr0.concat(['crédito recebido no ano']))}${asK([['Provisão recebida', fmtV(t.prov)],['Destaque recebido', fmtV(t.dr)],['Empenhado', fmtV(t.emp)],['Disponível', fmtV(t.disp), '', '#b8650a']])}`,
+      '<button data-asir="exe">Abrir Financeiro EXE</button>', 'provisão = crédito vindo da setorial; destaque = crédito vindo de outro órgão'); }
+  // O20 · pago no último mês
+  if(/ultimo mes|no mes passado|neste mes|mes de/.test(s) && /pag|volume|liquid|empenh/.test(s)){
+    const ms = Object.keys(MESES_TXT).map(Number).sort((a,b) => a-b), ant = ms[ms.length-2]; let Lant = [];
+    if(ant && Math.floor(ant/100) === Math.floor(+mes/100)){ try{ await garantirDetalhe('exe', String(ant)); Lant = asFiltroTes(DADOS.exe.det[ant]||[], ent, eo); }catch(e){} }
+    const a = somar(LE, 'exe'), b = somar(Lant, 'exe'), k = /liquid/.test(s) ? 'liq' : /empenh/.test(s) ? 'emp' : 'pago', rot = {liq:'Liquidado', emp:'Empenhado', pago:'Pago'}[k];
+    return asCard(rot+' no último mês', fonteTxt, `<p class="as-dest">${rot} em ${esc(rotMes(+mes))}: <b>${fmtV(a[k] - b[k])}</b> (acumulado no ano ${fmtV(a[k])}).</p>${asTrilha(tr0.concat([`posição de ${rotMes(+mes)} − posição de ${ant ? rotMes(ant) : '—'}`]))}`, '<button data-asir="exe">Abrir Financeiro EXE</button>', 'o Tesouro traz o acumulado: o mês é a diferença entre duas posições'); }
+  // O01 · RAP não processado por ação/UG
+  if(ehRap && /nao processad|saldo/.test(s)){
+    const r = somar(LR, 'rap'), G = asGrupo(LR, d => d.acao, ['npAlq']).sort((a,b) => b.npAlq - a.npAlq);
+    return asCard('Restos a pagar não processados', fonteTxt, `<p class="as-dest">Saldo não processado: <b>${fmtV(r.npSaldo)}</b> (a liquidar ${fmtV(r.npAlq)}). Inscrito não processado: ${fmtV((r.npIns||0)+(r.npRei||0))}.</p>${asTrilha(tr0.concat(['RAP inscrito', 'não processado', G.length+' ação(ões)']))}
+      ${asK([['NP inscrito', fmtV((r.npIns||0)+(r.npRei||0))],['NP cancelado', fmtV(r.npCan)],['NP pago', fmtV(r.npPag)],['NP a liquidar', fmtV(r.npAlq), '', '#b8650a']])}
+      ${G.length > 1 ? `<table class="as-t as-l"><tr><th>Ação</th><th class="n">A liquidar</th></tr>${G.slice(0, 8).map(x => `<tr><td>${esc(x.k)}</td><td class="n">${fmtV(x.npAlq)}</td></tr>`).join('')}</table>` : ''}`, '<button data-asir="rap">Abrir Financeiro RAP</button>', 'RAP de notas de anos anteriores'); }
+  // O02 · liquidado aguardando pagamento
+  if(/liquidad/.test(s) && /aguardando|a pagar|pendente|pagamento/.test(s)){
+    const e = somar(LE, 'exe'), r = somar(LR, 'rap'), G = asPorNE(LE, ['apagar']).filter(x => x.apagar > 0.01).sort((a,b) => b.apagar - a.apagar);
+    return asCard('Liquidado aguardando pagamento', fonteTxt, `<p class="as-dest">Total liquidado a pagar: <b>${fmtV(e.apagar + (r.ppApg||0) + (r.npLiqApg||0))}</b> (notas do ano ${fmtV(e.apagar)} · RAP processado ${fmtV(r.ppApg)} · RAP não processado já liquidado ${fmtV(r.npLiqApg)}).</p>
+      ${asTrilha(tr0.concat(['liquidado − pago', G.length+' nota(s) do ano']))}${asTabNE(G, [['UG', x => esc(x.d.ug)], ['Favorecido', x => esc(x.d.favN||'')], ['A pagar', x => fmtV(x.apagar), 1]])}`, '<button data-asir="alertaorc">Abrir o Alerta de Orçamento</button>', 'precisa de limite financeiro para pagar'); }
+  // O05 · por natureza de despesa / GND
+  if(eo.nd || eo.gnd){
+    const t = somar(LE, 'exe'), G = asGrupo(LE, d => d.fav || d.favN, ['emp','pago']).sort((a,b) => b.emp - a.emp);
+    return asCard('Natureza de despesa '+esc(eo.nd || 'GND '+eo.gnd), fonteTxt, `<p class="as-dest">Empenhado <b>${fmtV(t.emp)}</b> · liquidado ${fmtV(t.liq)} · pago ${fmtV(t.pago)}.</p>${asTrilha(tr0.concat([G.length+' favorecido(s)']))}
+      <table class="as-t as-l"><tr><th>Favorecido</th><th class="n">Empenhado</th><th class="n">Pago</th></tr>${G.slice(0, 8).map(x => `<tr><td>${esc(x.d.favN||x.k)}</td><td class="n">${fmtV(x.emp)}</td><td class="n">${fmtV(x.pago)}</td></tr>`).join('')}</table>`, '<button data-asir="exe">Abrir Financeiro EXE</button>', 'natureza de despesa nas notas do ano'); }
+  // O09/O15 · crédito disponível (por ação, PI, fonte)
+  if(/disponivel|saldo orcamentario|para empenho|credito/.test(s)){
+    const t = somar(LE, 'exe'), G = asGrupo(LE.filter(d => (+d.disp||0) > 0.004), d => [d.ug, d.acao, d.pi, d.fonte].join(' · '), ['disp']).sort((a,b) => b.disp - a.disp);
+    return asCard('Crédito disponível', fonteTxt, `<p class="as-dest">Disponível para empenho: <b>${fmtV(t.disp)}</b> (indisponível/bloqueado ${fmtV(t.indisp)} · já empenhado ${fmtV(t.emp)}).</p>${asTrilha(tr0.concat(['crédito na UG (provisão/destaque)', G.length+' combinação(ões) UG · ação · PI · fonte']))}
+      ${G.length ? `<table class="as-t as-l"><tr><th>UG · ação · PI · fonte</th><th class="n">Disponível</th></tr>${G.slice(0, 8).map(x => `<tr><td>${esc(x.k)}</td><td class="n">${fmtV(x.disp)}</td></tr>`).join('')}</table>` : ''}<p class="as-ent">Crédito que ainda está na setorial (130101) ou na dotação da ação aparece no Alerta de Orçamento (linha por UG).</p>`,
+      '<button data-asir="alertaorc">Abrir o Alerta de Orçamento</button><button data-asir="orcacao">Orçamento por ações</button>', 'crédito disponível nas UGs, pelo Tesouro'); }
+  return null;
+}
+// nota de empenho: além dos valores, o caminho até o contrato ou o instrumento que ela paga
+async function asAssocNE(d0){
+  const ne = (String(d0.ne).match(/\d{4}NE\d{6}/)||[''])[0], ug = String(d0.ug), out = [];
+  try{ const C = await asCtr(); const c = C.find(x => (x._o && x._o.nes || []).some(e => String(e.ug) === ug && String(e.ne).toUpperCase().includes(ne)));
+    if(c) out.push(`<a href="#" data-asq="${esc('contrato '+c.num+' da UG '+c.ugc)}">contrato ${esc(c.num)} · ${esc(c.forn)}</a>`); }catch(e){}
+  try{ const L = AS.dados.parc || await asParc(); const i = L.find(x => { const t = x.tgA || {}; return String(t.notas_empenho||'').includes(ne) && (!t.ugs_empenho || String(t.ugs_empenho).includes(ug)); });
+    if(i) out.push(`<a href="#" data-asq="${esc('situação do instrumento '+i.num)}">instrumento ${esc(i.num)} · ${esc(i.proponente||'')}</a>`); }catch(e){}
+  if(d0.contr && !out.length) out.push('contrato informado na NE: '+esc(d0.contr));
+  return asTrilha(['UG '+esc(ug), 'ação '+esc(d0.acao||'—'), 'PTRES '+esc(d0.ptres||'—'), 'PI '+esc(d0.pi||'—'), 'NE '+esc(ne)].concat(out.length ? out : ['sem contrato ou instrumento ligado']));
+}
+(function(){ const st = document.createElement('style'); st.textContent = `.as-tr{display:flex;flex-wrap:wrap;align-items:center;gap:4px;margin:6px 0 8px;font-size:12px}.as-tr small{font-weight:700;color:#5f6f66;margin-right:2px}.as-tr span{background:#eef6f0;border:1px solid #d5e6da;border-radius:999px;padding:2px 9px;color:#155a30}.as-tr i{font-style:normal;color:#8aa395}.as-tr a{color:#155a30;font-weight:700}`; document.head.appendChild(st); })();
+const AS_UGS_CTR = ['130010','130141','130255'], AS_NOME_UG_CTR = {'130010':'130010 · CEPLAC', '130141':'130141 · CGPI/SDR', '130255':'130255 · CGMAP/SDR'};
+// ===== ASSISTENTE · CONTRATOS (mapa de intenções C01–C21) =====
+// tipo de serviço citado na pergunta → palavras procuradas no objeto do contrato
+const AS_TIPO_SERV = [['limpeza e conservação', /limpeza|conservacao|asseio/], ['vigilância', /vigilancia|seguranca patrimonial/], ['brigada de incêndio', /brigad|bombeiro/], ['motoristas', /motorista/],
+  ['recepção e portaria', /recepc|portaria|porteiro/], ['apoio administrativo', /apoio administrativo|secretariad|auxiliar administrativo/], ['copeiragem', /copeir|copa\b/], ['manutenção predial', /manutencao predial|predial/],
+  ['ar-condicionado', /ar.condicionado|climatiza|refrigera/], ['elevadores', /elevador/], ['frota de veículos', /frota|veiculo|automot|pneu/], ['locação de veículos', /locacao de veiculo/], ['passagens aéreas', /passage|agenciamento de viage/],
+  ['energia elétrica', /energia eletrica|eletric/], ['água e esgoto', /agua|esgoto|saneamento/], ['telecomunicações e internet', /telecom|internet|link|telefon/], ['software e nuvem', /software|nuvem|licenc|sistema/],
+  ['computadores', /computador|notebook|informatica|microcomput/], ['mobiliário', /mobiliario|moveis|cadeira/], ['material de expediente', /expediente|papel|suprimento/]];
+function asTipoServ(s){ const q = s.match(/contratos? (?:n[ºo°]?\s*[\d/]+ )?(?:de|com|para) ([a-z -]{4,60}?)(?: \(| da ug| na ug| estao| vencem| vigentes| gerenciad| no exercicio|\?|$)/) || s.match(/\(([a-z -]{4,60})\)/) || s.match(/(?:estimado com|despesa com|faturado de|itens de) ([a-z -]{4,60}?)(?: \(| da ug| na ug| no |$)/);
+  const alvo = q ? q[1] : s; const t = AS_TIPO_SERV.find(([, rx]) => rx.test(alvo)); return t || null; }
+const asCtrObj = d => asN(((d._o && d._o.obj) || '')+' '+(d.forn||'')+' '+(d.cat||''));
+const asDBR = x => x instanceof Date && !isNaN(x) ? x.toLocaleDateString('pt-BR') : (x || '—');
+const AS_SEM_DADO_CTR = [
+  [/sicaf|regularidade fiscal/, 'Regularidade no SICAF', 'O SICAF não tem API aberta: a regularidade se consulta no próprio SICAF (ou no relatório de ocorrências do fornecedor no Contratos.gov.br).'],
+  [/conta.deposito|conta vinculada/, 'Conta-depósito vinculada', 'O painel não tem os dados da conta-depósito vinculada. Ela se acompanha no Contratos.gov.br (módulo Conta Vinculada) e no banco.'],
+  [/ata de registro|\barp\b|adesao|carona/, 'Ata de Registro de Preços', 'O painel não tem a base de Atas de Registro de Preços (vigência, saldo e adesões ficam no Compras.gov.br/PNCP). Se for útil, dá para incluir uma extração das atas gerenciadas pelas UGs.'],
+  [/repactuacao|reajuste em analise|pedidos? de (repactuacao|reajuste)/, 'Repactuação ou reajuste em análise', 'O pedido em análise fica no processo do SEI; o painel só vê o apostilamento depois de registrado no Contratos.gov.br.']];
+async function asResponderCtr2(txt, ent){
+  const s = asN(txt);
+  for(const [rx, tit, msg] of AS_SEM_DADO_CTR) if(rx.test(s)){ let extra = '';
+    if(/repactuacao|reajuste/.test(s) && (ent.ctr || ent.prop)){ const L = await asCtr(), d = L.find(x => String(x.num||'').includes(ent.ctr || ent.prop)); if(d){ const ap = (d._o.his||[]).filter(h => /apostil/i.test(h.tipo)); extra = `<p>Apostilamentos já registrados no contrato ${esc(d.num)}: <b>${ap.length}</b>${ap.length ? ' · último em '+asDBR(ap[ap.length-1].ass) : ''}.</p>`; } }
+    return asCard(tit, 'sem dado no painel', `<p>${esc(msg)}</p>${extra}`, '<button data-asir="ctrsdr">Abrir Contratos SDR</button>', ''); }
+  const L0 = await asCtr(); if(!L0.length) return asCard('Contratos', '', '<p>A base do Contratos.gov.br não carregou agora. Tente de novo em instantes.</p>', '', '');
+  const ug = ent.ug && ent.ug.filter(u => AS_UGS_CTR.includes(u)), ugFora = ent.ug && ent.ug.filter(u => !AS_UGS_CTR.includes(u));
+  if(ugFora && ugFora.length && !(ug && ug.length)) return asCard('Contratos da UG '+esc(ugFora.join(', ')), 'Contratos.gov.br', `<p>A UG <b>${esc(ugFora.join(', '))}</b> não tem contratos acompanhados no painel. Os contratos ficam nas UGs ${AS_UGS_CTR.map(u => esc(AS_NOME_UG_CTR[u])).join(', ')} (a 420013 e a 135098 não têm contratos administrativos).</p>`, '<button data-asir="ctrsdr">Abrir Contratos SDR</button>', '');
+  const L = ug && ug.length ? L0.filter(d => ug.includes(d.ugc)) : L0, nCtr = ent.ctr || ent.prop;
+  // um contrato: pelo número (e UG)
+  if(nCtr){ const nk = String(nCtr).replace(/^0+/, ''), d = L.find(x => String(x.num||'').replace(/^0+/, '') === nk);
+    if(!d){ const ano = (String(nCtr).match(/\/(\d{4})/)||[])[1], viz = L.filter(x => !ano || String(x.num).endsWith(ano)).slice(0, 8);
+      return asCard('Contrato '+esc(nCtr), 'Contratos.gov.br', `<p>Não encontrei o contrato <b>${esc(nCtr)}</b>${ug && ug.length ? ' na UG '+esc(ug.join(', ')) : ''}.</p>${viz.length ? `<p>Contratos ${ano ? 'de '+esc(ano)+' ' : ''}${ug && ug.length ? 'dessa UG' : ''}:</p><div class="as-bt">${viz.map(x => `<button class="sec" data-asq="${esc(txt.replace(nCtr, x.num))}">${esc(x.num)} · ${esc(String(x.forn).slice(0, 30))}</button>`).join('')}</div>` : ''}`, '', ''); }
+    return asCtrUm(d, txt, s); }
+  // fornecedor citado (faturas pendentes, histórico de pagamentos)
+  if(/faturas?|historico de pagamentos|pagamentos realizados|fornecedor|empresa|contratada/.test(s)){
+    // o nome vem depois de "empresa", "contratada" ou "para"; sufixos e palavras comuns não identificam a empresa
+    const GEN = new Set('ltda eireli epp brasil comercio servicos servico engenharia solucoes sistemas grupo empresa industria nacional geral gerais tecnologia'.split(' '));
+    const mn = String(txt).match(/(?:para a empresa|empresa|contratada|para)\s+(.+?)\s+(?:na UG|referente|est[aá]|no Contrato|da UG|\?)/i), alvo = mn ? mn[1] : '';
+    const pal = asN(alvo).replace(/[^a-z0-9 ]/g,' ').split(' ').filter(w => w.length >= 3 && !GEN.has(w) && !/^\d+$/.test(w) && !/^(s|sa|me)$/.test(w));
+    const F = pal.length ? L.filter(d => { const f = ' '+asN(d.forn).replace(/[^a-z0-9 ]/g,' ')+' '; return pal.every(p => f.includes(' '+p+' ') || (p.length >= 6 && f.includes(p))); }) : [];
+    if(!F.length) return asCard('Fornecedor '+esc(alvo || ''), 'Contratos.gov.br', `<p>Não encontrei contrato ${alvo ? 'de <b>'+esc(alvo)+'</b>' : 'desse fornecedor'} nas UGs acompanhadas${ug && ug.length ? ' (UG '+esc(ug.join(', '))+')' : ''}. Confira o nome ou pergunte pelo CNPJ.</p>`, '<button data-asir="ctrsdr">Abrir Contratos SDR</button>', '');
+    const pend = F.flatMap(d => (d._o.fat||[]).filter(f => /pendente|andamento|atest/i.test(f.sit)).map(f => ({d, f}))), pagas = F.flatMap(d => (d._o.fat||[]).filter(f => /pag/i.test(f.sit)).map(f => ({d, f})));
+    try{ const T = await ctrExecTes(F.map(d => d._o), null); F.forEach((d, i) => { if(T && T[i]){ d.emp = T[i].emp; d.pago = T[i].pago; } }); }catch(e){}
+    return asCard('Fornecedor · '+esc(F[0].forn), 'Contratos.gov.br (faturas) + Tesouro (pago das NEs do contrato)', `<p class="as-dest"><b>${F.length}</b> contrato(s) · <b>${pend.length}</b> fatura(s) pendente(s) (${fmtV(pend.reduce((t,x) => t + (x.f.v||0), 0))}) · pago pelo Tesouro ${fmtV(F.reduce((t,d) => t + (d.pago||0), 0))}.</p>
+      ${asTrilha(['fornecedor '+esc(F[0].forn), F.length+' contrato(s)', 'notas de empenho ligadas', 'pago (EXE + RAP)'])}
+      <table class="as-t as-l"><tr><th>Contrato</th><th>UG</th><th class="n">Pago (Tesouro)</th><th class="n">Pendentes</th></tr>${F.slice(0, 8).map(d => `<tr><td><a href="#" data-asq="${esc('contrato '+d.num+' da UG '+d.ugc)}">${esc(d.num)}</a></td><td>${esc(d.ugc)}</td><td class="n">${fmtV(d.pago||0)}</td><td class="n">${(d._o.fat||[]).filter(f => /pendente|andamento|atest/i.test(f.sit)).length}</td></tr>`).join('')}</table>
+      ${pagas.length ? `<p class="as-ent">Últimas faturas pagas: ${pagas.sort((a,b) => (b.f.liq||0) - (a.f.liq||0)).slice(0, 6).map(x => esc(x.f.n||'s/nº')+' ('+asDBR(x.f.liq)+', '+fmtV(x.f.v)+')').join(' · ')}</p>` : ''}`, '<button data-asir="ctrsdr">Abrir Contratos SDR</button>', 'fornecedor pelo nome'); }
+  // por tipo de serviço: vigentes, vencendo, valor mensal, média
+  const tipo = asTipoServ(s);
+  if(tipo){ const at = L.filter(d => d.sit === 'Ativo' && tipo[1].test(asCtrObj(d))), vig = at.filter(d => d.dias === null || d.dias >= 0);
+    let G = vig, tema = 'vigentes';
+    if(/venc/.test(s)){ const n = ent.dias || 60; G = vig.filter(d => d.dias !== null && d.dias <= n); tema = 'que vencem em até '+n+' dias'; }
+    const mens = G.reduce((t,d) => t + (d.mensal || (d._o.vp||0)), 0);
+    if(/media mensal|ultimos \d+ meses|variacao|atipic/.test(s)){ const n = +((s.match(/ultimos (\d+) meses/)||[])[1]) || 12, M = {}; at.forEach(d => (d._o.fat||[]).forEach(f => { if(!f.em || !f.em.getFullYear) return; const k = f.em.getFullYear()*100 + f.em.getMonth() + 1; M[k] = (M[k]||0) + (f.v||0); }));
+      const ks = Object.keys(M).map(Number).sort((a,b) => a-b).slice(-n), v = ks.map(k => M[k]), med = v.length ? v.reduce((a,b) => a+b, 0)/v.length : 0, ult = v[v.length-1] || 0, ant = v.slice(0,-1), mA = ant.length ? ant.reduce((a,b) => a+b, 0)/ant.length : 0;
+      return asCard(`Despesa mensal com ${tipo[0]}`, 'Contratos.gov.br (faturas)', `<p class="as-dest">${ks.length ? `Média mensal faturada nos últimos ${ks.length} mês(es): <b>${fmtV(med)}</b> · último mês ${fmtV(ult)}${mA ? ` (${ult >= mA ? '+' : ''}${(100*(ult - mA)/mA).toFixed(1).replace('.',',')}% sobre a média anterior${Math.abs(ult - mA)/mA > 0.2 ? ' · <b>variação atípica</b>' : ''})` : ''}.` : 'Sem faturas registradas para contratos desse tipo.'}</p>
+        ${asTrilha([ug && ug.length ? 'UG '+esc(ug.join(', ')) : 'UGs com contratos', at.length+' contrato(s) de '+esc(tipo[0]), 'faturas por mês de emissão'])}${ks.length ? `<table class="as-t as-l"><tr><th>Mês</th><th class="n">Faturado</th></tr>${ks.map(k => `<tr><td>${String(k%100).padStart(2,'0')}/${Math.floor(k/100)}</td><td class="n">${fmtV(M[k])}</td></tr>`).join('')}</table>` : ''}`, '<button data-asir="ctrsdr">Abrir Contratos SDR</button>', 'faturas dos contratos desse tipo'); }
+    return asCard(`Contratos de ${tipo[0]} · ${tema}`, 'Contratos.gov.br', `<p class="as-dest"><b>${G.length}</b> contrato(s) de ${esc(tipo[0])} ${esc(tema)}${ug && ug.length ? ' na UG '+esc(ug.join(', ')) : ''}${/mensal|media/.test(s) ? ` · valor mensal estimado <b>${fmtV(mens)}</b>` : ''}.</p>
+      ${asTrilha([ug && ug.length ? 'UG '+esc(ug.join(', ')) : 'UGs com contratos', 'objeto do contrato contém "'+esc(tipo[0])+'"', G.length+' contrato(s)'])}
+      ${G.length ? `<table class="as-t as-l"><tr><th>Contrato</th><th>Fornecedor</th><th>Fim</th><th class="n">Mensal</th><th class="n">Global</th></tr>${G.slice(0, 10).map(d => `<tr><td><a href="#" data-asq="${esc('contrato '+d.num+' da UG '+d.ugc)}">${esc(d.num)}</a></td><td>${esc(d.forn)}</td><td>${esc(d.fim||'—')}</td><td class="n">${fmtV(d.mensal || d._o.vp || 0)}</td><td class="n">${fmtV(d.vg)}</td></tr>`).join('')}</table>` : '<p>Nenhum contrato desse tipo nesse recorte.</p>'}`, '<button data-asir="ctrsdr">Abrir Contratos SDR</button>', 'tipo de serviço pelo objeto do contrato'); }
+  return null;
+}
+async function asCtrUm(d, txt, s){
+  const o = d._o, fonte = 'Contratos.gov.br · '+esc(AS_NOME_UG_CTR[d.ugc] || d.ugc), hoje = new Date();
+  let T = null; try{ T = (await ctrExecTes([o], null))[0]; }catch(e){}
+  const emp = T ? T.emp : d.emp || 0, pago = T ? T.pago : d.pago || 0;
+  const cab = asTrilha(['UG '+esc(d.ugc), 'contrato '+esc(d.num), esc(String(d.forn).slice(0, 40)), (o.nes||[]).length+' nota(s) de empenho', 'pago '+fmtV(pago)]);
+  const ficha = asK([['Valor global', fmtV(o.vg)],['Empenhado', fmtV(emp)],['Pago (EXE + RAP)', fmtV(pago)],['Fim da vigência', esc(d.fim||'—'), d.dias !== null ? (d.dias >= 0 ? 'em '+d.dias+' dias' : 'há '+(-d.dias)+' dias') : '']]);
+  const bt = `<button data-asir="ctrsdr">Abrir Contratos SDR</button>${o.link ? `<a class="as-lk" href="${esc(o.link)}" target="_blank" rel="noopener">Contratos.gov.br ↗</a>` : ''}`;
+  const C = (tit, corpo, ent) => asCard(tit+' · contrato '+esc(d.num), fonte, cab + corpo, bt, ent || '');
+  if(/saldo contratual|saldo .*empenho|disponivel para empenho/.test(s)) return C('Saldo para empenho', `<p class="as-dest">Saldo do contrato ainda não empenhado: <b>${fmtV(Math.max(0, o.vg - emp))}</b> (valor global ${fmtV(o.vg)} − empenhado ${fmtV(emp)}).${d.prev ? ` Previsto para ${hoje.getFullYear()}: ${fmtV(d.prev)}${d.falta ? ' · falta empenhar '+fmtV(d.falta) : ''}.` : ''}</p>${ficha}`, 'empenhado pelas notas ligadas ao contrato no Contratos.gov.br');
+  if(/fisca|gestor|responsav/.test(s)){ const R = o.resAt || []; return C('Gestor e fiscais', R.length ? `<table class="as-t as-l"><tr><th>Função</th><th>Nome</th></tr>${R.map(r => `<tr><td>${esc(r.f)}</td><td>${esc(r.nome)}</td></tr>`).join('')}</table>${!R.some(r => /fiscal/i.test(r.f)) ? '<p class="as-ent">⚠ Sem fiscal ativo: publicar a portaria e cadastrar (Lei 14.133, art. 117).</p>' : ''}` : '<p class="as-dest">Nenhum gestor ou fiscal ativo cadastrado no Contratos.gov.br.</p>', 'responsáveis ativos'); }
+  if(/faturad|pago .*(ano|exercicio)|neste ano/.test(s)){ const A = hoje.getFullYear(), F = (o.fat||[]).filter(f => f.em && f.em.getFullYear && f.em.getFullYear() === A), fv = F.reduce((t,f) => t + (f.v||0), 0);
+    return C('Faturado e pago em '+A, `<p class="as-dest">Faturado em ${A}: <b>${fmtV(fv)}</b> (${F.length} fatura(s)) · pago pelo Tesouro: <b>${fmtV(pago)}</b>${T ? ` (do ano ${fmtV(T.pagoE)} · de RAP ${fmtV(T.pagoR)})` : ''}.</p>${ficha}`, 'faturas do Contratos.gov.br + Tesouro'); }
+  if(/aditivo|acrescimo|supress/.test(s)){ const H = (o.his||[]).filter(h => /aditivo/i.test(h.tipo)), ac = o.vi ? (o.vg - o.vi)/o.vi : 0;
+    return C('Termos aditivos', `<p class="as-dest"><b>${H.length}</b> termo(s) aditivo(s) · valor inicial ${fmtV(o.vi)} → global atual ${fmtV(o.vg)} (<b>${ac >= 0 ? '+' : ''}${pct(o.vg - o.vi, o.vi)}</b>).</p>
+      <p class="as-ent">Limite de acréscimo: 25% do valor inicial atualizado (50% em reforma de edifício ou equipamento) · Lei 14.133/2021, art. 125. A variação do global inclui prorrogações (novos períodos), não só acréscimos de objeto.</p>
+      ${H.length ? `<table class="as-t as-l"><tr><th>Termo</th><th>Assinatura</th><th>Fim</th><th class="n">Valor global</th></tr>${H.map(h => `<tr><td>${esc(h.n||'')}</td><td>${asDBR(h.ass)}</td><td>${asDBR(h.fim)}</td><td class="n">${h.v ? fmtV(h.v) : '—'}</td></tr>`).join('')}</table>` : ''}`, 'histórico do contrato'); }
+  if(/prorroga/.test(s)){ const anos = o.ini ? (hoje - o.ini)/(365.25*864e5) : null, cont = /servi/i.test(o.cat||'') || /servi/.test(asCtrObj(d)), lim = cont ? 10 : 5;
+    return C('Permite prorrogação?', `<p class="as-dest">${anos === null ? 'Sem data de início no Contratos.gov.br.' : `Contrato com <b>${anos.toFixed(1).replace('.',',')} ano(s)</b> desde ${asDBR(o.ini)}. ${cont ? 'Serviço contínuo: pode chegar a 10 anos' : 'Prazo máximo de referência: 5 anos'} (Lei 14.133/2021, arts. 106 e 107) → ${anos < lim ? `<b>ainda cabe prorrogação</b> (até ${new Date(o.ini.getTime() + lim*365.25*864e5).toLocaleDateString('pt-BR')}), se houver vantajosidade e previsão no edital/contrato.` : '<b>já atingiu o prazo máximo</b>: planejar nova contratação.'}`}</p>${ficha}`, 'início da vigência e tipo do contrato'); }
+  if(/ocorrenc|notifica/.test(s)){ const Oc = o.oco || [];
+    return C('Ocorrências da fiscalização', !o.temOcoGar ? '<p>As ocorrências passam a ser lidas do Contratos.gov.br a partir da próxima rodada do robô.</p>' : Oc.length ? `<table class="as-t as-l"><tr><th>Nº</th><th>Data</th><th>Situação</th><th>Descrição</th></tr>${Oc.map(x => `<tr><td>${esc(x.n||'')}</td><td>${esc(x.data||'')}</td><td>${esc(x.sit||'')}</td><td>${esc(String(x.desc||'').slice(0, 160))}</td></tr>`).join('')}</table>` : '<p class="as-dest">Nenhuma ocorrência registrada no Contratos.gov.br.</p>'); }
+  if(/garantia/.test(s)){ const G = o.gar || [];
+    return C('Garantia contratual', !o.temOcoGar ? '<p>As garantias passam a ser lidas do Contratos.gov.br a partir da próxima rodada do robô.</p>' : G.length ? `<table class="as-t as-l"><tr><th>Tipo</th><th class="n">Valor</th><th>Vencimento</th><th>Situação</th></tr>${G.map(g => `<tr><td>${esc(g.tipo||'')}</td><td class="n">${fmtV(g.v)}</td><td>${asDBR(g.venc)}${g.venc && g.venc < hoje ? ' ⚠ vencida' : ''}</td><td>${esc(g.sit||'')}</td></tr>`).join('')}</table>` : '<p class="as-dest">Nenhuma garantia registrada no Contratos.gov.br para este contrato.</p>'); }
+  if(/variacao|atipic|media mensal|ultimos \d+ meses/.test(s)){ const n = +((s.match(/ultimos (\d+) meses/)||[])[1]) || 6, M = {}; (o.fat||[]).forEach(f => { if(!f.em || !f.em.getFullYear) return; const k = f.em.getFullYear()*100 + f.em.getMonth() + 1; M[k] = (M[k]||0) + (f.v||0); });
+    const ks = Object.keys(M).map(Number).sort((a,b) => a-b).slice(-n), v = ks.map(k => M[k]), med = v.length ? v.reduce((a,b) => a+b, 0)/v.length : 0, ult = v[v.length-1] || 0, ant = v.slice(0, -1), mAnt = ant.length ? ant.reduce((a,b) => a+b, 0)/ant.length : 0, varr = mAnt ? (ult - mAnt)/mAnt : 0;
+    return C(/variacao|atipic/.test(s) ? 'Variação do faturamento' : 'Média mensal', ks.length ? `<p class="as-dest">Média mensal das faturas (últimos ${ks.length} mês(es) com fatura): <b>${fmtV(med)}</b>. Último mês: ${fmtV(ult)} (${varr >= 0 ? '+' : ''}${(100*varr).toFixed(1).replace('.',',')}% sobre a média anterior)${Math.abs(varr) > 0.2 ? ' · <b>variação atípica (acima de 20%)</b>' : ''}.</p>
+      <table class="as-t as-l"><tr><th>Mês</th><th class="n">Faturado</th></tr>${ks.map(k => `<tr><td>${String(k%100).padStart(2,'0')}/${Math.floor(k/100)}</td><td class="n">${fmtV(M[k])}</td></tr>`).join('')}</table>` : '<p>Sem faturas registradas no Contratos.gov.br.</p>', 'faturas pela data de emissão'); }
+  return C('Situação', `<p class="as-dest">${esc(d.forn)} · ${esc(String(o.obj||'').slice(0, 160))}</p>${ficha}${asK([['Valor inicial', fmtV(o.vi)],['Parcela', fmtV(o.vp)],['Aditivos', String((o.his||[]).filter(h => /aditivo/i.test(h.tipo)).length)],['Faturas vencidas', String(d.fatVenc||0), '', d.fatVenc ? '#b3261e' : '']])}`, 'ficha do contrato');
+}
+// ===== ASSISTENTE · TED (mapa de intenções T01–T17) =====
+const AS_SEM_DADO_TED = [
+  [/coordenador|fiscal responsavel|responsavel pelo acompanhamento/, 'Responsável pelo acompanhamento do TED', 'A API do TED não traz o coordenador nem o fiscal. Para os TEDs da equipe (130010 e 420013) o responsável fica na planilha de controle interno; se quiser, incluo essa coluna no painel.'],
+  [/prorrogacao de oficio/, 'Prorrogação de ofício', 'A API do TED não traz os termos de prorrogação. O painel mostra só o fim da vigência atual (API e Tesouro); a prorrogação se confere no Transferegov (aba Termos Aditivos).'],
+  [/alteracao do plano de trabalho|pedido de (alteracao|prorrogacao|ajuste)|existe pedido de/, 'Pedido de alteração em análise', 'Solicitações de alteração do Plano de Trabalho em análise não vêm na API do TED: ficam no Transferegov (aba Ajustes do Plano de Trabalho) e no SEI.'],
+  [/metas do plano|destinacao prevista|bens adquiridos|subdescentraliza|execucao indireta|parecer tecnico/, 'Plano de Trabalho do TED', 'Metas, destinação de bens, subdescentralização e parecer técnico ficam no Plano de Trabalho e no processo (SEI/Transferegov); a API do TED do painel não traz esses campos.']];
+const asTedV = (d, ...ks) => { for(const k of ks){ const v = +(d[k]||0); if(v) return v; } return 0; };
+const AS_IFE = /universidade|instituto federal|\bif |\bif$|cefet|\bufv\b|\bufla\b|esalq|\bunb\b|\buf[a-z]{1,4}\b|faculdade|escola agrotecnica/;
+async function asResponderTed2(txt, ent){
+  const s = asN(txt);
+  for(const [rx, tit, msg] of AS_SEM_DADO_TED) if(rx.test(s)) return asCard(tit, 'sem dado no painel', `<p>${esc(msg)}</p>`, '<button data-asir="tedapi">Abrir TED GERAL SDR</button>', '');
+  const T = await asTed(); if(!T.length) return null;
+  const ugT = d => [String(d['UG descentralizadora']), String(d['UG descentralizada'])];
+  const TU = ent.ug ? T.filter(d => ugT(d).some(u => ent.ug.includes(u))) : T, rotUG = ent.ug ? 'UG '+ent.ug.join(', ') : 'todas as UGs';
+  const ano = (s.match(/\bexercicio de (20\d{2})\b|\bem (20\d{2})\b|\bano de (20\d{2})\b/)||[]).slice(1).find(Boolean);
+  // TED citado pelo número
+  const cod = ent.ted || (/\bted\b/.test(s) && (ent.num || ent.prop)) || ((String(txt).match(/TED n[ºo°]?\s*([0-9A-Z]{3,8}(?:\/20\d{2})?)/i)||[])[1]);
+  if(cod){ const c = String(cod).toUpperCase(), d = T.find(x => String(x['Nº TED']).toUpperCase() === c || String(x['Plano de ação']).toUpperCase() === c);
+    if(!d){ const a = (c.match(/\/(20\d{2})/)||[])[1], viz = TU.filter(x => !a || String(x['Ano']) === a).slice(0, 8);
+      return asCard('TED '+esc(cod), 'API do TED + Tesouro', `<p>Não encontrei o TED <b>${esc(cod)}</b>${ent.ug ? ' na '+esc(rotUG) : ''}. O número usado no painel é o do Transferegov (ex.: 991953 ou 7AADBG).</p>${viz.length ? `<p>TEDs ${a ? 'de '+esc(a)+' ' : ''}${ent.ug ? 'dessa UG' : ''}:</p><div class="as-bt">${viz.map(x => `<button class="sec" data-asq="${esc(txt.replace(cod, x['Nº TED']))}">${esc(x['Nº TED'])} · ${esc(String(x['Unidade descentralizada']).slice(0, 28))}</button>`).join('')}</div>` : ''}`, '', ''); }
+    const fir = asTedV(d, 'Valor firmado (API)', 'Valor firmado (Tesouro)'), nc = asTedV(d, 'NC no Tesouro', 'Descentralizado NC (API)'), pf = asTedV(d, 'Repassado (Tesouro)', 'Repassado PF (API)'), ne = asTedV(d, 'Empenhado pela unidade (NE)'), pg = asTedV(d, 'Pago pela unidade (NE + RP)'), acp = asTedV(d, 'A comprovar (Tesouro)');
+    const trilha = asTrilha(['UG '+esc(d['UG descentralizadora']), 'TED '+esc(d['Nº TED']), 'NC '+fmtV(nc), 'PF '+fmtV(pf), esc(String(d['Unidade descentralizada']).slice(0, 30))+' (UG '+esc(d['UG descentralizada'])+')', 'NE '+fmtV(ne), 'pago '+fmtV(pg)]);
+    const k = asK([['Firmado', fmtV(fir)],['Descentralizado (NC)', fmtV(nc)],['Repassado (PF)', fmtV(pf)],['Empenhado pela unidade', fmtV(ne)]]);
+    const C = (tit, corpo) => asCard(tit+' · TED '+esc(d['Nº TED']), 'API do TED + Tesouro', trilha + corpo + k, '<button data-asir="tedapi">Abrir TED GERAL SDR</button>', '');
+    if(/pendente de descentraliza|saldo .*descentraliz|a descentralizar/.test(s)) return C('Saldo a descentralizar', `<p class="as-dest">Saldo ainda não descentralizado: <b>${fmtV(Math.max(0, fir - nc))}</b> (firmado ${fmtV(fir)} − NCs ${fmtV(nc)}).</p>`);
+    if(/notas? de credito|\bnc\b|descentralizado via/.test(s)) return C('Notas de crédito', `<p class="as-dest">Descentralizado por NC: <b>${fmtV(nc)}</b>.</p><p>NCs: ${esc(d['Notas de crédito']||'nenhuma registrada')}</p>`);
+    if(/repassad|financeiro|\bpf\b/.test(s)) return C('Financeiro repassado', `<p class="as-dest">Repassado (PF): <b>${fmtV(pf)}</b> · a repassar ${fmtV(asTedV(d, 'A repassar (Tesouro)'))}.</p><p>Programações financeiras: ${esc(d['Programações financeiras']||'—')}</p>`);
+    if(/percentual|execucao/.test(s)) return C('Execução pela unidade', `<p class="as-dest">A unidade empenhou <b>${pct(ne, nc)}</b> do crédito recebido (${fmtV(ne)} de ${fmtV(nc)}) e pagou <b>${pct(pg, nc)}</b> (${fmtV(pg)}).</p>`);
+    if(/devolu|gru|recolhimento/.test(s)) return C('Devolução de saldo', `<p class="as-dest">O painel não separa as devoluções por GRU. Pelo Tesouro: comprovado ${fmtV(asTedV(d, 'Comprovado (Tesouro)'))} · a comprovar <b>${fmtV(acp)}</b>${acp > 0.01 && +d['Dias para o fim'] < 0 ? ' (vigência encerrada: cobrar a comprovação ou a devolução do saldo)' : ''}.</p>`);
+    if(/cumprimento do objeto|\brco\b|relatorio/.test(s)) return C('Relatório de cumprimento do objeto', `<p class="as-dest">Fase no painel: <b>${esc(d['Fase (painel)']||'—')}</b> · vigência até ${esc(d['Fim da vigência (painel)']||'—')} · a comprovar no Tesouro ${fmtV(acp)}. ${+d['Dias para o fim'] < -60 && acp > 0.01 ? '⚠ Vigência encerrada há mais de 60 dias com saldo a comprovar: cobrar o relatório (Decreto 10.426/2020).' : ''}</p><p class="as-ent">A entrega formal do relatório fica registrada no Transferegov.</p>`);
+    return null; }
+  // listas
+  if(/cumprimento do objeto|\brco\b/.test(s)){ const F = TU.filter(d => d['Dias para o fim'] !== '' && +d['Dias para o fim'] < -60 && asTedV(d, 'A comprovar (Tesouro)') > 0.01);
+    return asCard('TEDs com relatório de cumprimento do objeto em atraso', 'API do TED + Tesouro', `<p class="as-dest"><b>${F.length}</b> TED(s) da ${esc(rotUG)} com a vigência encerrada há mais de 60 dias e saldo a comprovar no Tesouro (aproximação do RCO vencido).</p>${asTrilha([esc(rotUG), 'vigência encerrada há +60 dias', 'saldo a comprovar > 0'])}
+      <table class="as-t as-l"><tr><th>TED</th><th>Unidade</th><th>Fim</th><th class="n">A comprovar</th></tr>${F.slice(0, 10).map(d => `<tr><td><a href="#" data-asq="TED ${esc(d['Nº TED'])}">${esc(d['Nº TED'])}</a></td><td>${esc(String(d['Unidade descentralizada']).slice(0, 50))}</td><td>${esc(d['Fim da vigência (painel)'])}</td><td class="n">${fmtV(asTedV(d, 'A comprovar (Tesouro)'))}</td></tr>`).join('')}</table>`, '<button data-asir="alertated">Abrir o Alerta de TED</button>', 'aproximação: o Transferegov registra a entrega formal'); }
+  if(/instituicoes federais de ensino|universidade|ensino/.test(s)){ const F = TU.filter(d => AS_IFE.test(asN(d['Unidade descentralizada'])) && (!ano || String(d['Ano']) === ano));
+    return asCard('TEDs com instituições federais de ensino', 'API do TED', `<p class="as-dest"><b>${F.length}</b> TED(s) da ${esc(rotUG)}${ano ? ' celebrados em '+esc(ano) : ''} com universidades e institutos federais · firmado ${fmtV(F.reduce((t,d) => t + asTedV(d, 'Valor firmado (API)', 'Valor firmado (Tesouro)'), 0))}.</p>
+      <table class="as-t as-l"><tr><th>TED</th><th>Unidade</th><th>Ano</th><th class="n">Firmado</th></tr>${F.slice(0, 10).map(d => `<tr><td><a href="#" data-asq="TED ${esc(d['Nº TED'])}">${esc(d['Nº TED'])}</a></td><td>${esc(String(d['Unidade descentralizada']).slice(0, 50))}</td><td>${esc(d['Ano'])}</td><td class="n">${fmtV(asTedV(d, 'Valor firmado (API)', 'Valor firmado (Tesouro)'))}</td></tr>`).join('')}</table>`, '<button data-asir="tedapi">Abrir TED GERAL SDR</button>', 'unidade descentralizada é universidade ou instituto federal'); }
+  if(/descentralizou|descentralizado .*acao/.test(s) && ent.acao){ const F = TU.filter(d => ent.acao.some(a => String(d['Ação']||'').toUpperCase().includes(a)) && (!ano || String(d['Ano']) === ano)), v = F.reduce((t,d) => t + asTedV(d, 'NC no Tesouro', 'Descentralizado NC (API)'), 0);
+    return asCard('Descentralizado por TED na ação '+esc(ent.acao.join(', ')), 'API do TED + Tesouro', `<p class="as-dest">${F.length ? `<b>${fmtV(v)}</b> descentralizados por NC em <b>${F.length}</b> TED(s)` : 'Nenhum TED'} da ${esc(rotUG)} na ação ${esc(ent.acao.join(', '))}${ano ? ' (TEDs de '+esc(ano)+')' : ''}.</p>${asTrilha([esc(rotUG), 'ação '+esc(ent.acao.join(', ')), F.length+' TED(s)', 'NCs'])}`, '<button data-asir="tedapi">Abrir TED GERAL SDR</button>', 'soma das NCs dos TEDs da ação'); }
+  return null;
+}
+// ===== ASSISTENTE · PARCERIAS (mapa de intenções P01–P19) =====
+const AS_SEM_DADO_PARC = [
+  [/devolvido via gru|saldo remanescente devolvido|devolucao de saldo/, 'Saldo devolvido por GRU', 'A devolução de saldo no encerramento não vem na extração do Transferegov do painel. Ela se confere na prestação de contas do instrumento (aba Prestação de Contas › Devolução) ou no SIAFI pela GRU.'],
+  [/in loco|relatorios? de acompanhamento e fiscalizacao/, 'Fiscalização in loco', 'Os relatórios de visita e fiscalização não vêm na extração do Transferegov do painel; ficam no instrumento (aba Acompanhamento e Fiscalização).'],
+  [/diligencias?|notificacoes pendentes/, 'Diligências da prestação de contas', 'As diligências e notificações não vêm na extração; ficam no Transferegov (prestação de contas › pareceres e notificações). O painel mostra a situação da prestação de contas e o prazo.'],
+  [/vrpl|processo licitatorio|aceite .*licita/, 'Processo licitatório (VRPL)', 'O aceite do processo licitatório não vem na extração; o painel só tem a situação geral do instrumento e, nas obras, a situação no Obrasgov.']];
+let _asObras = null;
+async function asObras(){ if(_asObras) return _asObras; const w = await garantirAntigo(); const r = await fetch(RAW_DADOS+'painel_obras.csv?v='+new Date().toISOString().slice(0,13), {cache:'no-store'}); if(!r.ok) throw new Error('HTTP '+r.status);
+  const rows = w.parseCSV(await r.text()), H = rows.shift(); _asObras = new Map(rows.filter(x => x[0]).map(x => { const o = {}; H.forEach((h, i) => o[h] = x[i] || ''); return [String(o.nr_instrumento), o]; })); return _asObras; }
+const asModRx = s => /termo de colaboracao/.test(s) ? [/COLABORA/, 'Termo de Colaboração'] : /termo de fomento/.test(s) ? [/FOMENTO/, 'Termo de Fomento'] : /contrato de repasse/.test(s) ? [/REPASSE/, 'Contrato de Repasse'] : /convenio/.test(s) ? [/CONVENIO/, 'Convênio'] : null;
+async function asResponderParc2(txt, ent){
+  const s = asN(txt);
+  for(const [rx, tit, msg] of AS_SEM_DADO_PARC) if(rx.test(s)) return asCard(tit, 'sem dado no painel', `<p>${esc(msg)}</p>`, '<button data-asir="parc">Abrir Parceria SDR</button>', '');
+  const mod = asModRx(s);
+  // propostas (planilha da equipe · UG 420013)
+  if(/propostas?/.test(s)){ const w = await garantirAntigo(); try{ await w.dados('prop'); }catch(e){ return asCard('Propostas', '', `<p>A planilha de propostas não abriu agora (${esc(e.message)}).</p>`, '', ''); }
+    const P = w.eval('DADOS.prop.linhas') || [], nota = ent.ug && !ent.ug.includes('420013') ? `<p class="as-ent">As propostas acompanhadas pela equipe são as da UG 420013 (planilha BASE PROPOSTAS); a UG ${esc(ent.ug.join(', '))} não tem proposta nessa base.</p>` : '';
+    const PF = P.filter(d => !mod || mod[0].test(asN(d.mod).toUpperCase()));
+    const lista = (tit, F, crit) => asCard(tit, 'Propostas SDR (planilha da equipe · 420013)', `<p class="as-dest"><b>${F.length}</b> proposta(s)${mod ? ' de '+esc(mod[1]) : ''} · valor ${fmtV(F.reduce((t,d) => t + (d.global||0), 0))}.</p>${nota}${asTrilha(['UG 420013', mod ? esc(mod[1]) : 'todas as modalidades', esc(crit), F.length+' proposta(s)'])}
+      ${F.length ? `<table class="as-t as-l"><tr><th>Proposta</th><th>Proponente</th><th>Situação</th><th class="n">Valor</th></tr>${F.slice(0, 10).map(d => `<tr><td>${esc(d.num)}</td><td>${esc(d.proponente)}<small> ${esc(d.uf||'')}</small></td><td>${esc(d.situ)}</td><td class="n">${fmtV(d.global)}</td></tr>`).join('')}</table>` : ''}`, '<button data-asir="prop">Abrir Propostas SDR</button>', esc(crit));
+    if(ent.prop){ const d = P.find(x => String(x.num) === ent.prop || String(x.num).replace(/^0+/,'') === ent.prop.replace(/^0+/,''));
+      if(!d) return asCard('Proposta '+esc(ent.prop), 'Propostas SDR', `<p>Não encontrei a proposta <b>${esc(ent.prop)}</b> na base de propostas da equipe (UG 420013).</p>${nota}`, '<button data-asir="prop">Abrir Propostas SDR</button>', '');
+      return asCard('Proposta '+esc(d.num), 'Propostas SDR (planilha da equipe)', `<p class="as-dest">Situação: <b>${esc(d.situ)}</b> · fase ${esc(d.fase||'—')}.</p>${asTrilha(['emenda '+esc(d.emenda||'—')+(d.parl ? ' · '+esc(d.parl) : ''), 'proposta '+esc(d.num), esc(d.proponente), 'técnico '+esc(d.exec||'—')])}${asK([['Valor global', fmtV(d.global)],['Indicado', fmtV(d.indicado)],['Modalidade', esc(d.mod)],['UF', esc(d.uf||'—')]])}${d.obs ? `<p class="as-ent">Observação: ${esc(d.obs)}</p>` : ''}`, '<button data-asir="prop">Abrir Propostas SDR</button>', 'situação na planilha da equipe'); }
+    if(/impedimento/.test(s)) return lista('Propostas com impedimento técnico', PF.filter(d => /impediment/i.test(d.situ)), 'situação com impedimento técnico');
+    if(/aguardam assinatura|nota de empenho emitida/.test(s)) return lista('Aprovadas aguardando assinatura', PF.filter(d => /aprovad/i.test(d.situ) && d.fase !== 'Celebrada'), 'aprovadas e ainda não celebradas');
+    if(/analise/.test(s)) return lista('Propostas em análise', PF.filter(d => /analise/i.test(asN(d.situ))), 'em análise do plano de trabalho');
+    if(/complementa/.test(s)) return lista('Propostas em complementação', PF.filter(d => /complementa/i.test(asN(d.situ)) && !/complementad/i.test(asN(d.situ))), 'em complementação (com o proponente)'); }
+  // prestação de contas aguardando análise (instrumentos)
+  if(/prestacao de contas/.test(s) && /aguardando analise|em analise|estoque|quantos processos/.test(s)){ const L = await asParc();
+    let F = L.filter(d => /Presta.*(enviada para An|em An|Comprovada em An)/i.test(d.asSitu||'')); if(mod) F = F.filter(d => mod[0].test(asN(d.mod||'').toUpperCase())); if(ent.ug) F = F.filter(d => asUGs(d).some(u => ent.ug.includes(u)));
+    return asCard('Prestações de contas aguardando análise', 'Transferegov (robô) + planilha da Parceria', `<p class="as-dest"><b>${F.length}</b> prestação(ões) de contas ${mod ? 'de '+esc(mod[1])+' ' : ''}enviadas ou em análise${ent.ug ? ' na UG '+esc(ent.ug.join(', ')) : ''} · repasse ${fmtV(F.reduce((t,d) => t + (d.repasse||0), 0))}.</p>
+      ${asTrilha([ent.ug ? 'UG '+esc(ent.ug.join(', ')) : '5 UGs', mod ? esc(mod[1]) : 'todas as modalidades', 'situação: prestação de contas enviada/em análise'])}${F.length ? `<table class="as-t as-l"><tr><th>Instrumento</th><th>Convenente</th><th>Situação</th></tr>${F.slice(0, 10).map(d => `<tr><td><a href="#" data-asq="${esc('situação do instrumento '+d.num)}">${esc(d.num)}</a></td><td>${esc(d.proponente||'')}<small> ${esc(d.uf||'')}</small></td><td>${esc(d.asSitu)}</td></tr>`).join('')}</table>` : ''}${mod && /COLABORA/.test(String(mod[0])) && !F.length ? '<p class="as-ent">As UGs da SDR não têm termos de colaboração no Transferegov.</p>' : ''}`, '<button data-asir="alertaparc">Abrir o Alerta de Parcerias</button>', 'situação do Transferegov'); }
+  // execução física (obra)
+  if(/medicao|execucao fisica|percentual fisico/.test(s) && ent.num){ let O = null; try{ O = await asObras(); }catch(e){}
+    const o = O && O.get(String(ent.num)); if(!o) return asCard('Execução física · '+esc(ent.num), 'Obrasgov / Transferegov', `<p>O instrumento <b>${esc(ent.num)}</b> não tem obra no Obrasgov (ou não é das 5 UGs).</p>`, '', '');
+    return asCard('Execução física · '+esc(ent.num), 'Obrasgov / Transferegov', `<p class="as-dest">Execução física: <b>${esc(String(o.pct_fisico||'0').replace('.',','))}%</b> · situação da obra ${esc(o.situacao_obra||'—')} · última medição ${esc(o.fim_ultima_medicao||'—')}${o.dias_sem_medicao ? ' ('+esc(o.dias_sem_medicao)+' dias sem medição)' : ''}.</p>${asTrilha(['instrumento '+esc(ent.num), esc(o.proponente||''), 'obra no Obrasgov', 'medição nº '+esc(o.nr_medicao||'—')])}${asK([['Valor da obra', fmtV(asNum(o.valor_obra))],['Realizado', fmtV(asNum(o.valor_realizado))],['Desembolsado', esc(String(o.pct_desembolsado||'—').replace('.',','))+'%']])}`,
+      `<button data-asq="${esc('situação do instrumento '+ent.num)}">Ficha do instrumento</button>`, 'percentual físico do Obrasgov'); }
+  return null;
+}
 async function asResponderFin(txt, ent){
   const E = (await asTesouro('exe')).linhas, R = (await asTesouro('rap')).linhas;
   if(ent.ne){ const ne = ent.ne.toUpperCase(), le = E.filter(d => String(d.ne).toUpperCase().endsWith(ne)), lr = R.filter(d => String(d.ne).toUpperCase().endsWith(ne));
@@ -10747,7 +11046,8 @@ async function asResponderFin(txt, ent){
     const k = le.length ? [['Empenhado', fmtV(te.emp)],['Liquidado', fmtV(te.liq)],['Pago', fmtV(te.pago)],['A pagar', fmtV(te.emp - te.pago), '', '#b8650a']] : [['RAP inscrito', fmtV(tr.ins)],['Pago', fmtV(tr.pago)],['Cancelado', fmtV(tr.canc)],['A pagar', fmtV(tr.apagar), '', '#b8650a']];
     const dest = le.length ? (te.pago >= te.emp - 0.01 ? 'Nota <b>totalmente paga</b>.' : te.liq > te.pago + 0.01 ? `Há <b>${fmtV(te.liq - te.pago)}</b> liquidado aguardando pagamento.` : te.liq < 0.01 ? 'Ainda <b>não liquidada</b>.' : `Paga em parte: ${fmtV(te.pago)} de ${fmtV(te.emp)}.`)
       : (tr.apagar < 0.01 ? 'RAP <b>quitado</b> ou cancelado.' : `RAP com <b>${fmtV(tr.apagar)}</b> a pagar.`);
-    return asCard('Nota de empenho '+esc(ne), (le.length ? 'Financeiro EXE' : 'Financeiro RAP')+' · Tesouro Gerencial', `<p class="as-dest">${dest}</p>${asK(k)}<table class="as-t"><tr><td>Favorecido</td><td>${esc(d0.favN||'')} ${d0.fav ? '('+esc(d0.fav)+')' : ''}</td></tr><tr><td>UG · ação</td><td>${esc(d0.ug)} · ${esc(d0.acao)}</td></tr><tr><td>Processo</td><td>${esc(d0.proc||'—')}</td></tr><tr><td>Descrição</td><td>${esc(String(d0.desc||'').slice(0,240))}</td></tr></table>`,
+    const trilha = await asAssocNE(d0);
+    return asCard('Nota de empenho '+esc(ne), (le.length ? 'Financeiro EXE' : 'Financeiro RAP')+' · Tesouro Gerencial', `<p class="as-dest">${dest}</p>${trilha}${asK(k)}<table class="as-t"><tr><td>Favorecido</td><td>${esc(d0.favN||'')} ${d0.fav ? '('+esc(d0.fav)+')' : ''}</td></tr><tr><td>UG · ação</td><td>${esc(d0.ug)} · ${esc(d0.acao)}</td></tr><tr><td>Processo</td><td>${esc(d0.proc||'—')}</td></tr><tr><td>Descrição</td><td>${esc(String(d0.desc||'').slice(0,240))}</td></tr></table>`,
       `<button data-asir="${le.length ? 'exe' : 'rap'}">Abrir no Financeiro</button>`, ''); }
   const GEN = new Set('quanto quantos quais qual pagamento pagamentos pagou pago pagos paga recebeu recebido receberam fornecedor favorecido empresa realizados total valor valores para esse essa este esta foram feito feitos cnpj nota notas empenho ltda eireli'.split(' '));
   const pal = asN(txt).replace(/[^a-z0-9 ]/g,' ').split(' ').filter(w => w.length >= 4 && !GEN.has(w) && !/^\d+$/.test(w));
@@ -11071,6 +11371,11 @@ async function asResponder(txt){
     if(ehConc && !temDado){ const tc = asBuscarBase(txt); if(tc.length && tc[0].s >= 1.2 && tc[0].it.tipo === 'conceito'){ const r = asResponderBase(tc, ent, ehTed); if(r) return r; } } }
   // 1. número na pergunta: consulta direta
   if(ent.ne) return asResponderFin(txt, ent);
+  if(ehTed && !/o que e|o que sao|como (faco|funciona)|qual a diferenca|qual (a )?legislacao/.test(s)){ const r = await asResponderTed2(txt, ent); if(r) return r; }
+  if(!ehTed && !ehCtr && /proposta|prestacao de contas|devolvido via gru|in loco|diligencia|vrpl|processo licitatorio|medicao|execucao fisica/.test(s) && !/o que e|o que sao|como (faco|funciona)|qual a diferenca/.test(s)){ const r = await asResponderParc2(txt, ent); if(r) return r; }
+  { const ehOrc = /empenh|liquidad|restos a pagar|\brap\b|dotacao|credito|saldo orcamentario|natureza de despesa|favorecid|credor|exercicios anteriores|\bdea\b|provisao|destaque|ordem bancaria|limite de (movimentacao|empenho)|emendas parlamentares|plano interno|\bfonte\b|\bgnd\b|anulad|pago no|volume/.test(s);
+    if(ehOrc && !ehTed && !ehCtr && !/proposta|convenio|termo de|contrato de repasse|instrumento|o que e|o que sao|como |qual a diferenca/.test(s)){ const r = await asResponderOrc2(txt, ent); if(r) return r; } }
+  if((ehCtr || /\bata de registro|\barp\b|sicaf|fiscais titular|faturas atestadas|historico de pagamentos realizados|contratada|valor mensal estimado|media mensal de despesa|consumo faturado/.test(s)) && !ehTed && !/contrato de repasse|o que e|o que sao|como (faco|funciona)|qual a diferenca/.test(s)){ const r = await asResponderCtr2(txt, ent); if(r) return r; }
   if(ehTed && (ent.ted || ent.num)) return asResponderTed(ent.ted || ent.num, asCampo(txt));
   if(ehTed && !ent.ted && !ent.num && (ehLista || /vigent|venc|dispensa|prestac|conclu|rejeit|em execucao/.test(s)) && !/o que e|o que sao|como |qual a diferenca|prazo/.test(s)) return asResponderTedLista(txt, ent);
   if(ent.num && !ehCtr) return asResponderInst(ent.num, asCampo(txt), ent);

@@ -23,6 +23,9 @@ ARQ = {
     'res': ['ID contrato (API)', 'UG contrato', 'Nº contrato', 'Função', 'Nome', 'Portaria', 'Situação'],
     'arq': ['ID contrato (API)', 'UG contrato', 'Nº contrato', 'Tipo', 'Descrição', 'Link PDF', 'Link SEI', 'Origem'],
     'itn': ['ID contrato (API)', 'UG contrato', 'Nº contrato', 'Item / posto', 'Tipo', 'Quantidade', 'Valor unitário', 'Valor total', 'Nº item da compra'],
+    # ocorrências da fiscalização e garantias contratuais (a API não documenta os campos: pega os nomes mais comuns e guarda o texto)
+    'oco': ['ID contrato (API)', 'UG contrato', 'Nº contrato', 'Nº ocorrência', 'Data', 'Situação', 'Descrição'],
+    'gar': ['ID contrato (API)', 'UG contrato', 'Nº contrato', 'Tipo', 'Valor', 'Vencimento', 'Situação'],
     'cro': ['ID contrato (API)', 'UG contrato', 'Nº contrato', 'Mês ref', 'Ano ref', 'Vencimento', 'Valor', 'Tipo'],
     'pag': ['ID contrato (API)', 'UG contrato', 'Nº contrato', 'Mão de obra exclusiva', 'Total postos (decreto)', 'Total vagas reservadas', 'Percentual reserva vagas', 'Nº contratação', 'Link PNCP', 'Id contratação PNCP', 'Link edital PNCP',
             'Página lida em', 'Fim vigência na leitura', 'Valor global na leitura', 'Termos na leitura', 'Alteração depois da leitura'],
@@ -245,6 +248,9 @@ def ligar_editais(pag):
         pass
 
 
+CHAVES = {'oco': [], 'gar': []}
+
+
 def main():
     if reaproveitar():
         return
@@ -259,7 +265,7 @@ def main():
 
     def det(c):
         i = c['id']
-        d = {k: (get(f'/api/contrato/{i}/{k}') or []) for k in ['empenhos', 'faturas', 'historico', 'responsaveis', 'arquivos', 'itens', 'cronograma']}
+        d = {k: (get(f'/api/contrato/{i}/{k}') or []) for k in ['empenhos', 'faturas', 'historico', 'responsaveis', 'arquivos', 'itens', 'cronograma', 'ocorrencias', 'garantias']}
         d['pagina'] = pagina(i) if c.get('_ativo') else {}
         return c, d
     with ThreadPoolExecutor(4) as ex:
@@ -291,6 +297,14 @@ def main():
             for hi in x.get('historico_item') or [] if isinstance(x.get('historico_item'), list) else []:
                 L['ith'].append(ch + [x.get('id'), (x.get('descricao_complementar') or x.get('catmatseritem_id') or '')[:200], x.get('tipo_id'), hi.get('contrato_historico_id'), hi.get('tipo_historico'),
                                       hi.get('data_termo'), hi.get('quantidade'), hi.get('periodicidade'), br(num(hi.get('valor_unitario'))), br(num(hi.get('valor_total')))])
+        pk = lambda x, *ks: next((str(x[k]) for k in ks if isinstance(x, dict) and x.get(k) not in (None, '')), '')
+        for x in d.get('ocorrencias') if isinstance(d.get('ocorrencias'), list) else []:
+            if not CHAVES['oco'] and isinstance(x, dict): CHAVES['oco'] = sorted(x)
+            L['oco'].append(ch + [pk(x, 'numero', 'numeroocorrencia', 'numero_ocorrencia', 'id'), pk(x, 'data', 'data_ocorrencia', 'dataocorrencia', 'created_at'),
+                                  pk(x, 'situacao', 'situacao_ocorrencia', 'situacaoocorrencia', 'status'), pk(x, 'ocorrencia', 'descricao', 'texto', 'observacao')[:400]])
+        for x in d.get('garantias') if isinstance(d.get('garantias'), list) else []:
+            if not CHAVES['gar'] and isinstance(x, dict): CHAVES['gar'] = sorted(x)
+            L['gar'].append(ch + [pk(x, 'tipo', 'tipo_garantia', 'modalidade'), br(num(pk(x, 'valor', 'valor_garantia'))), pk(x, 'vencimento', 'data_vencimento', 'validade', 'vigencia_fim'), pk(x, 'situacao', 'status')])
         for x in d['cronograma'] if isinstance(d['cronograma'], list) else []:
             L['cro'].append(ch + [x.get('mesref'), x.get('anoref'), x.get('vencimento'), br(num(x.get('valor'))), x.get('tipo')])
         pg = d.get('pagina') or {}
@@ -323,6 +337,7 @@ def main():
     for k in ARQ:
         gravar(k, L[k])
     print('Contratos.gov.br: ' + ' · '.join(f'{k} {len(v)}' for k, v in L.items()) + f' · {time.time()-t0:.0f}s', flush=True)
+    print(f"Contratos.gov.br: campos das ocorrências {CHAVES['oco']} · das garantias {CHAVES['gar']}", flush=True)
 
 
 if __name__ == '__main__':
