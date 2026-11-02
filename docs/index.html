@@ -2605,7 +2605,7 @@ const LEITORES = {
     const hi = achaCabecalho(rows, h => h.includes('DOTACAO ATUAL'));
     if(hi===-1) throw new Error('não encontrei o cabeçalho da aba SIOP SDR (coluna "Dotação Atual"). Início da resposta: '+text.slice(0,200));
     const H = rows[hi].map(normAccent), col = localizador(H);
-    const ix = {depto:col('DEPARTAMENTO'), acao:col('ACAO'), po:col('PLANO ORCAMENTARIO'), pi:H.findIndex(h=>h==='PI'), ptres:col('PTRES'),
+    const ix = {depto:col('DEPARTAMENTO'), acao:col('ACAO'), po:col('PLANO ORCAMENTARIO'), pi:H.findIndex(h=>h==='PI'), ptres:col('PTRES'), fonte:col('FONTE'), rp:H.findIndex(h=>h==='RP'||h==='RESULTADO PRIMARIO'),
       ploa:col('PLOA','PROJETO DE LEI'), loa:col('DOTACAO INICIAL'), corte:col('CANCELAMENTO','CORTE'), atual:col('DOTACAO ATUAL'),
       bloq:col('BLOQUEIO'), disp:col('DOTACAO DISPONIVEL'), aEmp:col('A EMPENHAR'), emp:col('EMPENHADO'), liq:col('LIQUIDADO'), pago:col('PAGO')};
     const g = (r,i) => i===-1 ? '' : (r[i]||'').trim();
@@ -2615,7 +2615,7 @@ const LEITORES = {
       if(!acao || /^TOTAL/.test(normAccent(depto))) continue;
       const po = g(r,ix.po), disp = toNum(g(r,ix.disp)), emp = toNum(g(r,ix.emp));
       out.push({depto: depto||'(sem departamento)', acao: acao.split(' - ')[0].trim(), acaoNome: acao, po: po.split(' - ')[0].trim(), poNome: po.split(' - ').slice(1).join(' - ').trim() || po,
-        pi: g(r,ix.pi), ptres: limpo(g(r,ix.ptres)),
+        pi: g(r,ix.pi), ptres: limpo(g(r,ix.ptres)), fonte: g(r,ix.fonte), rp: g(r,ix.rp),
         ploa:toNum(g(r,ix.ploa)), loa:toNum(g(r,ix.loa)), corte:toNum(g(r,ix.corte)), atual:toNum(g(r,ix.atual)), bloq:toNum(g(r,ix.bloq)),
         disp, aEmp: ix.aEmp!==-1 ? toNum(g(r,ix.aEmp)) : disp-emp, emp, liq:toNum(g(r,ix.liq)), pago:toNum(g(r,ix.pago))});
     }
@@ -3782,27 +3782,42 @@ window.__alertasCtr = async function(){
   try{ await dados('base'); }catch(e){}
   try{ await carregarApiCtr(); }catch(e){}
   try{ pedirTesCtr(); if(_tesCtrP) await _tesCtrP; if(API_CTR) API_CTR._sdr = null; }catch(e){}
-  const out = [], A = (menu, sev, id, titulo, sugestao, itens) => out.push({menu, sev, id, titulo, sugestao, itens});
+  const out = [];
   const B = (DADOS.base && DADOS.base.linhas || []), at = B.filter(d => normAccent(d.cat) === 'ATIVO');
-  const iB = (d, info) => { const a = apiDoContrato(d); return {num:d.num, nome:d.fav, uf:d.uf, valor:d.anual||d.global||0, info, ctr: a ? a.id : null}; };
+  const COL_B = [['num','Contrato','ctr'],['ano','Ano'],['ug','UG responsável'],['unid','Unidade'],['resp','Responsável (Base)'],['fav','Fornecedor'],['cnpj','CNPJ/CPF'],['uf','UF'],['proc','Processo'],['modal','Modalidade da compra'],['objeto','Objeto','w'],
+    ['ini','Início da vigência'],['fim','Fim da vigência'],['dias','Dias para o fim','i'],['info','Motivo do alerta'],['global','Valor global','n'],['anual','Valor anual','n']];
+  const iB = (d, info, extra) => { const a = apiDoContrato(d); return Object.assign({num:d.num, ano:d.ano, ug:d.ug, unid:d.unid, resp:d.resp, fav:d.fav, cnpj:d.cnpj, uf:d.uf, proc:d.proc, modal:d.modal, objeto:String(d.objeto||'').slice(0,300),
+    ini:d.ini, fim:d.fim, dias:d.dias, info, global:d.global||0, anual:d.anual||0, ctr: a ? a.id : null}, extra||{}); };
+  const A = (menu, sev, id, titulo, sugestao, itens, cols) => out.push({menu, sev, id, titulo, sugestao, itens, cols: cols || COL_B});
   A('contratos','r','venc','Contratos ativos com a vigência vencida','Regularizar: prorrogar (se ainda couber) ou encerrar o contrato e abrir nova contratação; atualizar a Base e o Contratos.gov.br.', at.filter(d => d.dias !== null && d.dias < 0).sort((a,b) => a.dias-b.dias).map(d => iB(d, 'venceu há '+(-d.dias)+' dia(s)')));
   A('contratos','r','vig30','Vigência vence em até 30 dias','Confirmar no SEI se a prorrogação ou a nova contratação já foi aberta; se não, abrir hoje.', at.filter(d => d.dias !== null && d.dias >= 0 && d.dias <= 30).sort((a,b) => a.dias-b.dias).map(d => iB(d, 'vence em '+d.dias+' dia(s)')));
   A('contratos','y','vig120','Vigência vence em 31 a 120 dias','Abrir o processo de prorrogação ou de nova contratação com antecedência (pesquisa de preços, termo aditivo).', at.filter(d => d.dias !== null && d.dias > 30 && d.dias <= 120).sort((a,b) => a.dias-b.dias).map(d => iB(d, 'vence em '+d.dias+' dia(s)')));
   let L = []; try{ L = linhasCtrSdr() || []; }catch(e){}
-  const iS = (d, info) => ({num:d.num, nome:d.forn, uf:d.uf, valor:d.vg||0, info, ctr:d.id});
+  const dBR = x => x instanceof Date && !isNaN(x) ? dataCtrBR(x) : '';
+  const COL_S = [['num','Contrato','ctr'],['ano','Ano'],['ugc','UG responsável'],['ug','Unidade'],['ugo','UG de origem'],['forn','Fornecedor'],['cnpj','CNPJ/CPF'],['uf','UF'],['proc','Processo'],['mod','Modalidade'],['obj','Objeto','w'],
+    ['ini','Início da vigência'],['fim','Fim da vigência'],['dias','Dias para o fim','i'],['resp','Gestor e fiscais ativos','w'],['info','Motivo do alerta'],['vg','Valor global','n'],['emp','Empenhado','n'],['pago','Pago','n']];
+  const iS = (d, info, extra) => Object.assign({num:d.num, ano:d.ano, ugc:d.ugc, ug:d.ug, ugo:d.ugo, forn:d.forn, cnpj:d._o.cnpj||'', uf:d.uf, proc:d._o.proc||'', mod:d._o.mod||'', obj:String(d._o.obj||'').slice(0,300),
+    ini:d.ini, fim:d.fim, dias:d.dias, resp:d.resp||'nenhum', info, vg:d.vg||0, emp:d.emp||0, pago:d.pago||0, ctr:d.id}, extra||{});
   const ac = k => L.filter(d => (d.acoes||[]).includes(k));
-  A('ctrsdr','r','fatura','Faturas vencidas sem pagamento','Cobrar o ateste do fiscal e liquidar respeitando a ordem cronológica (Lei 14.133/2021, art. 141).', ac('fatura').map(d => iS(d, (d.fatVenc||0)+' fatura(s) vencida(s)')));
-  A('ctrsdr','r','vencido','Vencidos ainda ativos no Contratos.gov.br','Encerrar no Contratos.gov.br ou registrar o termo aditivo de prorrogação.', ac('vencido').map(d => iS(d, 'fim '+(d.fim||''))));
-  A('ctrsdr','y','empenho','Empenho insuficiente para o previsto do ano','Pedir o reforço de empenho ao financeiro antes do fechamento do exercício.', ac('empenho').map(d => iS(d, 'falta empenhar '+fmtBRL(d.falta||0))));
-  A('ctrsdr','y','semresp','Sem gestor ou sem fiscal designado','Publicar a portaria de designação e cadastrar no Contratos.gov.br (Lei 14.133/2021, art. 117).', ac('semresp').map(d => iS(d, [d.gestor === 'Não' ? 'sem gestor' : '', d.fiscal === 'Não' ? 'sem fiscal' : ''].filter(Boolean).join(' e ') || 'sem responsável')));
-  A('ctrsdr','b','renovar','Vencem em até 120 dias (todas as UGs)','Acompanhar a renovação junto ao gestor de cada contrato.', ac('renovar').map(d => iS(d, 'vence em '+d.dias+' dia(s)')));
+  const COL_FAT = COL_S.slice(0, 14).concat([['fats','Faturas vencidas (nº · vencimento · valor)','w'],['info','Motivo do alerta'],['fatv','Valor vencido','n'],['vg','Valor global','n']]);
+  A('ctrsdr','r','fatura','Faturas vencidas sem pagamento','Cobrar o ateste do fiscal e liquidar respeitando a ordem cronológica (Lei 14.133/2021, art. 141).', ac('fatura').map(d => { const F = d._o.fatVenc || [];
+    return iS(d, F.length+' fatura(s) vencida(s)', {fats: F.map(x => (x.n||'s/nº')+' · '+dBR(x.venc)+' · '+fmtBRL(x.v||0)).join(' | '), fatv: F.reduce((t, x) => t + (x.v||0), 0)}); }), COL_FAT);
+  A('ctrsdr','r','vencido','Vencidos ainda ativos no Contratos.gov.br','Encerrar no Contratos.gov.br ou registrar o termo aditivo de prorrogação.', ac('vencido').map(d => iS(d, 'venceu há '+(-(d.dias||0))+' dia(s)')), COL_S);
+  A('ctrsdr','y','empenho','Empenho insuficiente para o previsto do ano','Pedir o reforço de empenho ao financeiro antes do fechamento do exercício.', ac('empenho').map(d => iS(d, 'falta empenhar', {prev:d.prev||0, falta:d.falta||0})),
+    COL_S.concat([['prev','Previsto no ano','n'],['falta','Falta empenhar','n']]));
+  A('ctrsdr','y','semresp','Sem gestor ou sem fiscal designado','Publicar a portaria de designação e cadastrar no Contratos.gov.br (Lei 14.133/2021, art. 117).', ac('semresp').map(d => iS(d, [d.gestor === 'Não' ? 'sem gestor' : '', d.fiscal === 'Não' ? 'sem fiscal' : ''].filter(Boolean).join(' e ') || 'sem responsável')), COL_S);
+  A('ctrsdr','b','renovar','Vencem em até 120 dias (todas as UGs)','Acompanhar a renovação junto ao gestor de cada contrato.', ac('renovar').map(d => iS(d, 'vence em '+d.dias+' dia(s)')), COL_S);
   if(API_CTR && !API_CTR.erro){
     const C = B.map(b => ({b, c: confCtr(b)}));
-    A('conferencia','y','naoenc','Na Base, mas não encontrados no Contratos.gov.br','Conferir o número do contrato na Base (digitação) ou cadastrar no Contratos.gov.br.', C.filter(x => /Não encontrado/.test(x.c.txt)).map(x => iB(x.b, 'não encontrado')));
-    A('conferencia','b','fimdif','Fim da vigência diferente entre a Base e o Contratos.gov.br','Atualizar a data que estiver errada (último termo aditivo).', C.filter(x => /Fim da vig/.test(x.c.txt)).map(x => iB(x.b, 'Base '+(x.b.fim||'—'))));
-    A('conferencia','b','vgdif','Valor global diferente entre a Base e o Contratos.gov.br','Atualizar o valor depois do último termo aditivo ou apostilamento.', C.filter(x => /Valor global/.test(x.c.txt)).map(x => iB(x.b, 'Base '+fmtBRL(x.b.global||0))));
+    const COL_C = COL_B.slice(0, 11).concat([['fimB','Fim (Base)'],['fimA','Fim (Contratos.gov.br)'],['vgB','Valor global (Base)','n'],['vgA','Valor global (Contratos.gov.br)','n'],['info','Motivo do alerta']]);
+    const iC = (x, info) => iB(x.b, info, {fimB:x.b.fim||'', fimA: x.c.a ? dataCtrBR(x.c.a.fim) : '', vgB:x.b.global||0, vgA: x.c.a ? x.c.a.vg||0 : 0});
+    A('conferencia','y','naoenc','Na Base, mas não encontrados no Contratos.gov.br','Conferir o número do contrato na Base (digitação) ou cadastrar no Contratos.gov.br.', C.filter(x => /Não encontrado/.test(x.c.txt)).map(x => iC(x, 'não encontrado no Contratos.gov.br')), COL_C);
+    A('conferencia','b','fimdif','Fim da vigência diferente entre a Base e o Contratos.gov.br','Atualizar a data que estiver errada (último termo aditivo).', C.filter(x => /Fim da vig/.test(x.c.txt)).map(x => iC(x, 'datas diferentes')), COL_C);
+    A('conferencia','b','vgdif','Valor global diferente entre a Base e o Contratos.gov.br','Atualizar o valor depois do último termo aditivo ou apostilamento.', C.filter(x => /Valor global/.test(x.c.txt)).map(x => iC(x, 'valores diferentes')), COL_C);
     const naBase = new Set(C.map(x => x.c.a && x.c.a.id).filter(Boolean)), ugs = new Set(B.map(b => (String(b.ug||'').match(/\d{6}/)||[])[0]).filter(Boolean));
-    A('conferencia','b','fora','Ativos no Contratos.gov.br e fora da Base','Cadastrar na Base Contratos (ou marcar que não são da CEPLAC).', API_CTR.lista.filter(o => o.ativo && !naBase.has(o.id) && (o.ug === '130010' || ugs.has(o.ugo))).map(o => ({num:o.num, nome:o.forn, uf:'', valor:o.vg||0, info:'só no Contratos.gov.br', ctr:o.id})));
+    A('conferencia','b','fora','Ativos no Contratos.gov.br e fora da Base','Cadastrar na Base Contratos (ou marcar que não são da CEPLAC).', API_CTR.lista.filter(o => o.ativo && !naBase.has(o.id) && (o.ug === '130010' || ugs.has(o.ugo))).map(o => ({num:o.num, ano:(String(o.num||'').match(/\/(\d{4})/)||[])[1]||'',
+      ug:o.ug, ugo:o.ugo+(o.ugoN ? ' · '+o.ugoN : ''), forn:o.forn, cnpj:o.cnpj||'', proc:o.proc||'', mod:o.mod||'', obj:String(o.obj||'').slice(0,300), ini:dBR(o.ini), fim:dBR(o.fim), info:'só no Contratos.gov.br', vg:o.vg||0, ctr:o.id})),
+      [['num','Contrato','ctr'],['ano','Ano'],['ug','UG responsável'],['ugo','UG de origem'],['forn','Fornecedor'],['cnpj','CNPJ/CPF'],['proc','Processo'],['mod','Modalidade'],['obj','Objeto','w'],['ini','Início da vigência'],['fim','Fim da vigência'],['info','Motivo do alerta'],['vg','Valor global','n']]);
   }
   return {itens: out, base: B.length, ativos: at.length, sdr: L.length};
 };
@@ -8747,28 +8762,30 @@ function csvDeO(o){ const q = s => '"'+String(s ?? '').replace(/"/g,'""')+'"';
 async function baixarXlsx(o){
   const nome = String(o.arquivo || o.titulo || 'extracao').replace(/[^\wÀ-ú-]+/g,'_');
   let EJ;
-  try{ EJ = await carregarExcelJS(); }catch(e){ baixarArquivo(new Blob([csvDeO(o)], {type:'text/csv;charset=utf-8'}), nome+'.csv'); return; }
-  const ext = quandoExt(), pos = posicaoDados(), nc = o.cab.length;
+  try{ EJ = await carregarExcelJS(); }catch(e){ baixarArquivo(new Blob([csvDeO(o.abas ? o.abas[o.abas.length > 1 ? 1 : 0] : o)], {type:'text/csv;charset=utf-8'}), nome+'.csv'); return; }
+  const ext = quandoExt(), pos = posicaoDados();
   const wb = new EJ.Workbook(); wb.creator = 'Painel SDR 2026 · COAPI · SDR/MAPA'; wb.created = new Date();
-  const ws = wb.addWorksheet('Dados', {views:[{showGridLines:false}], pageSetup:{orientation:'landscape', fitToPage:true, fitToWidth:1, fitToHeight:0, margins:{left:0.4,right:0.4,top:0.5,bottom:0.6,header:0.2,footer:0.3}}});
+  const img = wb.addImage({base64: SDR_BANNER_JPG, extension:'jpeg'}), usados = new Set();
   const VERDE = 'FF155A30', V2 = 'FF1F6B3A', CLARO = 'FFEAF3EC', fill = c => ({type:'pattern', pattern:'solid', fgColor:{argb:c}});
+  for(const f of (o.abas || [o])){ const fo = Object.assign({}, o, f), nc = fo.cab.length;
+  let nomeAba = String(fo.aba || 'Dados').replace(/[\[\]:*?\/\\]/g,' ').slice(0,31).trim() || 'Dados'; for(let k = 2; usados.has(nomeAba.toLowerCase()); k++) nomeAba = nomeAba.slice(0,27)+' ('+k+')'; usados.add(nomeAba.toLowerCase());
+  const ws = wb.addWorksheet(nomeAba, {views:[{showGridLines:false}], pageSetup:{orientation:'landscape', fitToPage:true, fitToWidth:1, fitToHeight:0, margins:{left:0.4,right:0.4,top:0.5,bottom:0.6,header:0.2,footer:0.3}}});
   // larguras: pelo maior texto da coluna (limitado)
-  const larg = o.cab.map((c,i) => c.w || Math.min(60, Math.max(10, String(c.t).length + 2, ...o.linhas.slice(0,300).map(l => String(l[i] ?? '').length * (c.n ? 1.1 : 1) + 2))));
+  const larg = fo.cab.map((c,i) => c.w || Math.min(60, Math.max(10, String(c.t).length + 2, ...fo.linhas.slice(0,300).map(l => String(l[i] ?? '').length * (c.n ? 1.1 : 1) + 2))));
   ws.columns = larg.map(w => ({width: w}));
   // faixa da SDR (imagem presa às células do topo)
   for(let r = 1; r <= 5; r++) ws.getRow(r).height = 17;
   const totPx = larg.reduce((a,w) => a + w*7+5, 0), alvo = Math.min(totPx, 1060); let acc = 0, colF = nc;
   for(let i = 0; i < nc; i++){ const px = larg[i]*7+5; if(acc + px >= alvo){ colF = i + (alvo-acc)/px; break; } acc += px; }
-  const img = wb.addImage({base64: SDR_BANNER_JPG, extension:'jpeg'});
   ws.addImage(img, {tl:{col:0, row:0}, br:{col:colF, row:5}, editAs:'oneCell'});
   const ultima = ws.getColumn(nc).letter;
   const linha = (r, txt, estilo, alt) => { ws.mergeCells(`A${r}:${ultima}${r}`); const c = ws.getCell(`A${r}`); c.value = txt; Object.assign(c, estilo); if(alt) ws.getRow(r).height = alt; return c; };
-  linha(6, `Extraído em ${ext}${pos ? '   ·   Posição dos dados: '+pos : ''}${o.fonte ? '   ·   Fonte: '+o.fonte : ''}`, {font:{name:'Calibri', size:10, italic:true, color:{argb:'FF5A6672'}}, alignment:{horizontal:'right'}}, 18);
-  const tc = linha(7, `${o.titulo}${o.sub ? '  ·  '+o.sub : ''}     (${o.linhas.length.toLocaleString('pt-BR')} registros)`, {font:{name:'Calibri', size:14, bold:true, color:{argb:'FFFFFFFF'}}, alignment:{vertical:'middle'}, fill:fill(VERDE)}, 26);
-  linha(8, 'Filtros aplicados: '+(o.filtros && o.filtros.length ? o.filtros.join(' · ') : 'nenhum (todos os registros)'), {font:{name:'Calibri', size:10.5, color:{argb:'FF155A30'}, bold:true}, fill:fill(CLARO), alignment:{wrapText:true, vertical:'middle'}}, 20);
+  linha(6, `Extraído em ${ext}${pos ? '   ·   Posição dos dados: '+pos : ''}${fo.fonte ? '   ·   Fonte: '+fo.fonte : ''}`, {font:{name:'Calibri', size:10, italic:true, color:{argb:'FF5A6672'}}, alignment:{horizontal:'right'}}, 18);
+  const tc = linha(7, `${fo.titulo}${fo.sub ? '  ·  '+fo.sub : ''}     (${fo.linhas.length.toLocaleString('pt-BR')} registros)`, {font:{name:'Calibri', size:14, bold:true, color:{argb:'FFFFFFFF'}}, alignment:{vertical:'middle'}, fill:fill(VERDE)}, 26);
+  linha(8, 'Filtros aplicados: '+(fo.filtros && fo.filtros.length ? fo.filtros.join(' · ') : 'nenhum (todos os registros)'), {font:{name:'Calibri', size:10.5, color:{argb:'FF155A30'}, bold:true}, fill:fill(CLARO), alignment:{wrapText:true, vertical:'middle'}}, 20);
   // cartões de totais: registros + até 3 colunas numéricas (somas)
-  const nums = o.cab.map((c,i) => [c,i]).filter(([c]) => c.n && !c.semSoma).slice(0,3);
-  const kp = [['Registros', o.linhas.length, '#,##0']].concat(nums.map(([c,i]) => [c.t, o.linhas.reduce((a,l) => a + (typeof l[i]==='number' ? l[i] : 0), 0), c.inteiro ? '#,##0' : '"R$" #,##0.00']));
+  const nums = fo.cab.map((c,i) => [c,i]).filter(([c]) => c.n && !c.semSoma).slice(0,3);
+  const kp = [['Registros', fo.linhas.length, '#,##0']].concat(nums.map(([c,i]) => [c.t, fo.linhas.reduce((a,l) => a + (typeof l[i]==='number' ? l[i] : 0), 0), c.inteiro ? '#,##0' : '"R$" #,##0.00']));
   const fatia = Math.max(1, Math.floor(nc / kp.length));
   kp.forEach(([t,v,fmt], k) => { const a = k*fatia + 1, b = k===kp.length-1 ? nc : Math.min(nc, a+fatia-1); if(a > nc) return;
     if(b > a){ ws.mergeCells(9, a, 9, b); ws.mergeCells(10, a, 10, b); }
@@ -8777,31 +8794,32 @@ async function baixarXlsx(o){
   ws.getRow(10).height = 24;
   // tabela
   const H = 12, hr = ws.getRow(H);
-  o.cab.forEach((c,i) => { const cel = hr.getCell(i+1); cel.value = c.t; cel.fill = fill(V2); cel.font = {name:'Calibri', size:11, bold:true, color:{argb:'FFFFFFFF'}}; cel.alignment = {horizontal: c.n ? 'right' : 'left', vertical:'middle', wrapText:true}; });
+  fo.cab.forEach((c,i) => { const cel = hr.getCell(i+1); cel.value = c.t; cel.fill = fill(V2); cel.font = {name:'Calibri', size:11, bold:true, color:{argb:'FFFFFFFF'}}; cel.alignment = {horizontal: c.n ? 'right' : 'left', vertical:'middle', wrapText:true}; });
   hr.height = 30;
   const dataRe = /^(\d{2})\/(\d{2})\/(\d{4})$/, fino = {bottom:{style:'thin', color:{argb:'FFE1E8E3'}}};
-  o.linhas.forEach((l, k) => { const row = ws.getRow(H+1+k);
-    l.forEach((v, i) => { const c = o.cab[i], cel = row.getCell(i+1); let val = v;
+  fo.linhas.forEach((l, k) => { const row = ws.getRow(H+1+k);
+    l.forEach((v, i) => { const c = fo.cab[i], cel = row.getCell(i+1); let val = v;
       if(typeof val === 'string'){ const m = val.match(dataRe); if(m) val = new Date(Date.UTC(+m[3], +m[2]-1, +m[1])); }
       if(c.link && v){ cel.value = {text: c.textoLink || 'abrir', hyperlink: String(v)}; cel.font = {name:'Calibri', size:10.5, color:{argb:'FF1F4E79'}, underline:true}; }
       else { cel.value = (val === undefined || val === null) ? '' : val; cel.font = {name:'Calibri', size:10.5}; }
       if(val instanceof Date) cel.numFmt = 'dd/mm/yyyy';
       if(c.n && typeof val === 'number') cel.numFmt = c.inteiro ? '#,##0' : '#,##0.00';
       cel.border = fino; if(k % 2) cel.fill = fill('FFF2F8F4'); }); });
-  const fim = H + o.linhas.length, T = fim + 1;
-  ws.getCell(T, 1).value = `Total (${o.linhas.length.toLocaleString('pt-BR')} registros)`;
-  o.cab.forEach((c,i) => { if(c.n && !c.semSoma && i > 0 && o.linhas.length){ const L = ws.getColumn(i+1).letter; const cel = ws.getCell(T, i+1); cel.value = {formula:`SUBTOTAL(9,${L}${H+1}:${L}${fim})`}; cel.numFmt = c.inteiro ? '#,##0' : '#,##0.00'; } });
+  const fim = H + fo.linhas.length, T = fim + 1;
+  ws.getCell(T, 1).value = `Total (${fo.linhas.length.toLocaleString('pt-BR')} registros)`;
+  fo.cab.forEach((c,i) => { if(c.n && !c.semSoma && i > 0 && fo.linhas.length){ const L = ws.getColumn(i+1).letter; const cel = ws.getCell(T, i+1); cel.value = {formula:`SUBTOTAL(9,${L}${H+1}:${L}${fim})`}; cel.numFmt = c.inteiro ? '#,##0' : '#,##0.00'; } });
   for(let i = 1; i <= nc; i++){ const cel = ws.getCell(T, i); cel.fill = fill('FFD6EADB'); cel.font = {name:'Calibri', size:11, bold:true, color:{argb:VERDE}}; cel.border = {top:{style:'medium', color:{argb:V2}}}; }
   ws.getCell(T+2, 1).value = `Painel SDR 2026 · COAPI · SDR/MAPA · documento extraído em ${ext}`; ws.getCell(T+2, 1).font = {name:'Calibri', size:9, italic:true, color:{argb:'FF8A949C'}};
   ws.views = [{state:'frozen', ySplit:H, showGridLines:false}];
-  if(o.linhas.length) ws.autoFilter = {from:{row:H, column:1}, to:{row:fim, column:nc}};
+  if(fo.linhas.length) ws.autoFilter = {from:{row:H, column:1}, to:{row:fim, column:nc}};
   ws.pageSetup.printTitlesRow = `${H}:${H}`;
   ws.headerFooter.oddFooter = `&L&8Painel SDR 2026 · extraído em ${ext}&R&8Página &P de &N`;
+  }
   // aba "Sobre a extração"
   const s = wb.addWorksheet('Sobre a extração', {views:[{showGridLines:false}]});
   s.columns = [{width:28},{width:100}]; for(let r = 1; r <= 5; r++) s.getRow(r).height = 17;
   s.addImage(img, {tl:{col:0, row:0}, br:{col:2, row:5}, editAs:'oneCell'});
-  [['Painel', 'Painel SDR 2026 · '+(o.titulo||'')], ['Extraído em', ext], ['Posição dos dados', pos || '—'], ['Filtros aplicados', o.filtros && o.filtros.length ? o.filtros.join(' · ') : 'nenhum'], ['Registros', o.linhas.length.toLocaleString('pt-BR')],
+  [['Painel', 'Painel SDR 2026 · '+(o.titulo||'')], ['Extraído em', ext], ['Posição dos dados', pos || '—'], ['Filtros aplicados', o.filtros && o.filtros.length ? o.filtros.join(' · ') : 'nenhum'], ['Registros', (o.abas ? o.abas.slice(1) : [o]).reduce((t, f) => t + f.linhas.length, 0).toLocaleString('pt-BR')],
    ['Fonte', o.fonte || 'Painel SDR 2026 (planilhas da equipe, Transferegov, Tesouro Gerencial, Contratos.gov.br)'], ['Observação', 'Valores em reais. Datas e valores estão em formato numérico (podem ser filtrados e somados).'], ['Responsável', 'COAPI · Coordenação Análise e Execução de Parcerias Institucionais · SDR/MAPA']]
    .forEach(([a,b], k) => { const r = 7+k; s.getCell(r,1).value = a; s.getCell(r,1).font = {name:'Calibri', size:11, bold:true, color:{argb:VERDE}}; s.getCell(r,1).fill = fill(CLARO); s.getCell(r,2).value = b; s.getCell(r,2).font = {name:'Calibri', size:11}; s.getCell(r,2).alignment = {wrapText:true}; s.getRow(r).height = 20; });
   const buf = await wb.xlsx.writeBuffer();
@@ -9864,7 +9882,7 @@ document.addEventListener('click', e => {
 .em-cl{background:#eef5f0;color:#155a30;border:1px solid #cfe3d5}.em-mais{margin-top:8px;border:1px solid #cfe3d5;background:#fff;border-radius:8px;padding:6px 12px;cursor:pointer;color:#155a30;font-weight:700}
 @media(max-width:1000px){.em-fun{grid-template-columns:repeat(2,minmax(0,1fr))}.em-fun>div{clip-path:none;border-radius:12px;padding:10px 12px}.em-fil{grid-template-columns:repeat(2,minmax(0,1fr))}}`; document.head.appendChild(st); })();
 // ===== ALERTA · por área (Gestão Contratual, Orçamento e Finanças, Parcerias, TED) · alertas por menu + sugestão + autocrítica =====
-const AL = {cache:{}, sel:null, filtroSev:''};
+const AL = {cache:{}, sel:null, filtroSev:'', q:{}};
 const AL_AREA = {alertactr:['GESTÃO CONTRATUAL', [['contratos','📑','Base Contratos (CEPLAC)'],['ctrsdr','📄','Contratos SDR'],['conferencia','✔','Conferência de Contratos'],['despesas','🧾','Despesas previstas']]],
   alertaorc:['ORÇAMENTO E FINANÇAS', [['orcacao','🏛','Orçamento por ações'],['exe','$','Financeiro EXE'],['rap','⏱','Financeiro RAP']]],
   alertaparc:['PARCERIAS', [['parc','🤝','Parceria SDR · convênios e termos (130141)'],['conv','📋','Execução Convênio/TF 420013'],['repasse','🏠','Contrato de Repasse (135098)'],['prop','📝','Propostas SDR'],['captacao','💡','Captação de Emendas']]],
@@ -9888,48 +9906,130 @@ async function alAbrir(tela){
 async function alCarregar(tela){
   if(tela === 'alertactr'){ const w = await garantirAntigo(); const r = await w.__alertasCtr(); return r.itens; }
   if(tela === 'alertaparc' || tela === 'alertated'){ const r = await fetch(RAW_DADOS+'alertas.json?v='+new Date().toISOString().slice(0,13), {cache:'no-store'}); if(!r.ok) throw new Error(r.status === 404 ? 'o robô ainda não gerou os alertas' : 'HTTP '+r.status); const j = lgpdObj(await r.json()); return tela === 'alertaparc' ? j.parc : j.ted; }
-  // orçamento e finanças: SIOP SDR (dotação) + Tesouro (EXE e RAP do último mês)
-  const out = [], A = (menu, sev, id, titulo, sugestao, itens) => out.push({menu, sev, id, titulo, sugestao, itens});
+  // orçamento e finanças: SIOP SDR (dotação) + Tesouro (EXE e RAP do último mês) · cada linha com UG, PTRES, PI, emenda, fonte, favorecido…
+  const out = [], A = (menu, sev, id, titulo, sugestao, itens, cols) => out.push({menu, sev, id, titulo, sugestao, itens, cols});
   const w = await garantirAntigo(); let S = []; try{ await w.dados('siop'); S = w.eval('DADOS.siop && DADOS.siop.linhas') || []; }catch(e){}
-  const hoje = new Date(), fimAno = new Date(hoje.getFullYear(), 11, 31), diasFim = Math.round((fimAno - hoje)/864e5);
-  const iS = (d, info) => ({num: d.acao+' · '+(d.po||''), nome: d.poNome || d.acaoNome || '', uf: d.depto || '', valor: d.disp || 0, info});
-  A('orcacao', diasFim <= 90 ? 'r' : 'y', 'dotpar', 'Dotação disponível sem empenho', `Empenhar ou remanejar o saldo · faltam ${diasFim} dia(s) para o fim do exercício.`, S.filter(d => (d.disp||0) > 1000 && !(d.emp > 0)).sort((a,b) => b.disp - a.disp).map(d => iS(d, 'disponível '+fmtBRL(d.disp))));
-  A('orcacao', 'y', 'dotpar', 'Saldo disponível acima de 30% da dotação', 'Rever a programação de empenhos da ação/PO até o fim do ano.', S.filter(d => d.emp > 0 && (d.atual||0) > 0 && (d.disp||0) > 0.3*d.atual).sort((a,b) => b.disp - a.disp).map(d => iS(d, Math.round(100*d.disp/d.atual)+'% da dotação disponível')));
-  A('orcacao', 'b', 'bloq', 'Crédito bloqueado', 'Pedir o desbloqueio à SPOA/SOF ou ajustar a programação.', S.filter(d => (d.bloq||0) > 0).map(d => ({...iS(d, 'bloqueado '+fmtBRL(d.bloq)), valor: d.bloq})));
-  try{ await Promise.all(['exe','rap'].map(v => carregarVisao(v).catch(() => {}))); const ms = Object.keys(MESES_TXT).map(Number).sort((a,b) => a-b), ult = ms[ms.length-1];
-    if(ult){ await Promise.all(['exe','rap'].map(v => garantirDetalhe(v, String(ult)).catch(() => {})));
-      const porNE = (v, f) => { const M = new Map(); (DADOS[v].det[ult]||[]).forEach(d => { const k = d.ug+'|'+d.ne; const x = M.get(k) || {d, v:0}; x.v += f(d); M.set(k, x); }); return [...M.values()].filter(x => x.v > 0.5).sort((a,b) => b.v - a.v); };
-      const iN = (x, info) => ({num: x.d.ne, nome: x.d.favN || x.d.fav || '', uf: 'UG '+x.d.ug+' · '+(x.d.acao||''), valor: x.v, info});
-      A('exe', 'y', 'apagar', 'Liquidado e ainda não pago', 'Pagar respeitando a ordem cronológica e o limite financeiro (PF).', porNE('exe', d => +d.apagar || 0).map(x => iN(x, 'a pagar')));
-      A('exe', 'b', 'aliq', 'Empenhado a liquidar', 'Cobrar a execução do contrato ou instrumento; avaliar a anulação do saldo sem uso antes do fim do ano.', porNE('exe', d => +d.aliq || 0).map(x => iN(x, 'a liquidar')));
-      A('rap', 'r', 'rapnp', 'RAP não processado a liquidar', 'Liquidar ou justificar a manutenção; sem liquidação, o RAP é bloqueado e cancelado (Decreto 93.872/1986, art. 68).', porNE('rap', d => +d.npAlq || 0).map(x => iN(x, 'não processado a liquidar')));
-      A('rap', 'y', 'rapp', 'RAP a pagar', 'Programar o pagamento com o limite financeiro.', porNE('rap', d => (+d.ppApg || 0) + (+d.npApg || 0)).map(x => iN(x, 'a pagar')));
-      AL.mesOrc = MESES_TXT[ult] || ''; } }catch(e){}
+  const hoje = new Date(), ANO = String(hoje.getFullYear()), fimAno = new Date(hoje.getFullYear(), 11, 31), diasFim = Math.round((fimAno - hoje)/864e5);
+  let ult = null;
+  try{ await Promise.all(['exe','rap'].map(v => carregarVisao(v).catch(() => {}))); const ms = Object.keys(MESES_TXT).map(Number).sort((a,b) => a-b); ult = ms[ms.length-1];
+    if(ult){ await Promise.all(['exe','rap'].map(v => garantirDetalhe(v, String(ult)).catch(() => {}))); AL.mesOrc = MESES_TXT[ult] || ''; } }catch(e){}
+  const det = v => (ult && DADOS[v] && DADOS[v].det && DADOS[v].det[ult]) || [];
+  // onde o crédito está no Tesouro (UG que recebeu a provisão), por PTRES + PI
+  const credUG = new Map();
+  det('exe').forEach(d => { if(!(+d.disp > 0) && !(+d.emp > 0)) return; const k = (d.ptres||'')+'|'+String(d.pi||'').toUpperCase(); const m = credUG.get(k) || credUG.set(k, new Map()).get(k);
+    const x = m.get(d.ug) || m.set(d.ug, {ugN:d.ugN||'', ugr:d.ugr||'', disp:0, emp:0}).get(d.ug); x.disp += +d.disp || 0; x.emp += +d.emp || 0; });
+  const ugsDe = d => { const m = credUG.get((d.ptres||'')+'|'+String(d.pi||'').toUpperCase()); if(!m) return ''; return [...m.entries()].sort((a,b) => b[1].disp - a[1].disp).map(([u, x]) => u+(x.disp > 0 ? ' (disp. '+fmtBRL(x.disp)+')' : '')).join(' · '); };
+  // PI de emenda individual (I + autor + nº) → autor e beneficiários indicados no SIOP
+  let EM = null; try{ if(!(EMI && EMI.d)){ const r = await fetch(RAW_DADOS+'emendas_siop.json?v='+new Date().toISOString().slice(0,13), {cache:'no-store'}); if(r.ok) EMI.d = lgpdObj(await r.json()); } EM = EMI.d; }catch(e){}
+  const emDe = pi => { const m = String(pi||'').toUpperCase().match(/^I(\d{8})/); if(!m || !EM) return null; const cod = m[1];
+    const e = (EM.emendas||[]).find(x => String(x.emenda).slice(4) === cod && x.ano === ANO) || (EM.emendas||[]).find(x => String(x.emenda).slice(4) === cod); if(!e) return null;
+    const ben = (EM.linhas||[]).filter(b => b.emenda === e.emenda); return {emenda: e.emenda+' · '+e.autor+(e.partido ? ' ('+e.partido+')' : ''), benef: ben.map(b => b.entidade+(b.uf ? '/'+b.uf : '')+(b.indicado ? ' '+fmtBRL(b.indicado) : '')).join(' | ')}; };
+  const COL_DOT = [['ano','Exercício'],['ug','UG com o crédito no Tesouro','w'],['depto','Departamento'],['acao','Ação'],['po','PO'],['poNome','Plano orçamentário','w'],['ptres','PTRES'],['pi','PI'],['emenda','Emenda (autor)'],['benef','Beneficiário(s) indicado(s) no SIOP','w'],
+    ['fonte','Fonte'],['rp','RP'],['info','Motivo do alerta'],['atual','Dotação atual','n'],['emp','Empenhado','n'],['disp','Disponível','n'],['bloq','Bloqueado','n']];
+  const iS = (d, info) => { const e = emDe(d.pi) || {}; return {ano:ANO, ug:ugsDe(d) || 'sem crédito provisionado nas UGs da SDR', depto:d.depto||'', acao:d.acao||'', po:d.po||'', poNome:d.poNome||'', ptres:d.ptres||'', pi:d.pi||'', emenda:e.emenda||'', benef:e.benef||'',
+    fonte:d.fonte||'', rp:d.rp||'', info, atual:d.atual||0, emp:d.emp||0, disp:d.disp||0, bloq:d.bloq||0}; };
+  A('orcacao', diasFim <= 90 ? 'r' : 'y', 'dotpar', 'Dotação disponível sem empenho', `Empenhar ou remanejar o saldo · faltam ${diasFim} dia(s) para o fim do exercício.`, S.filter(d => (d.disp||0) > 1000 && !(d.emp > 0)).sort((a,b) => b.disp - a.disp).map(d => iS(d, 'nada empenhado')), COL_DOT);
+  A('orcacao', 'y', 'dotpar', 'Saldo disponível acima de 30% da dotação', 'Rever a programação de empenhos da ação/PO até o fim do ano.', S.filter(d => d.emp > 0 && (d.atual||0) > 0 && (d.disp||0) > 0.3*d.atual).sort((a,b) => b.disp - a.disp).map(d => iS(d, Math.round(100*d.disp/d.atual)+'% da dotação disponível')), COL_DOT);
+  A('orcacao', 'b', 'bloq', 'Crédito bloqueado', 'Pedir o desbloqueio à SPOA/SOF ou ajustar a programação.', S.filter(d => (d.bloq||0) > 0).sort((a,b) => b.bloq - a.bloq).map(d => iS(d, 'bloqueado')), COL_DOT);
+  if(ult){
+    const porNE = (v, f, extra) => { const M = new Map(); det(v).forEach(d => { if(!d.ne) return; const k = d.ug+'|'+d.ne; const x = M.get(k) || M.set(k, {d, v:0, x:{}}).get(k); x.v += f(d);
+      Object.entries(extra).forEach(([c, g]) => { x.x[c] = (x.x[c]||0) + g(d); }); }); return [...M.values()].filter(x => x.v > 0.5).sort((a,b) => b.v - a.v); };
+    const base = (x, info) => { const d = x.d; return Object.assign({ne:d.ne, anoNE:(String(d.ne).match(/(\d{4})NE/)||[])[1]||'', ug:d.ug+(d.ugN ? ' · '+d.ugN : ''), ugr:d.ugr||'', dep:d.dep||'', fav:d.fav||'', favN:d.favN||'', acao:d.acao||'', ptres:d.ptres||'', pi:d.pi||'',
+      fonte:d.fonte||'', nd:d.nd||'', proc:d.proc||'', contr:d.contr||'', desc:String(d.desc||'').slice(0,300), info, valor:x.v}, x.x); };
+    const C0 = [['ne','Nota de empenho'],['anoNE','Ano da NE'],['ug','UG executora','w'],['ugr','UG responsável'],['dep','Departamento'],['fav','CNPJ/CPF do favorecido'],['favN','Favorecido'],['acao','Ação'],['ptres','PTRES'],['pi','PI'],['fonte','Fonte'],['nd','Natureza de despesa'],
+      ['proc','Processo'],['contr','Contrato / instrumento'],['desc','Descrição da NE','w'],['info','Motivo do alerta']];
+    const exX = {emp: d => +d.emp || 0, liq: d => +d.liq || 0, pago: d => +d.pago || 0}, rpX = {ins: d => (+d.ppIns||0)+(+d.ppRei||0)+(+d.npIns||0)+(+d.npRei||0), pag: d => (+d.ppPag||0)+(+d.npPag||0)};
+    const CE = r => C0.concat([['emp','Empenhado','n'],['liq','Liquidado','n'],['pago','Pago','n'],['valor',r,'n']]), CR = r => C0.concat([['ins','RAP inscrito','n'],['pag','RAP pago','n'],['valor',r,'n']]);
+    A('exe', 'y', 'apagar', 'Liquidado e ainda não pago', 'Pagar respeitando a ordem cronológica e o limite financeiro (PF).', porNE('exe', d => +d.apagar || 0, exX).map(x => base(x, 'liquidado a pagar')), CE('A pagar'));
+    A('exe', 'b', 'aliq', 'Empenhado a liquidar', 'Cobrar a execução do contrato ou instrumento; avaliar a anulação do saldo sem uso antes do fim do ano.', porNE('exe', d => +d.aliq || 0, exX).map(x => base(x, 'empenhado a liquidar')), CE('A liquidar'));
+    A('rap', 'r', 'rapnp', 'RAP não processado a liquidar', 'Liquidar ou justificar a manutenção; sem liquidação, o RAP é bloqueado e cancelado (Decreto 93.872/1986, art. 68).', porNE('rap', d => +d.npAlq || 0, rpX).map(x => base(x, 'não processado a liquidar')), CR('A liquidar'));
+    A('rap', 'y', 'rapp', 'RAP a pagar', 'Programar o pagamento com o limite financeiro.', porNE('rap', d => (+d.ppApg || 0) + (+d.npApg || 0), rpX).map(x => base(x, (+x.d.ppApg > 0 ? 'processado' : 'não processado')+' a pagar')), CR('A pagar'));
+  }
   if(!S.length && !AL.mesOrc) throw new Error('o SIOP SDR e o Tesouro não carregaram agora; tente de novo em instantes');
   return out;
 }
+// ----- colunas, tabela e exportação -----
+const AL_COL0 = [['num','Nº'],['nome','Nome'],['uf','UF / complemento'],['info','Motivo do alerta'],['valor','Valor','n']];
+const alCols = a => a.cols && a.cols.length ? a.cols : AL_COL0;
+const alTxtV = (x, c) => { const v = x[c[0]]; return v === null || v === undefined ? '' : String(v); };
+function alFiltrar(a, q){ const T = norm(q); if(!T) return a.itens; const C = alCols(a); return a.itens.filter(x => norm(C.map(c => alTxtV(x, c)).join(' ')).includes(T)); }
+function alCel(x, c, tela){ const [k, , t] = c, v = x[k];
+  if(t === 'n') return `<td class="n">${v ? fmtBRL(+v) : '—'}</td>`;
+  if(t === 'i') return `<td class="n">${v === null || v === undefined || v === '' ? '—' : Number(v).toLocaleString('pt-BR')}</td>`;
+  const s = v === null || v === undefined || v === '' ? '—' : String(v);
+  if(t === 'ctr' && x.ctr) return `<td class="k"><a href="#" data-alctr="${esc(x.ctr)}">${esc(s)}</a></td>`;
+  if(t === 'inst' && /^\d{6}$/.test(s)) return `<td class="k"><a href="#" data-alinst="${esc(s)}">${esc(s)}</a></td>`;
+  if(t === 'link' && x.link) return `<td class="k"><a href="${esc(x.link)}" target="_blank" rel="noopener">${esc(s)}</a></td>`;
+  return `<td class="${t === 'w' ? 'w' : ''}${k === 'info' ? ' mot' : ''}" title="${esc(s)}">${esc(s)}</td>`; }
+function alTabela(a, tela, q){ const C = alCols(a), L = alFiltrar(a, q), N = 500;
+  return `<table class="al-t"><thead><tr>${C.map(c => `<th class="${c[2] === 'n' || c[2] === 'i' ? 'n' : ''}">${esc(c[1])}</th>`).join('')}</tr></thead><tbody>${L.slice(0, N).map(x => '<tr>'+C.map(c => alCel(x, c, tela)).join('')+'</tr>').join('')}</tbody>
+    ${L.length ? `<tfoot><tr>${C.map((c, i) => `<td class="${c[2] === 'n' ? 'n' : ''}">${i === 0 ? L.length.toLocaleString('pt-BR')+' linha(s)' : c[2] === 'n' ? fmtBRL(L.reduce((t, x) => t + (+x[c[0]]||0), 0)) : ''}</td>`).join('')}</tr></tfoot>` : ''}</table>
+    ${!L.length ? '<p class="al-mais">Nenhuma linha com esse texto.</p>' : L.length > N ? `<p class="al-mais">Mostrando ${N} de ${L.length.toLocaleString('pt-BR')} linhas · a exportação em Excel traz todas.</p>` : ''}`; }
+function alAchar(k){ const tela = document.getElementById('v-extra').dataset.tela, C = AL.cache[tela]; if(!C || !C.itens) return null; return C.itens.find(a => tela+'|'+a.menu+'|'+a.id+'|'+a.titulo === k); }
+const alMenuNome = (tela, m) => ((AL_AREA[tela][1].find(x => x[0] === m) || [])[2] || m);
+function alXlsAba(a, tela, q){ const C = alCols(a), L = alFiltrar(a, q);
+  return {aba: alMenuNome(tela, a.menu).split(' ')[0]+' · '+a.titulo, titulo: 'Alerta · '+a.titulo, sub: AL_AREA[tela][0]+' · '+alMenuNome(tela, a.menu), filtros: (q ? ['texto: '+q] : []).concat(['Sugestão: '+a.sugestao]),
+    cab: C.map(c => ({t: c[1], n: c[2] === 'n' || c[2] === 'i', inteiro: c[2] === 'i', semSoma: c[2] === 'i'})), linhas: L.map(x => C.map(c => c[2] === 'n' ? +x[c[0]] || 0 : c[2] === 'i' ? (x[c[0]] === null || x[c[0]] === undefined || x[c[0]] === '' ? '' : +x[c[0]]) : alTxtV(x, c)))}; }
+const AL_FONTE = {alertactr:'Base Contratos (CEPLAC) e Contratos.gov.br', alertaorc:'SIOP SDR, Tesouro Gerencial (EXE e RAP) e SIOP emendas', alertaparc:'Transferegov (robô do painel)', alertated:'Transferegov TED e Tesouro Gerencial'};
+function alXls(a, tela, q){ const o = alXlsAba(a, tela, q); baixarXlsx(Object.assign(o, {fonte: AL_FONTE[tela], arquivo: 'alerta_'+a.menu+'_'+a.id})); }
+function alPdfTabela(a, tela, q, max){ const C = alCols(a), L = alFiltrar(a, q), M = L.slice(0, max);
+  const f = (x, c) => c[2] === 'n' ? (x[c[0]] ? fmtBRL(+x[c[0]]) : '—') : c[2] === 'i' ? (x[c[0]] === null || x[c[0]] === undefined || x[c[0]] === '' ? '—' : Number(x[c[0]]).toLocaleString('pt-BR')) : (alTxtV(x, c) || '—').slice(0, c[2] === 'w' ? 140 : 80);
+  return {C, L, M, f}; }
+function alPdf(a, tela, q){ const {C, L, M, f} = alPdfTabela(a, tela, q, PDF_MAX);
+  const html = documentoPDF({titulo: 'Alerta · '+a.titulo, sub: AL_AREA[tela][0]+' · '+alMenuNome(tela, a.menu)+' · Sugestão: '+a.sugestao, filtros: q ? ['texto: '+q] : [], cab: C.map(c => ({t: c[1], n: c[2] === 'n' || c[2] === 'i'})),
+    linhas: M.map(x => C.map(c => f(x, c))), tot: C.map((c, i) => i === 0 ? 'Total' : c[2] === 'n' ? fmtBRL(L.reduce((t, x) => t + (+x[c[0]]||0), 0)) : ''), total: L.length, arquivo: 'alerta_'+a.menu+'_'+a.id});
+  abrirPDF(html, 'alerta_'+a.menu+'_'+a.id); }
+function alLista(tela){ const C = AL.cache[tela]; return C && C.itens ? C.itens.filter(a => a.itens && a.itens.length && (!AL.filtroSev || a.sev === AL.filtroSev)) : []; }
+function alXlsPagina(tela){ const L = alLista(tela), SEV = {r:'Crítico', y:'Atenção', b:'Acompanhar'};
+  const res = {aba: 'Resumo', titulo: 'Alerta · '+AL_AREA[tela][0]+' · resumo', cab: [{t:'Aba'},{t:'Menu'},{t:'Gravidade'},{t:'Alerta'},{t:'Quantidade', n:true, inteiro:true},{t:'Sugestão de correção'},{t:'Valor total', n:true}],
+    linhas: L.map((a, i) => { const v = alCols(a).find(c => c[2] === 'n'); return [String(i+1), alMenuNome(tela, a.menu), SEV[a.sev], a.titulo, a.itens.length, a.sugestao, v ? a.itens.reduce((t, x) => t + (+x[v[0]]||0), 0) : 0]; })};
+  baixarXlsx({titulo: 'Alerta · '+AL_AREA[tela][0], fonte: AL_FONTE[tela], filtros: AL.filtroSev ? ['gravidade: '+SEV[AL.filtroSev]] : [], arquivo: 'alertas_'+tela.replace('alerta',''), abas: [res].concat(L.map((a, i) => Object.assign(alXlsAba(a, tela, AL.q[tela+'|'+a.menu+'|'+a.id+'|'+a.titulo] || ''), {aba: (i+1)+'. '+a.titulo})))}); }
+function alPdfPagina(tela){ const L = alLista(tela), SEV = {r:'Crítico', y:'Atenção', b:'Acompanhar'}, MAX = 400, quando = new Date().toLocaleString('pt-BR', {dateStyle:'short', timeStyle:'short'});
+  const auto = document.querySelector('#v-extra .al-auto'), sv = document.querySelector('#v-extra .al-sv');
+  const secs = AL_AREA[tela][1].map(([m, , nome]) => { const A = L.filter(a => a.menu === m); if(!A.length) return '';
+    return `<h2>${escPDF(nome)}</h2>` + A.map(a => { const q = AL.q[tela+'|'+a.menu+'|'+a.id+'|'+a.titulo] || '', {C, L: T, M, f} = alPdfTabela(a, tela, q, MAX);
+      return `<h3 class="s${a.sev}">${T.length.toLocaleString('pt-BR')} · ${escPDF(a.titulo)} <small>${SEV[a.sev]}</small></h3><p class="sug">Sugestão: ${escPDF(a.sugestao)}</p>
+        <table><thead><tr>${C.map(c => `<th class="${c[2] === 'n' || c[2] === 'i' ? 'n' : ''}">${escPDF(c[1])}</th>`).join('')}</tr></thead><tbody>${M.map(x => '<tr>'+C.map(c => `<td class="${c[2] === 'n' || c[2] === 'i' ? 'n' : c[2] === 'w' ? 'w' : ''}">${escPDF(f(x, c))}</td>`).join('')+'</tr>').join('')}</tbody></table>
+        ${T.length > MAX ? `<p class="sug">Mostrando ${MAX} de ${T.length.toLocaleString('pt-BR')} linhas · a lista completa está na exportação em Excel.</p>` : ''}`; }).join(''); }).join('');
+  const html = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>Alerta ${escPDF(AL_AREA[tela][0])}</title><style>@page{size:A4 landscape;margin:8mm}
+    *{box-sizing:border-box}body{margin:0;padding:14px;font-family:"Segoe UI",Arial,sans-serif;color:#1d2b24;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    .barra{background:#fff8e1;border:1px solid #e6cf7a;border-radius:10px;padding:9px 14px;margin-bottom:12px;font-size:13px}.barra button{font:inherit;font-weight:700;background:#1f6b3a;color:#fff;border:0;border-radius:8px;padding:7px 16px;margin-right:10px;cursor:pointer}
+    h2{font-size:14px;color:#155a30;border-bottom:2px solid #cfe3d5;margin:16px 0 6px;padding-bottom:3px}h3{font-size:11.5px;margin:10px 0 2px;border-left:5px solid;padding-left:7px}h3 small{font-weight:400;color:#5f6f66}h3.sr{border-color:#d93636}h3.sy{border-color:#e0a100}h3.sb{border-color:#378add}
+    .sug{font-size:9.5px;color:#4c5c53;margin:0 0 4px}table{width:100%;border-collapse:collapse;font-size:6.6px}th{background:#1f6b3a;color:#fff;text-align:left;padding:3px;font-weight:700}td{padding:2px 3px;border-bottom:1px solid #e1e8e3;vertical-align:top;word-break:normal}td.w{word-break:break-word;min-width:120px}
+    tbody tr:nth-child(even) td{background:#f4f8f5}.n{text-align:right;white-space:nowrap}thead{display:table-header-group}tr{break-inside:avoid}
+    .al-sv{display:flex;gap:8px}.al-s{flex:1;border:0;border-radius:10px;padding:8px 12px;text-align:left;font:inherit}.al-s span{display:block;font-weight:700;font-size:11px}.al-s b{display:block;font-size:20px}.al-s small{font-size:10px}.al-s.r{background:#fdecec;color:#8a1c1c}.al-s.y{background:#fdf3df;color:#6b4500}.al-s.b{background:#e6f1fb;color:#0c447c}
+    .al-auto{margin-top:8px;background:#fff8e6;border:1px solid #efc56f;border-radius:10px;padding:8px 12px;font-size:10.5px}.al-auto ol{margin:4px 0 0;padding-left:18px}
+    ${CSS_CAB_PDF} @media print{.barra{display:none}body{padding:0}}</style></head><body>
+    <div class="barra"><button onclick="window.print()">Salvar em PDF</button>Na janela de impressão, escolha <b>Salvar como PDF</b> em "Destino".</div>
+    ${cabecalhoPDF('Alerta · '+escPDF(AL_AREA[tela][0])+(AL.filtroSev ? ' · só '+SEV[AL.filtroSev] : ''), quando)}${sv ? sv.outerHTML : ''}${auto ? auto.outerHTML : ''}${secs}
+    <p class="sug" style="margin-top:10px">Fonte: ${escPDF(AL_FONTE[tela])}${tela === 'alertaorc' && AL.mesOrc ? ' · Tesouro: posição de '+escPDF(AL.mesOrc) : ''} · Painel SDR 2026 · extraído em ${quando}</p>
+    <script>setTimeout(function(){ try{ window.print(); }catch(e){} }, 700);<\/script></body></html>`;
+  abrirPDF(html, 'alertas_'+tela.replace('alerta','')); }
 function desenharAlerta(tela){
   const el = document.getElementById('v-extra'); if(!el || el.dataset.tela !== tela) return;
   const [area, menus] = AL_AREA[tela], C = AL.cache[tela] || {};
-  const topo = `<div class="vx-top"><div><h1>ALERTA · ${area}</h1><small>alertas de cada menu da área · sugestão de correção · autocrítica</small></div></div>`;
+  const topo = `<div class="vx-top"><div><h1>ALERTA · ${area}</h1><small>alertas de cada menu da área · sugestão de correção · autocrítica</small></div>${C.itens ? `<div class="al-exp"><span>Exportar a página</span><button type="button" data-alxp="xls">⬇ Excel</button><button type="button" data-alxp="pdf">⬇ PDF</button></div>` : ''}</div>`;
   if(!C.itens){ el.innerHTML = topo + `<div class="vx-card" style="margin-top:14px">${C.erro ? 'Não foi possível montar os alertas: '+esc(C.erro) : 'Juntando os alertas da área…'}</div>`; return; }
   const I = C.itens.filter(a => a.itens && a.itens.length), soma = (s) => I.filter(a => a.sev === s).reduce((t, a) => t + a.itens.length, 0);
   const sv = [['r','Crítico','vence ou já venceu'],['y','Atenção','precisa de providência'],['b','Acompanhar','informativo']];
   const tot = `<div class="al-sv">${sv.map(([s, r, d]) => `<button type="button" class="al-s ${s} ${AL.filtroSev === s ? 'on' : ''}" data-alsev="${s}"><span>${r}</span><b>${soma(s).toLocaleString('pt-BR')}</b><small>${d}</small></button>`).join('')}</div>`;
-  // autocrítica: os alertas mais pesados viram frases com a causa provável e a correção
   const peso = a => ({r:3, y:2, b:1})[a.sev] * Math.log10(1 + a.itens.length);
-  const ag = {}; I.forEach(a => { const g = ag[a.id] || (ag[a.id] = {...a, itens: []}); g.itens = g.itens.concat(a.itens); if(({r:3, y:2, b:1})[a.sev] > ({r:3, y:2, b:1})[g.sev]) g.sev = a.sev; });   // o mesmo alerta em vários menus conta uma vez
+  const ag = {}; I.forEach(a => { const g = ag[a.id] || (ag[a.id] = {...a, itens: []}); g.itens = g.itens.concat(a.itens); if(({r:3, y:2, b:1})[a.sev] > ({r:3, y:2, b:1})[g.sev]) g.sev = a.sev; });
   const top = Object.values(ag).sort((a,b) => peso(b) - peso(a)).slice(0, 4);
   const auto = top.length ? `<div class="al-auto"><b>Autocrítica da área</b><small> · o que os números dizem sobre a nossa rotina e como resolver</small><ol>${top.map(a => `<li><b>${a.itens.length.toLocaleString('pt-BR')} · ${esc(a.titulo)}</b>${a.base ? ' em '+a.base : ''}: ${esc(AL_CAUSA[a.id] || 'precisa de providência')}. <span>Correção: ${esc(a.sugestao)}</span></li>`).join('')}</ol></div>`
     : `<div class="al-auto ok"><b>Nenhum alerta nesta área.</b> Tudo em dia pelos dados de hoje.</div>`;
   const ordem = {r:0, y:1, b:2};
   const secs = menus.map(([m, ic, nome]) => { const L = I.filter(a => a.menu === m && (!AL.filtroSev || a.sev === AL.filtroSev)).sort((a,b) => ordem[a.sev] - ordem[b.sev] || b.itens.length - a.itens.length);
-    return `<div class="al-sec"><div class="al-st"><span>${ic} ${esc(nome)}</span><button type="button" class="al-ir" data-alir="${m}">abrir o menu →</button></div>${L.length ? `<div class="al-g">${L.map(a => { const k = tela+'|'+a.menu+'|'+a.id+'|'+a.titulo, aberto = AL.sel === k;
-      return `<div class="al-a ${a.sev} ${aberto ? 'ab' : ''}"><button type="button" class="al-h" data-alsel="${esc(k)}"><em>${a.itens.length.toLocaleString('pt-BR')}</em><b>${esc(a.titulo)}</b><small>Sugestão: ${esc(a.sugestao)}</small><i>${aberto ? 'fechar ▴' : 'ver lista ▾'}</i></button>
-        ${aberto ? `<div class="al-l">${a.itens.slice(0, 200).map(x => `<div><span class="n">${x.ctr ? `<a href="#" data-alctr="${esc(x.ctr)}">${esc(x.num)}</a>` : /^\d{6}$|^[1-9]AA/.test(String(x.num)) && tela === 'alertaparc' ? `<a href="#" data-alinst="${esc(x.num)}">${esc(x.num)}</a>` : esc(x.num)}</span><span class="t">${esc(x.nome||'')}${x.uf ? ' <small>'+esc(x.uf)+'</small>' : ''}</span><span class="i">${esc(x.info||'')}</span><span class="v">${x.valor ? fmtC(x.valor) : ''}</span></div>`).join('')}${a.itens.length > 200 ? `<p class="al-mais">+ ${a.itens.length - 200} · abra o menu para ver todos</p>` : ''}</div>` : ''}</div>`; }).join('')}</div>` : '<p class="al-vazio">✓ Sem alertas neste menu.</p>'}</div>`; }).join('');
-  el.innerHTML = topo + tot + auto + secs + `<p class="em-n">Alertas calculados com os dados de hoje${tela === 'alertaorc' && AL.mesOrc ? ' (Tesouro: posição de '+esc(AL.mesOrc)+')' : ''}. Clique no número para abrir a ficha ou o relatório.</p>`;
+    return `<div class="al-sec"><div class="al-st"><span>${ic} ${esc(nome)}</span><button type="button" class="al-ir" data-alir="${m}">abrir o menu →</button></div>${L.length ? `<div class="al-g">${L.map(a => { const k = tela+'|'+a.menu+'|'+a.id+'|'+a.titulo, aberto = AL.sel === k, q = AL.q[k] || '';
+      return `<div class="al-a ${a.sev} ${aberto ? 'ab' : ''}"><div class="al-hw"><button type="button" class="al-h" data-alsel="${esc(k)}"><em>${a.itens.length.toLocaleString('pt-BR')}</em><b>${esc(a.titulo)}</b><small>Sugestão: ${esc(a.sugestao)}</small><i>${aberto ? 'fechar ▴' : 'ver lista ▾'}</i></button>
+        <span class="al-bx"><button type="button" data-alx="xls" data-alk="${esc(k)}" title="Baixar esta lista em Excel">Excel</button><button type="button" data-alx="pdf" data-alk="${esc(k)}" title="Baixar esta lista em PDF">PDF</button></span></div>
+        ${aberto ? `<div class="al-busca"><input type="search" placeholder="Procurar nesta lista (UG, fornecedor, PI, UF…)" value="${esc(q)}" data-alq="${esc(k)}"><small>${alCols(a).length} colunas · role para o lado para ver todas</small></div><div class="al-l" data-alcorpo="${esc(k)}">${alTabela(a, tela, q)}</div>` : ''}</div>`; }).join('')}</div>` : '<p class="al-vazio">✓ Sem alertas neste menu.</p>'}</div>`; }).join('');
+  el.innerHTML = topo + tot + auto + secs + `<p class="em-n">Alertas calculados com os dados de hoje${tela === 'alertaorc' && AL.mesOrc ? ' (Tesouro: posição de '+esc(AL.mesOrc)+')' : ''}. Fonte: ${esc(AL_FONTE[tela])}. Clique no número do contrato ou do instrumento para abrir o relatório.</p>`;
 }
+document.addEventListener('input', e => { const i = e.target.closest('[data-alq]'); if(!i) return; const k = i.dataset.alq; AL.q[k] = i.value; const a = alAchar(k), c = document.querySelector(`[data-alcorpo="${CSS.escape(k)}"]`); if(a && c) c.innerHTML = alTabela(a, document.getElementById('v-extra').dataset.tela, i.value); });
 document.addEventListener('click', e => {
+  const x = e.target.closest('[data-alx]'); if(x){ const a = alAchar(x.dataset.alk), tela = document.getElementById('v-extra').dataset.tela; if(a) (x.dataset.alx === 'xls' ? alXls : alPdf)(a, tela, AL.q[x.dataset.alk] || ''); return; }
+  const p = e.target.closest('[data-alxp]'); if(p){ const tela = document.getElementById('v-extra').dataset.tela; (p.dataset.alxp === 'xls' ? alXlsPagina : alPdfPagina)(tela); return; }
   const s = e.target.closest('[data-alsev]'); if(s){ AL.filtroSev = AL.filtroSev === s.dataset.alsev ? '' : s.dataset.alsev; desenharAlerta(document.getElementById('v-extra').dataset.tela); return; }
   const a = e.target.closest('[data-alsel]'); if(a){ AL.sel = AL.sel === a.dataset.alsel ? null : a.dataset.alsel; desenharAlerta(document.getElementById('v-extra').dataset.tela); return; }
   const m = e.target.closest('[data-alir]'); if(m){ ir(m.dataset.alir); return; }
@@ -9944,9 +10044,14 @@ document.addEventListener('click', e => {
 .al-g{display:grid;gap:8px}.al-a{background:#fff;border-radius:12px;border-left:5px solid;overflow:hidden}.al-a.r{border-left-color:#d93636}.al-a.y{border-left-color:#e0a100}.al-a.b{border-left-color:#378add}
 .al-h{display:grid;grid-template-columns:70px 1fr auto;grid-template-rows:auto auto;gap:2px 12px;width:100%;border:0;background:none;text-align:left;padding:10px 14px;cursor:pointer;font:inherit}.al-h:hover{background:#f6faf7}
 .al-h em{grid-row:1/3;font-style:normal;font-size:26px;font-weight:800;align-self:center}.al-a.r em{color:#b3261e}.al-a.y em{color:#8a5a00}.al-a.b em{color:#185fa5}.al-h b{font-size:14.5px;color:#1d2b24}.al-h small{grid-column:2;font-size:12.5px;color:#4c5c53}.al-h i{grid-row:1/3;grid-column:3;align-self:center;font-style:normal;font-size:12px;font-weight:700;color:#1e7a3c}
-.al-l{border-top:1px solid #e3ebe5;max-height:380px;overflow:auto}.al-l>div{display:grid;grid-template-columns:150px minmax(0,1fr) 220px 110px;gap:10px;padding:6px 14px;font-size:12.5px;border-bottom:1px solid #f0f4f1}.al-l>div:nth-child(even){background:#f8fbf9}
-.al-l .t{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.al-l .t small{color:#5f6f66}.al-l .i{color:#4c5c53}.al-l .v{text-align:right;font-weight:700}.al-l a{color:#1e7a3c;font-weight:700}.al-mais,.al-vazio{font-size:12.5px;color:#5f6f66;margin:8px 14px}
-@media(max-width:900px){.al-l>div{grid-template-columns:1fr 1fr}.al-sv{grid-template-columns:1fr}}`; document.head.appendChild(st); })();
+.al-hw{display:flex;align-items:stretch}.al-hw .al-h{flex:1}.al-bx{display:flex;align-items:center;gap:4px;padding-right:12px}.al-bx button,.al-exp button{border:1px solid #cfe3d5;background:#f4f8f5;color:#155a30;font:inherit;font-size:11.5px;font-weight:700;border-radius:7px;padding:4px 9px;cursor:pointer}.al-bx button:hover,.al-exp button:hover{background:#1f6b3a;color:#fff}
+.al-exp{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.14);border-radius:10px;padding:6px 10px}.al-exp span{color:#fff;font-size:12px;font-weight:700;margin-right:2px}.al-exp button{background:#fff}
+.al-busca{display:flex;align-items:center;gap:10px;padding:8px 14px;border-top:1px solid #e3ebe5;background:#f8fbf9}.al-busca input{flex:0 1 380px;border:1px solid #cfe3d5;border-radius:8px;padding:5px 10px;font:inherit;font-size:12.5px}.al-busca small{color:#5f6f66;font-size:11.5px}
+.al-l{border-top:1px solid #e3ebe5;max-height:460px;overflow:auto}.al-t{border-collapse:collapse;font-size:12px;min-width:100%;font-variant-numeric:tabular-nums}
+.al-t th{position:sticky;top:0;z-index:1;background:#1f6b3a;color:#fff;text-align:left;padding:6px 8px;font-weight:600;white-space:nowrap}.al-t td{padding:5px 8px;border-bottom:1px solid #eef3ef;white-space:nowrap;max-width:240px;overflow:hidden;text-overflow:ellipsis}
+.al-t td.w{max-width:320px}.al-t td.mot{font-weight:600;color:#6b4500}.al-t .n{text-align:right}.al-t tbody tr:nth-child(even) td{background:#f8fbf9}.al-t tbody tr:hover td{background:#fff6dc}
+.al-t tfoot td{position:sticky;bottom:0;background:#dfeee3;font-weight:700;border-top:2px solid #1f6b3a}.al-t a{color:#1e7a3c;font-weight:700}.al-mais,.al-vazio{font-size:12.5px;color:#5f6f66;margin:8px 14px}
+@media(max-width:900px){.al-sv{grid-template-columns:1fr}.al-hw{flex-direction:column}.al-bx{padding:0 14px 10px}}`; document.head.appendChild(st); })();
 function desenharConstr(tela){ const [t, s] = TELAS_CONSTR[tela];
   document.getElementById('v-extra').innerHTML = `<div class="vx-top"><div><h1>${esc(t)}</h1><small>${esc(s)}</small></div></div>
     <div class="vx-card" style="margin-top:16px;text-align:center;padding:40px 20px"><div style="font-size:40px">🚧</div><h2 style="margin:8px 0 4px;color:#155a30">Em construção</h2><p style="color:#5f6f66;margin:0">Esta página será montada a partir das orientações da equipe.</p></div>`; }

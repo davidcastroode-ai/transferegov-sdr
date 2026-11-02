@@ -1,5 +1,6 @@
 """Alertas por menu · Parcerias e TED (os de Gestão Contratual e Orçamento são calculados no painel, com os dados do navegador).
-Cada alerta: {menu, sev ('r' crítico, 'y' atenção, 'b' acompanhar), id, titulo, sugestao, itens:[{num, nome, uf, valor, info}]}
+Cada alerta: {menu, sev ('r' crítico, 'y' atenção, 'b' acompanhar), id, titulo, sugestao, cols:[[campo, rótulo, tipo]], itens:[{campo: valor}]}
+tipo: '' texto · 'n' valor em R$ · 'i' número inteiro · 'w' texto longo · 'inst' nº do instrumento (abre o relatório) · 'link' endereço
 Saída: alertas.json  {gerado_em, hoje, parc:[...], ted:[...]}
 Uso: python scripts/alertas.py saida
 """
@@ -26,8 +27,28 @@ def item(num, nome, uf='', valor=0.0, info=''):
     return {'num': num, 'nome': (nome or '')[:90], 'uf': uf or '', 'valor': round(valor or 0, 2), 'info': info}
 
 
-def alerta(menu, sev, id_, titulo, sugestao, itens, base=None):
-    return {'menu': menu, 'sev': sev, 'id': id_, 'titulo': titulo, 'sugestao': sugestao, 'itens': itens, 'base': base}
+def alerta(menu, sev, id_, titulo, sugestao, itens, base=None, cols=None):
+    return {'menu': menu, 'sev': sev, 'id': id_, 'titulo': titulo, 'sugestao': sugestao, 'itens': itens, 'base': base, 'cols': cols}
+
+
+def proc_fmt(p):
+    d = re.sub(r'\D', '', p or '')
+    return f'{d[:5]}.{d[5:11]}/{d[11:15]}-{d[15:17]}' if len(d) == 17 else (p or '')
+
+
+COL_INST = [['num', 'Instrumento', 'inst'], ['ano', 'Ano', ''], ['ug', 'UG responsável', ''], ['modalidade', 'Modalidade', ''], ['proponente', 'Convenente', ''], ['uf', 'UF', ''],
+            ['municipio', 'Município', ''], ['acao', 'Ação', ''], ['programa', 'Programa', 'w'], ['processo', 'Processo', ''], ['objeto', 'Objeto', 'w'], ['situacao', 'Situação no Transferegov', ''],
+            ['fim', 'Fim da vigência', ''], ['prazo_pc', 'Prazo da prestação de contas', ''], ['ult_des', 'Último desembolso', ''], ['ne', 'Notas de empenho', ''], ['info', 'Motivo do alerta', ''],
+            ['repasse', 'Valor de repasse', 'n'], ['desembolsado', 'Desembolsado', 'n'], ['a_desembolsar', 'A desembolsar', 'n'], ['saldo', 'Saldo em conta', 'n']]
+COL_PROP = [['num', 'Proposta', 'link'], ['ano', 'Ano', ''], ['ug', 'UG responsável', ''], ['modalidade', 'Modalidade', ''], ['proponente', 'Proponente', ''], ['cnpj', 'CNPJ', ''], ['uf', 'UF', ''],
+            ['municipio', 'Município', ''], ['acao', 'Ação', ''], ['programa', 'Programa', 'w'], ['emenda', 'Emenda', ''], ['parlamentar', 'Parlamentar', ''], ['objeto', 'Objeto', 'w'],
+            ['situacao', 'Situação da proposta', ''], ['info', 'Motivo do alerta', ''], ['valor', 'Valor de repasse', 'n'], ['global', 'Valor global', 'n']]
+COL_EMENDA = [['num', 'Emenda', ''], ['ano', 'Ano', ''], ['autor', 'Autor', ''], ['partido', 'Partido', ''], ['acao', 'Ação', ''], ['ug', 'UG responsável', ''], ['area', 'Área', ''],
+              ['entidade', 'Beneficiário', ''], ['cnpj', 'CNPJ', ''], ['uf', 'UF', ''], ['modalidade', 'Modalidade', ''], ['tipo', 'Tipo de despesa', ''], ['info', 'Motivo do alerta', ''], ['indicado', 'Valor indicado', 'n']]
+COL_TED = [['num', 'Nº TED', ''], ['ano', 'Ano', ''], ['plano', 'Plano de ação', ''], ['sentido', 'Enviado / recebido', ''], ['ugdor', 'UG descentralizadora', ''], ['ugda', 'UG descentralizada', ''],
+           ['unid', 'Unidade descentralizada', ''], ['processo', 'Processo', ''], ['acao', 'Ação', ''], ['objeto', 'Objeto', 'w'], ['situacao', 'Situação', ''], ['fim', 'Fim da vigência', ''],
+           ['dias', 'Dias para o fim', 'i'], ['nc_lista', 'Notas de crédito', 'w'], ['info', 'Motivo do alerta', ''], ['firmado', 'Valor firmado', 'n'], ['nc', 'Descentralizado (NC)', 'n'],
+           ['repassado', 'Repassado (PF)', 'n'], ['empenhado', 'Empenhado pela unidade', 'n'], ['pago', 'Pago pela unidade', 'n'], ['acomprovar', 'A comprovar', 'n']]
 
 
 def parcerias(saida):
@@ -37,10 +58,16 @@ def parcerias(saida):
     ATIVA = re.compile(r'Em execu|Aguardando Presta|Presta.*Complementa|Assinad|Proposta/Plano de Trabalho Aprovad', re.I)
     out = []
     for menu, filtro in grupos.items():
+        n0 = len(out)
         L = [r for r in inst if filtro(r) and ATIVA.search(r.get('situacao') or '')]
         exe = [r for r in L if re.search(r'Em execu', r['situacao'], re.I)]
         dias = lambda r: (data(r['fim_vigencia']) - HOJE).days if data(r['fim_vigencia']) else None
-        I = lambda r, info: item(r['nr_instrumento'], r['proponente'], r['uf'], f(r['valor_repasse']), info)
+        I = lambda r, info: {'num': r['nr_instrumento'], 'ano': r.get('ano', ''), 'ug': r.get('ug_emitente', ''), 'modalidade': r.get('modalidade', ''), 'proponente': r.get('proponente', ''),
+                             'uf': r.get('uf', ''), 'municipio': r.get('municipio', ''), 'acao': (r.get('acao_orcamentaria') or '')[-4:], 'programa': r.get('programa', ''),
+                             'processo': proc_fmt(r.get('nr_processo')), 'objeto': (r.get('objeto') or '')[:300], 'situacao': r.get('situacao', ''), 'fim': r.get('fim_vigencia', ''),
+                             'prazo_pc': r.get('limite_prestacao_contas', ''), 'ult_des': r.get('ultimo_desembolso', ''), 'ne': r.get('notas_empenho', ''), 'info': info,
+                             'repasse': round(f(r.get('valor_repasse')), 2), 'desembolsado': round(f(r.get('valor_desembolsado')), 2), 'a_desembolsar': round(f(r.get('valor_a_desembolsar')), 2),
+                             'saldo': round(f(r.get('saldo_em_conta')), 2)}
         v_venc = [r for r in exe if dias(r) is not None and dias(r) < 0]
         v30 = [r for r in exe if dias(r) is not None and 0 <= dias(r) <= 30]
         v90 = [r for r in exe if dias(r) is not None and 30 < dias(r) <= 90]
@@ -78,20 +105,36 @@ def parcerias(saida):
                           [I(r, f"saldo R$ {f(r['saldo_em_conta']):,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')) for r in par]))
         tce = [r for r in L if (r.get('em_processo_tce') or '').upper().startswith('SIM')]
         out.append(alerta(menu, 'b', 'tce', 'Em Tomada de Contas Especial', 'Acompanhar o processo de TCE.', [I(r, 'TCE') for r in tce]))
+        for a in out[n0:]:
+            a['cols'] = COL_INST
     # Propostas SDR (ano corrente)
     props = ler(os.path.join(saida, 'propostas.csv.gz')) or ler(os.path.join(saida, 'propostas.csv'))
     pa = [p for p in props if p.get('ano_proposta') == str(HOJE.year)]
-    P = lambda p, info: item(p.get('nr_proposta'), p.get('proponente'), p.get('uf'), f(p.get('valor_repasse_proposta')), info)
+    # UG da proposta: a do instrumento; sem instrumento, a UG que mais celebra pelo mesmo programa
+    from collections import Counter
+    ugp = {}
+    for x in props + inst:
+        if x.get('ug_emitente') and x.get('cod_programa'):
+            ugp.setdefault(x['cod_programa'], Counter())[x['ug_emitente']] += 1
+    ug_prog = lambda p: p.get('ug_emitente') or (ugp[p['cod_programa']].most_common(1)[0][0] + ' (pelo programa)' if p.get('cod_programa') in ugp else '')
+    P = lambda p, info: {'num': p.get('nr_proposta', ''), 'link': p.get('link_proposta', ''), 'ano': p.get('ano_proposta', ''), 'ug': ug_prog(p), 'modalidade': p.get('modalidade', ''),
+                         'proponente': p.get('proponente', ''), 'cnpj': p.get('cnpj_proponente', ''), 'uf': p.get('uf', ''), 'municipio': p.get('municipio', ''),
+                         'acao': (p.get('acao_orcamentaria') or '')[-4:], 'programa': p.get('programa', ''), 'emenda': p.get('nr_emenda', ''), 'parlamentar': p.get('parlamentar', ''),
+                         'objeto': (p.get('objeto') or '')[:300], 'situacao': p.get('situacao_proposta', ''), 'info': info,
+                         'valor': round(f(p.get('valor_repasse_proposta')), 2), 'global': round(f(p.get('valor_global_proposta')), 2)}
     comp = [p for p in pa if re.search(r'Complementa', p.get('situacao_proposta') or '', re.I) and not re.search(r'Complementad', p.get('situacao_proposta') or '', re.I)]
     anal = [p for p in pa if re.search(r'Complementad|Enviad[ao] para An|em An[aá]lise', p.get('situacao_proposta') or '', re.I)]
-    out.append(alerta('prop', 'y', 'complem', 'Propostas em complementação (com o proponente)', 'Cobrar a complementação do proponente dentro do prazo do programa.', [P(p, p['situacao_proposta']) for p in comp]))
-    out.append(alerta('prop', 'y', 'analise', 'Propostas aguardando análise da área técnica', 'Analisar e emitir parecer; observar o prazo de impedimento técnico das emendas.', [P(p, p['situacao_proposta']) for p in anal]))
+    out.append(alerta('prop', 'y', 'complem', 'Propostas em complementação (com o proponente)', 'Cobrar a complementação do proponente dentro do prazo do programa.', [P(p, 'com o proponente para complementar') for p in comp], cols=COL_PROP))
+    out.append(alerta('prop', 'y', 'analise', 'Propostas aguardando análise da área técnica', 'Analisar e emitir parecer; observar o prazo de impedimento técnico das emendas.', [P(p, 'na fila de análise da área técnica') for p in anal], cols=COL_PROP))
     # Captação de Emendas (SIOP)
     try:
         em = json.load(open(os.path.join(saida, 'emendas_siop.json'), encoding='utf-8'))
         sem = [b for b in em.get('linhas', []) if b.get('ano') == str(HOJE.year) and not b.get('proposta') and b.get('modalidade') != 'Aplicação direta']
         out.append(alerta('captacao', 'y', 'semprop', 'Emenda indicada sem proposta no Transferegov', 'Contatar o beneficiário para cadastrar a proposta ou avaliar o impedimento técnico.',
-                          [item(b['emenda'], b.get('entidade'), b.get('uf'), b.get('indicado'), b.get('autor', '')) for b in sem]))
+                          [{'num': b['emenda'], 'ano': b.get('ano', ''), 'autor': b.get('autor', ''), 'partido': b.get('partido', ''), 'acao': b.get('acao', ''),
+                            'ug': b.get('ug') or {'20ZY': '130010', '8622': '420013', '215A': '420013', '8593': '420013', '214Z': '420013', '21B6': '420013', '8606': '420013'}.get(b.get('acao'), ''),
+                            'area': b.get('area', ''), 'entidade': b.get('entidade', ''), 'cnpj': b.get('cnpj', ''), 'uf': b.get('uf', ''), 'modalidade': b.get('modalidade', ''),
+                            'tipo': b.get('tipo_despesa', ''), 'info': 'sem proposta cadastrada', 'indicado': b.get('indicado', 0)} for b in sem], cols=COL_EMENDA))
     except Exception:
         pass
     return out
@@ -106,7 +149,13 @@ def ted(saida):
         L = [r for r in T if filtro(r)]
         exe = [r for r in L if r.get('Fase (painel)') == 'Em execução']
         d = lambda r: int(r['Dias para o fim']) if re.match(r'^-?\d+$', r.get('Dias para o fim') or '') else None
-        I = lambda r, info: item(r['Nº TED'] or r.get('Plano de ação'), r.get('Unidade descentralizada'), '', f(r.get('Valor firmado (API)')) or f(r.get('Valor firmado (Tesouro)')), info)
+        I = lambda r, info: {'num': r['Nº TED'] or r.get('Plano de ação'), 'ano': r.get('Ano', ''), 'plano': r.get('Plano de ação', ''), 'sentido': r.get('Enviado / recebido', ''),
+                             'ugdor': r.get('UG descentralizadora', ''), 'ugda': r.get('UG descentralizada', ''), 'unid': r.get('Unidade descentralizada', ''), 'processo': r.get('Processo', ''),
+                             'acao': r.get('Ação', ''), 'objeto': (r.get('Objeto') or '')[:300], 'situacao': r.get('Situação do termo (API)') or r.get('Situação no Tesouro', ''),
+                             'fim': r.get('Fim da vigência (painel)', ''), 'dias': d(r), 'nc_lista': (r.get('Notas de crédito') or '')[:300], 'info': info,
+                             'firmado': round(f(r.get('Valor firmado (API)')) or f(r.get('Valor firmado (Tesouro)')), 2), 'nc': round(f(r.get('Descentralizado NC (API)')) or f(r.get('NC no Tesouro')), 2),
+                             'repassado': round(f(r.get('Repassado PF (API)')) or f(r.get('Repassado (Tesouro)')), 2), 'empenhado': round(f(r.get('Empenhado pela unidade (NE)')), 2),
+                             'pago': round(f(r.get('Pago pela unidade (NE + RP)')), 2), 'acomprovar': round(f(r.get('A comprovar (Tesouro)')), 2)}
         vv = [r for r in exe if d(r) is not None and d(r) < 0]
         v30 = [r for r in exe if d(r) is not None and 0 <= d(r) <= 30]
         v90 = [r for r in exe if d(r) is not None and 30 < d(r) <= 90]
@@ -120,7 +169,9 @@ def ted(saida):
         comp = [r for r in L if f(r.get('A comprovar (Tesouro)')) > 0 and d(r) is not None and d(r) < -60]
         out.append(alerta(menu, 'y', 'comprovar', 'Saldo a comprovar com a vigência encerrada há mais de 60 dias', 'Cobrar o relatório de cumprimento do objeto e a comprovação no SIAFI.', [I(r, 'a comprovar no Tesouro') for r in comp]))
         div = [r for r in L if (r.get('Divergências API x Tesouro') or '').strip()]
-        out.append(alerta(menu, 'b', 'diverg', 'Diferença entre a API do TED e o Tesouro', 'Conferir qual registro está correto e ajustar (Transferegov ou SIAFI).', [I(r, r['Divergências API x Tesouro'][:80]) for r in div]))
+        out.append(alerta(menu, 'b', 'diverg', 'Diferença entre a API do TED e o Tesouro', 'Conferir qual registro está correto e ajustar (Transferegov ou SIAFI).', [I(r, r['Divergências API x Tesouro'][:300]) for r in div]))
+    for a in out:
+        a['cols'] = COL_TED
     return out
 
 
