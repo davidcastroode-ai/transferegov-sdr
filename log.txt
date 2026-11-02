@@ -1,0 +1,11 @@
+portfolio ok https://www.gov.br/agricultura/pt-br/centrais-de-conteudo/publicacoes/cartilhas-emendas-parlamentares/PLOA2025versofinal.pdf
+capacitacao ok https://www.gov.br/agricultura/pt-br/centrais-de-conteudo/publicacoes/cartilhas-emendas-parlamentares/cartilha-capacitacao-e-eventos/@@download/file
+insumos ok https://www.gov.br/agricultura/pt-br/centrais-de-conteudo/publicacoes/cartilhas-emendas-parlamentares/cartilhas-insumos/@@download/file
+obras ok https://www.gov.br/agricultura/pt-br/centrais-de-conteudo/publicacoes/cartilhas-emendas-parlamentares/cartilha-obras-de-fomento/@@download/file
+fotovoltaica ok https://www.gov.br/agricultura/pt-br/centrais-de-conteudo/publicacoes/cartilhas-emendas-parlamentares/energia-fotovoltaica-para-o-desenvolvimento-rural/@@download/file
+hortas ok https://www.gov.br/agricultura/pt-br/centrais-de-conteudo/publicacoes/cartilhas-emendas-parlamentares/cartilhas-hortas-comunitarias/@@download/file
+promaq ok https://www.gov.br/agricultura/pt-br/centrais-de-conteudo/publicacoes/cartilhas-emendas-parlamentares/cartilha-promaq.pdf
+proner FALHOU
+te0ec2 ok https://www.gov.br/agricultura/pt-br/centrais-de-conteudo/publicacoes/cartilhas-emendas-parlamentares/CartilhaTransfernciasEspeciaisAo0EC2.pdf
+tutorial ok https://www.gov.br/agricultura/pt-br/centrais-de-conteudo/publicacoes/cartilhas-emendas-parlamentares/passo_a_passo_cadastro_nova_gestao_tranferencias_voluntarias.pdf
+embrapa ok https://www.infoteca.cnptia.embrapa.br/infoteca/bitstream/doc/1167976/1/CATALOGO-DE-PROJETOS-EMENDAS-PARLAMENTARES-2025.pdf
