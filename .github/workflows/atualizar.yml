@@ -73,12 +73,12 @@ jobs:
         continue-on-error: true
         run: python scripts/emendas_siop.py saida
 
-      - name: Alertas por menu (Parcerias e TED)
-        continue-on-error: true
-        run: python scripts/alertas.py saida
-
       - name: Gerar as páginas do painel (Propostas, Empenho, Programas, Movimentação, Obras, Prestação de contas)
         run: python scripts/paginas.py saida
+
+      - name: Alertas por menu (Parcerias e TED · depois das páginas, que geram a base do TED)
+        continue-on-error: true
+        run: python scripts/alertas.py saida
 
       - name: Comprimir os arquivos grandes que só o robô usa (.csv → .csv.gz)
         run: |
