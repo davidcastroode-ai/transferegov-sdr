@@ -9896,6 +9896,22 @@ const AL_CAUSA = {venc:'a renovação começou tarde', vig30:'o prazo está no l
   inad:'há convenentes inadimplentes', saldo:'há recurso parado na conta do convenente', tce:'há processos de TCE em curso', complem:'as propostas voltam para complementação e ficam paradas com o proponente', analise:'a fila de análise está grande', semprop:'beneficiários de emenda não cadastraram proposta',
   semnc:'o crédito não foi descentralizado ou o relatório do Tesouro está sem as NCs do ano', ncsemne:'a unidade recebeu o crédito e não empenhou', comprovar:'o relatório de cumprimento do objeto não foi cobrado depois do fim da vigência', diverg:'API e Tesouro registram valores ou datas diferentes',
   dotpar:'há dotação disponível sem empenho perto do fim do exercício', bloq:'há crédito bloqueado na dotação', aliq:'há empenho sem liquidação (execução atrasada)', apagar:'há despesa liquidada esperando pagamento', rapnp:'RAP não processado sem liquidação corre risco de bloqueio e cancelamento', rapp:'há RAP processado ainda a pagar'};
+// resumo explicativo de cada menu: de onde vêm os dados, o que é cada linha e como ler
+const AL_EXPL = {
+  contratos:'De onde vem: planilha Base Contratos da CEPLAC (UG 130010). Cada linha é um contrato ativo da Base. O alerta olha a coluna "Dias a vencer". Quem resolve: o responsável indicado na Base (coluna Responsável), abrindo a prorrogação ou a nova contratação no SEI antes do fim da vigência.',
+  ctrsdr:'De onde vem: Contratos.gov.br (API), contratos das UGs da SDR. Cada linha é um contrato, com a UG responsável, o fornecedor e o gestor e fiscais ativos. Faturas vencidas = notas fiscais pendentes com vencimento passado; empenho insuficiente = o empenhado no ano não cobre o previsto pelo valor mensal até dezembro.',
+  conferencia:'Compara a Base Contratos (CEPLAC) com o Contratos.gov.br, contrato por contrato. Cada linha mostra o dado da Base ao lado do dado do Contratos.gov.br; o que estiver errado deve ser corrigido na base de origem.',
+  despesas:'Despesas previstas da planilha da equipe. Ainda não há regra de alerta para este menu.',
+  orcacao:'De onde vem: planilha SIOP SDR (dotação por ação, PO e PTRES) cruzada com o Tesouro Gerencial (em qual UG o crédito está). Na planilha, a 20ZV aparece numa área só ("130141, 130255 e 135098") porque é a mesma ação para as três UGs; aqui cada linha mostra uma UG só. Como ler: "na UG" = a UG já tem o crédito e deve empenhar (ou devolver); "na setorial (130101)" = o crédito está com a SPOA e falta provisionar para a UG; "não descentralizado / nenhuma UG ainda" = o crédito ainda está na dotação da ação e precisa ser pedido à SPOA. Nas emendas, cada PTRES costuma ser uma emenda: o PI (I + código) mostra o autor e os beneficiários.',
+  exe:'De onde vem: Tesouro Gerencial, EXE do exercício (posição do último mês carregado). Cada linha é uma nota de empenho: UG executora (quem empenhou), UG responsável, favorecido (CNPJ e nome), PTRES, PI, natureza de despesa e processo. "A liquidar" = empenhado e ainda sem entrega/ateste; "a pagar" = já liquidado esperando pagamento.',
+  rap:'De onde vem: Tesouro Gerencial, Restos a Pagar (empenhos de anos anteriores; o ano está na coluna "Ano da NE"). "Não processado a liquidar" = a despesa ainda não foi entregue/atestada (corre risco de bloqueio e cancelamento); "a pagar" = já liquidado, falta pagar.',
+  parc:'De onde vem: Transferegov, instrumentos da UG 130141 (convênios e termos de fomento). Cada linha é um instrumento; clique no número para abrir o relatório. As datas (vigência e prazo da prestação de contas) e os valores (repasse, desembolsado, saldo em conta) são os do Transferegov.',
+  conv:'De onde vem: Transferegov, instrumentos da UG 420013 (convênios e termos de fomento). Cada linha é um instrumento; clique no número para abrir o relatório.',
+  repasse:'De onde vem: Transferegov, contratos de repasse da UG 135098 (operados pela Caixa). Cada linha é um instrumento; obras sem medição vêm do Obrasgov.',
+  prop:'De onde vem: Transferegov, propostas de 2026 dos programas da SDR. Cada linha é uma proposta (clique para abrir no Transferegov). UG responsável: a do instrumento; quando ainda não há instrumento, a UG que mais celebra pelo mesmo programa, marcada "(pelo programa)".',
+  captacao:'De onde vem: extrator de emendas do SIOP (ações da SDR) cruzado com o Transferegov. Cada linha é um beneficiário indicado por uma emenda individual de 2026 que ainda não tem proposta cadastrada.',
+  tedapi:'De onde vem: Transferegov TED (API) e Tesouro Gerencial, TEDs das UGs 130141, 130255 e 135098. Cada linha é um TED, com quem descentraliza e quem recebe, notas de crédito, valores firmados, descentralizados, empenhados e a comprovar.',
+  ted:'De onde vem: Transferegov TED (API) e Tesouro Gerencial, TEDs da equipe (UGs 130010 e 420013). Cada linha é um TED, com quem descentraliza e quem recebe, notas de crédito, valores firmados, descentralizados, empenhados e a comprovar.'};
 async function alAbrir(tela){
   desenharAlerta(tela);
   if(AL.cache[tela] && !AL.cache[tela].erro) return;
@@ -9914,23 +9930,32 @@ async function alCarregar(tela){
   try{ await Promise.all(['exe','rap'].map(v => carregarVisao(v).catch(() => {}))); const ms = Object.keys(MESES_TXT).map(Number).sort((a,b) => a-b); ult = ms[ms.length-1];
     if(ult){ await Promise.all(['exe','rap'].map(v => garantirDetalhe(v, String(ult)).catch(() => {}))); AL.mesOrc = MESES_TXT[ult] || ''; } }catch(e){}
   const det = v => (ult && DADOS[v] && DADOS[v].det && DADOS[v].det[ult]) || [];
-  // onde o crédito está no Tesouro (UG que recebeu a provisão), por PTRES + PI
-  const credUG = new Map();
-  det('exe').forEach(d => { if(!(+d.disp > 0) && !(+d.emp > 0)) return; const k = (d.ptres||'')+'|'+String(d.pi||'').toUpperCase(); const m = credUG.get(k) || credUG.set(k, new Map()).get(k);
-    const x = m.get(d.ug) || m.set(d.ug, {ugN:d.ugN||'', ugr:d.ugr||'', disp:0, emp:0}).get(d.ug); x.disp += +d.disp || 0; x.emp += +d.emp || 0; });
-  const ugsDe = d => { const m = credUG.get((d.ptres||'')+'|'+String(d.pi||'').toUpperCase()); if(!m) return ''; return [...m.entries()].sort((a,b) => b[1].disp - a[1].disp).map(([u, x]) => u+(x.disp > 0 ? ' (disp. '+fmtBRL(x.disp)+')' : '')).join(' · '); };
+  // onde o crédito está no Tesouro (UG que recebeu a provisão), por PTRES · e os PIs de emenda que aparecem no PTRES
+  const cred = new Map();
+  det('exe').forEach(d => { if(!d.ptres) return; const m = cred.get(d.ptres) || cred.set(d.ptres, {ugs:new Map(), pis:new Set()}).get(d.ptres);
+    if(+d.disp > 0){ const x = m.ugs.get(d.ug) || m.ugs.set(d.ug, {ugN:d.ugN||'', disp:0}).get(d.ug); x.disp += +d.disp; }
+    if(/^I\d{8}/i.test(d.pi||'')) m.pis.add(String(d.pi).toUpperCase()); });
   // PI de emenda individual (I + autor + nº) → autor e beneficiários indicados no SIOP
   let EM = null; try{ if(!(EMI && EMI.d)){ const r = await fetch(RAW_DADOS+'emendas_siop.json?v='+new Date().toISOString().slice(0,13), {cache:'no-store'}); if(r.ok) EMI.d = lgpdObj(await r.json()); } EM = EMI.d; }catch(e){}
   const emDe = pi => { const m = String(pi||'').toUpperCase().match(/^I(\d{8})/); if(!m || !EM) return null; const cod = m[1];
     const e = (EM.emendas||[]).find(x => String(x.emenda).slice(4) === cod && x.ano === ANO) || (EM.emendas||[]).find(x => String(x.emenda).slice(4) === cod); if(!e) return null;
     const ben = (EM.linhas||[]).filter(b => b.emenda === e.emenda); return {emenda: e.emenda+' · '+e.autor+(e.partido ? ' ('+e.partido+')' : ''), benef: ben.map(b => b.entidade+(b.uf ? '/'+b.uf : '')+(b.indicado ? ' '+fmtBRL(b.indicado) : '')).join(' | ')}; };
-  const COL_DOT = [['ano','Exercício'],['ug','UG com o crédito no Tesouro','w'],['depto','Departamento'],['acao','Ação'],['po','PO'],['poNome','Plano orçamentário','w'],['ptres','PTRES'],['pi','PI'],['emenda','Emenda (autor)'],['benef','Beneficiário(s) indicado(s) no SIOP','w'],
-    ['fonte','Fonte'],['rp','RP'],['info','Motivo do alerta'],['atual','Dotação atual','n'],['emp','Empenhado','n'],['disp','Disponível','n'],['bloq','Bloqueado','n']];
-  const iS = (d, info) => { const e = emDe(d.pi) || {}; return {ano:ANO, ug:ugsDe(d) || 'sem crédito provisionado nas UGs da SDR', depto:d.depto||'', acao:d.acao||'', po:d.po||'', poNome:d.poNome||'', ptres:d.ptres||'', pi:d.pi||'', emenda:e.emenda||'', benef:e.benef||'',
-    fonte:d.fonte||'', rp:d.rp||'', info, atual:d.atual||0, emp:d.emp||0, disp:d.disp||0, bloq:d.bloq||0}; };
-  A('orcacao', diasFim <= 90 ? 'r' : 'y', 'dotpar', 'Dotação disponível sem empenho', `Empenhar ou remanejar o saldo · faltam ${diasFim} dia(s) para o fim do exercício.`, S.filter(d => (d.disp||0) > 1000 && !(d.emp > 0)).sort((a,b) => b.disp - a.disp).map(d => iS(d, 'nada empenhado')), COL_DOT);
-  A('orcacao', 'y', 'dotpar', 'Saldo disponível acima de 30% da dotação', 'Rever a programação de empenhos da ação/PO até o fim do ano.', S.filter(d => d.emp > 0 && (d.atual||0) > 0 && (d.disp||0) > 0.3*d.atual).sort((a,b) => b.disp - a.disp).map(d => iS(d, Math.round(100*d.disp/d.atual)+'% da dotação disponível')), COL_DOT);
-  A('orcacao', 'b', 'bloq', 'Crédito bloqueado', 'Pedir o desbloqueio à SPOA/SOF ou ajustar a programação.', S.filter(d => (d.bloq||0) > 0).sort((a,b) => b.bloq - a.bloq).map(d => iS(d, 'bloqueado')), COL_DOT);
+  const UG_SDR = {'130010':'CEPLAC', '130141':'SDR · CGPI', '130255':'SDR · PROMAQ', '135098':'SDR · CGPI (repasse)', '420013':'SDR · 420013'};
+  const COL_DOT = [['ano','Exercício'],['ug','UG responsável'],['sitc','Onde está o crédito / o que fazer','w'],['acao','Ação'],['po','PO'],['poNome','Plano orçamentário','w'],['ptres','PTRES'],['pi','PI'],['emenda','Emenda (autor)'],['benef','Beneficiário(s) indicado(s) no SIOP','w'],
+    ['fonte','Fonte'],['rp','RP'],['depto','Área na planilha SIOP SDR'],['info','Motivo do alerta'],['atual','Dotação atual do PTRES','m'],['empP','Empenhado no PTRES','m'],['disp','Disponível nesta linha','n'],['bloq','Bloqueado','n']];
+  // uma linha por UG que tem o crédito; o que sobra da dotação disponível e não está em UG nenhuma vira a linha "não descentralizado"
+  const linhasDot = (d, info, comBloq) => { const c = cred.get(d.ptres), pi = d.pi || (c && [...c.pis][0]) || '', e = emDe(pi) || {};
+    const b0 = {ano:ANO, acao:d.acao||'', po:d.po||'', poNome:d.poNome||'', ptres:d.ptres||'', pi, emenda:e.emenda||'', benef:e.benef||'', fonte:d.fonte||'', rp:d.rp||'', depto:d.depto||'', info, atual:d.atual||0, empP:d.emp||0};
+    const out = []; let resto = d.disp || 0;
+    if(c) [...c.ugs.entries()].sort((a,b) => b[1].disp - a[1].disp).forEach(([u, x]) => { const v = Math.min(x.disp, resto > 0 ? resto : x.disp); resto -= x.disp;
+      out.push({...b0, ug: u+' · '+(UG_SDR[u] || x.ugN || ''), sitc: u === '130101' ? 'na setorial do MAPA (SPOA): pedir a provisão para a UG que vai executar' : UG_SDR[u] ? 'na UG: a UG deve empenhar ou devolver o crédito' : 'em outra UG: confirmar quem vai empenhar', disp: v, bloq: 0}); });
+    if(resto > 1000 || !out.length) out.push({...b0, ug:'nenhuma UG ainda', sitc:'não descentralizado: está na dotação da ação (pedir à SPOA a provisão para a UG)', disp: Math.max(resto, 0) || (d.disp||0), bloq: 0});
+    if(comBloq) out.forEach((x, i) => { x.bloq = i === 0 ? d.bloq || 0 : 0; });
+    return out; };
+  const iS = (d, info) => linhasDot(d, info, false)[0];
+  A('orcacao', diasFim <= 90 ? 'r' : 'y', 'dotpar', 'Dotação disponível sem empenho', `Empenhar ou remanejar o saldo · faltam ${diasFim} dia(s) para o fim do exercício.`, S.filter(d => (d.disp||0) > 1000 && !(d.emp > 0)).sort((a,b) => b.disp - a.disp).flatMap(d => linhasDot(d, 'nada empenhado no PTRES')), COL_DOT);
+  A('orcacao', 'y', 'dotpar', 'Saldo disponível acima de 30% da dotação', 'Rever a programação de empenhos da ação/PO até o fim do ano.', S.filter(d => d.emp > 0 && (d.atual||0) > 0 && (d.disp||0) > 0.3*d.atual).sort((a,b) => b.disp - a.disp).flatMap(d => linhasDot(d, Math.round(100*d.disp/d.atual)+'% da dotação do PTRES disponível')), COL_DOT);
+  A('orcacao', 'b', 'bloq', 'Crédito bloqueado', 'Pedir o desbloqueio à SPOA/SOF ou ajustar a programação.', S.filter(d => (d.bloq||0) > 0).sort((a,b) => b.bloq - a.bloq).map(d => { const x = linhasDot(d, 'crédito bloqueado na dotação', true)[0]; return {...x, ug:'(bloqueio é na dotação da ação)', sitc:'pedir o desbloqueio à SPOA/SOF ou remanejar', disp:d.disp||0}; }), COL_DOT);
   if(ult){
     const porNE = (v, f, extra) => { const M = new Map(); det(v).forEach(d => { if(!d.ne) return; const k = d.ug+'|'+d.ne; const x = M.get(k) || M.set(k, {d, v:0, x:{}}).get(k); x.v += f(d);
       Object.entries(extra).forEach(([c, g]) => { x.x[c] = (x.x[c]||0) + g(d); }); }); return [...M.values()].filter(x => x.v > 0.5).sort((a,b) => b.v - a.v); };
@@ -9950,11 +9975,13 @@ async function alCarregar(tela){
 }
 // ----- colunas, tabela e exportação -----
 const AL_COL0 = [['num','Nº'],['nome','Nome'],['uf','UF / complemento'],['info','Motivo do alerta'],['valor','Valor','n']];
-const alCols = a => a.cols && a.cols.length ? a.cols : AL_COL0;
+const alCols0 = a => a.cols && a.cols.length ? a.cols : AL_COL0;
+// só as colunas que têm algum dado neste alerta (coluna toda vazia some da tela e da exportação)
+const alCols = a => a._cv || (a._cv = alCols0(a).filter(c => c[0] === 'info' || c[2] === 'ctr' || c[2] === 'inst' || a.itens.some(x => { const v = x[c[0]]; return v !== null && v !== undefined && v !== '' && v !== 0 && v !== '—'; })));
 const alTxtV = (x, c) => { const v = x[c[0]]; return v === null || v === undefined ? '' : String(v); };
 function alFiltrar(a, q){ const T = norm(q); if(!T) return a.itens; const C = alCols(a); return a.itens.filter(x => norm(C.map(c => alTxtV(x, c)).join(' ')).includes(T)); }
 function alCel(x, c, tela){ const [k, , t] = c, v = x[k];
-  if(t === 'n') return `<td class="n">${v ? fmtBRL(+v) : '—'}</td>`;
+  if(t === 'n' || t === 'm') return `<td class="n">${v ? fmtBRL(+v) : '—'}</td>`;
   if(t === 'i') return `<td class="n">${v === null || v === undefined || v === '' ? '—' : Number(v).toLocaleString('pt-BR')}</td>`;
   const s = v === null || v === undefined || v === '' ? '—' : String(v);
   if(t === 'ctr' && x.ctr) return `<td class="k"><a href="#" data-alctr="${esc(x.ctr)}">${esc(s)}</a></td>`;
@@ -9962,21 +9989,21 @@ function alCel(x, c, tela){ const [k, , t] = c, v = x[k];
   if(t === 'link' && x.link) return `<td class="k"><a href="${esc(x.link)}" target="_blank" rel="noopener">${esc(s)}</a></td>`;
   return `<td class="${t === 'w' ? 'w' : ''}${k === 'info' ? ' mot' : ''}" title="${esc(s)}">${esc(s)}</td>`; }
 function alTabela(a, tela, q){ const C = alCols(a), L = alFiltrar(a, q), N = 500;
-  return `<table class="al-t"><thead><tr>${C.map(c => `<th class="${c[2] === 'n' || c[2] === 'i' ? 'n' : ''}">${esc(c[1])}</th>`).join('')}</tr></thead><tbody>${L.slice(0, N).map(x => '<tr>'+C.map(c => alCel(x, c, tela)).join('')+'</tr>').join('')}</tbody>
+  return `<table class="al-t"><thead><tr>${C.map(c => `<th class="${c[2] === 'n' || c[2] === 'm' || c[2] === 'i' ? 'n' : ''}">${esc(c[1])}</th>`).join('')}</tr></thead><tbody>${L.slice(0, N).map(x => '<tr>'+C.map(c => alCel(x, c, tela)).join('')+'</tr>').join('')}</tbody>
     ${L.length ? `<tfoot><tr>${C.map((c, i) => `<td class="${c[2] === 'n' ? 'n' : ''}">${i === 0 ? L.length.toLocaleString('pt-BR')+' linha(s)' : c[2] === 'n' ? fmtBRL(L.reduce((t, x) => t + (+x[c[0]]||0), 0)) : ''}</td>`).join('')}</tr></tfoot>` : ''}</table>
     ${!L.length ? '<p class="al-mais">Nenhuma linha com esse texto.</p>' : L.length > N ? `<p class="al-mais">Mostrando ${N} de ${L.length.toLocaleString('pt-BR')} linhas · a exportação em Excel traz todas.</p>` : ''}`; }
 function alAchar(k){ const tela = document.getElementById('v-extra').dataset.tela, C = AL.cache[tela]; if(!C || !C.itens) return null; return C.itens.find(a => tela+'|'+a.menu+'|'+a.id+'|'+a.titulo === k); }
 const alMenuNome = (tela, m) => ((AL_AREA[tela][1].find(x => x[0] === m) || [])[2] || m);
 function alXlsAba(a, tela, q){ const C = alCols(a), L = alFiltrar(a, q);
-  return {aba: alMenuNome(tela, a.menu).split(' ')[0]+' · '+a.titulo, titulo: 'Alerta · '+a.titulo, sub: AL_AREA[tela][0]+' · '+alMenuNome(tela, a.menu), filtros: (q ? ['texto: '+q] : []).concat(['Sugestão: '+a.sugestao]),
-    cab: C.map(c => ({t: c[1], n: c[2] === 'n' || c[2] === 'i', inteiro: c[2] === 'i', semSoma: c[2] === 'i'})), linhas: L.map(x => C.map(c => c[2] === 'n' ? +x[c[0]] || 0 : c[2] === 'i' ? (x[c[0]] === null || x[c[0]] === undefined || x[c[0]] === '' ? '' : +x[c[0]]) : alTxtV(x, c)))}; }
+  return {aba: alMenuNome(tela, a.menu).split(' ')[0]+' · '+a.titulo, titulo: 'Alerta · '+a.titulo, sub: AL_AREA[tela][0]+' · '+alMenuNome(tela, a.menu), filtros: (q ? ['texto: '+q] : []).concat(['Sugestão: '+a.sugestao]).concat(AL_EXPL[a.menu] ? ['Como ler: '+AL_EXPL[a.menu]] : []),
+    cab: C.map(c => ({t: c[1], n: c[2] === 'n' || c[2] === 'm' || c[2] === 'i', inteiro: c[2] === 'i', semSoma: c[2] === 'i' || c[2] === 'm'})), linhas: L.map(x => C.map(c => c[2] === 'n' || c[2] === 'm' ? +x[c[0]] || 0 : c[2] === 'i' ? (x[c[0]] === null || x[c[0]] === undefined || x[c[0]] === '' ? '' : +x[c[0]]) : alTxtV(x, c)))}; }
 const AL_FONTE = {alertactr:'Base Contratos (CEPLAC) e Contratos.gov.br', alertaorc:'SIOP SDR, Tesouro Gerencial (EXE e RAP) e SIOP emendas', alertaparc:'Transferegov (robô do painel)', alertated:'Transferegov TED e Tesouro Gerencial'};
 function alXls(a, tela, q){ const o = alXlsAba(a, tela, q); baixarXlsx(Object.assign(o, {fonte: AL_FONTE[tela], arquivo: 'alerta_'+a.menu+'_'+a.id})); }
 function alPdfTabela(a, tela, q, max){ const C = alCols(a), L = alFiltrar(a, q), M = L.slice(0, max);
-  const f = (x, c) => c[2] === 'n' ? (x[c[0]] ? fmtBRL(+x[c[0]]) : '—') : c[2] === 'i' ? (x[c[0]] === null || x[c[0]] === undefined || x[c[0]] === '' ? '—' : Number(x[c[0]]).toLocaleString('pt-BR')) : (alTxtV(x, c) || '—').slice(0, c[2] === 'w' ? 140 : 80);
+  const f = (x, c) => c[2] === 'n' || c[2] === 'm' ? (x[c[0]] ? fmtBRL(+x[c[0]]) : '—') : c[2] === 'i' ? (x[c[0]] === null || x[c[0]] === undefined || x[c[0]] === '' ? '—' : Number(x[c[0]]).toLocaleString('pt-BR')) : (alTxtV(x, c) || '—').slice(0, c[2] === 'w' ? 140 : 80);
   return {C, L, M, f}; }
 function alPdf(a, tela, q){ const {C, L, M, f} = alPdfTabela(a, tela, q, PDF_MAX);
-  const html = documentoPDF({titulo: 'Alerta · '+a.titulo, sub: AL_AREA[tela][0]+' · '+alMenuNome(tela, a.menu)+' · Sugestão: '+a.sugestao, filtros: q ? ['texto: '+q] : [], cab: C.map(c => ({t: c[1], n: c[2] === 'n' || c[2] === 'i'})),
+  const html = documentoPDF({titulo: 'Alerta · '+a.titulo, sub: AL_AREA[tela][0]+' · '+alMenuNome(tela, a.menu)+' · Sugestão: '+a.sugestao, filtros: q ? ['texto: '+q] : [], cab: C.map(c => ({t: c[1], n: c[2] === 'n' || c[2] === 'm' || c[2] === 'i'})),
     linhas: M.map(x => C.map(c => f(x, c))), tot: C.map((c, i) => i === 0 ? 'Total' : c[2] === 'n' ? fmtBRL(L.reduce((t, x) => t + (+x[c[0]]||0), 0)) : ''), total: L.length, arquivo: 'alerta_'+a.menu+'_'+a.id});
   abrirPDF(html, 'alerta_'+a.menu+'_'+a.id); }
 function alLista(tela){ const C = AL.cache[tela]; return C && C.itens ? C.itens.filter(a => a.itens && a.itens.length && (!AL.filtroSev || a.sev === AL.filtroSev)) : []; }
@@ -9987,9 +10014,9 @@ function alXlsPagina(tela){ const L = alLista(tela), SEV = {r:'Crítico', y:'Ate
 function alPdfPagina(tela){ const L = alLista(tela), SEV = {r:'Crítico', y:'Atenção', b:'Acompanhar'}, MAX = 400, quando = new Date().toLocaleString('pt-BR', {dateStyle:'short', timeStyle:'short'});
   const auto = document.querySelector('#v-extra .al-auto'), sv = document.querySelector('#v-extra .al-sv');
   const secs = AL_AREA[tela][1].map(([m, , nome]) => { const A = L.filter(a => a.menu === m); if(!A.length) return '';
-    return `<h2>${escPDF(nome)}</h2>` + A.map(a => { const q = AL.q[tela+'|'+a.menu+'|'+a.id+'|'+a.titulo] || '', {C, L: T, M, f} = alPdfTabela(a, tela, q, MAX);
+    return `<h2>${escPDF(nome)}</h2>${AL_EXPL[m] ? `<p class="sug" style="font-size:10px"><b>Como ler:</b> ${escPDF(AL_EXPL[m])}</p>` : ''}` + A.map(a => { const q = AL.q[tela+'|'+a.menu+'|'+a.id+'|'+a.titulo] || '', {C, L: T, M, f} = alPdfTabela(a, tela, q, MAX);
       return `<h3 class="s${a.sev}">${T.length.toLocaleString('pt-BR')} · ${escPDF(a.titulo)} <small>${SEV[a.sev]}</small></h3><p class="sug">Sugestão: ${escPDF(a.sugestao)}</p>
-        <table><thead><tr>${C.map(c => `<th class="${c[2] === 'n' || c[2] === 'i' ? 'n' : ''}">${escPDF(c[1])}</th>`).join('')}</tr></thead><tbody>${M.map(x => '<tr>'+C.map(c => `<td class="${c[2] === 'n' || c[2] === 'i' ? 'n' : c[2] === 'w' ? 'w' : ''}">${escPDF(f(x, c))}</td>`).join('')+'</tr>').join('')}</tbody></table>
+        <table><thead><tr>${C.map(c => `<th class="${c[2] === 'n' || c[2] === 'm' || c[2] === 'i' ? 'n' : ''}">${escPDF(c[1])}</th>`).join('')}</tr></thead><tbody>${M.map(x => '<tr>'+C.map(c => `<td class="${c[2] === 'n' || c[2] === 'm' || c[2] === 'i' ? 'n' : c[2] === 'w' ? 'w' : ''}">${escPDF(f(x, c))}</td>`).join('')+'</tr>').join('')}</tbody></table>
         ${T.length > MAX ? `<p class="sug">Mostrando ${MAX} de ${T.length.toLocaleString('pt-BR')} linhas · a lista completa está na exportação em Excel.</p>` : ''}`; }).join(''); }).join('');
   const html = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>Alerta ${escPDF(AL_AREA[tela][0])}</title><style>@page{size:A4 landscape;margin:8mm}
     *{box-sizing:border-box}body{margin:0;padding:14px;font-family:"Segoe UI",Arial,sans-serif;color:#1d2b24;-webkit-print-color-adjust:exact;print-color-adjust:exact}
@@ -10020,7 +10047,7 @@ function desenharAlerta(tela){
     : `<div class="al-auto ok"><b>Nenhum alerta nesta área.</b> Tudo em dia pelos dados de hoje.</div>`;
   const ordem = {r:0, y:1, b:2};
   const secs = menus.map(([m, ic, nome]) => { const L = I.filter(a => a.menu === m && (!AL.filtroSev || a.sev === AL.filtroSev)).sort((a,b) => ordem[a.sev] - ordem[b.sev] || b.itens.length - a.itens.length);
-    return `<div class="al-sec"><div class="al-st"><span>${ic} ${esc(nome)}</span><button type="button" class="al-ir" data-alir="${m}">abrir o menu →</button></div>${L.length ? `<div class="al-g">${L.map(a => { const k = tela+'|'+a.menu+'|'+a.id+'|'+a.titulo, aberto = AL.sel === k, q = AL.q[k] || '';
+    return `<div class="al-sec"><div class="al-st"><span>${ic} ${esc(nome)}</span><button type="button" class="al-ir" data-alir="${m}">abrir o menu →</button></div>${AL_EXPL[m] ? `<p class="al-expl"><b>Como ler este menu.</b> ${esc(AL_EXPL[m])}</p>` : ''}${L.length ? `<div class="al-g">${L.map(a => { const k = tela+'|'+a.menu+'|'+a.id+'|'+a.titulo, aberto = AL.sel === k, q = AL.q[k] || '';
       return `<div class="al-a ${a.sev} ${aberto ? 'ab' : ''}"><div class="al-hw"><button type="button" class="al-h" data-alsel="${esc(k)}"><em>${a.itens.length.toLocaleString('pt-BR')}</em><b>${esc(a.titulo)}</b><small>Sugestão: ${esc(a.sugestao)}</small><i>${aberto ? 'fechar ▴' : 'ver lista ▾'}</i></button>
         <span class="al-bx"><button type="button" data-alx="xls" data-alk="${esc(k)}" title="Baixar esta lista em Excel">Excel</button><button type="button" data-alx="pdf" data-alk="${esc(k)}" title="Baixar esta lista em PDF">PDF</button></span></div>
         ${aberto ? `<div class="al-busca"><input type="search" placeholder="Procurar nesta lista (UG, fornecedor, PI, UF…)" value="${esc(q)}" data-alq="${esc(k)}"><small>${alCols(a).length} colunas · role para o lado para ver todas</small></div><div class="al-l" data-alcorpo="${esc(k)}">${alTabela(a, tela, q)}</div>` : ''}</div>`; }).join('')}</div>` : '<p class="al-vazio">✓ Sem alertas neste menu.</p>'}</div>`; }).join('');
@@ -10044,12 +10071,13 @@ document.addEventListener('click', e => {
 .al-g{display:grid;gap:8px}.al-a{background:#fff;border-radius:12px;border-left:5px solid;overflow:hidden}.al-a.r{border-left-color:#d93636}.al-a.y{border-left-color:#e0a100}.al-a.b{border-left-color:#378add}
 .al-h{display:grid;grid-template-columns:70px 1fr auto;grid-template-rows:auto auto;gap:2px 12px;width:100%;border:0;background:none;text-align:left;padding:10px 14px;cursor:pointer;font:inherit}.al-h:hover{background:#f6faf7}
 .al-h em{grid-row:1/3;font-style:normal;font-size:26px;font-weight:800;align-self:center}.al-a.r em{color:#b3261e}.al-a.y em{color:#8a5a00}.al-a.b em{color:#185fa5}.al-h b{font-size:14.5px;color:#1d2b24}.al-h small{grid-column:2;font-size:12.5px;color:#4c5c53}.al-h i{grid-row:1/3;grid-column:3;align-self:center;font-style:normal;font-size:12px;font-weight:700;color:#1e7a3c}
+.al-expl{margin:0 0 8px;background:#f1f7f3;border:1px solid #d5e6da;border-radius:10px;padding:8px 12px;font-size:12.5px;line-height:1.5;color:#2c3d33}.al-expl b{color:#155a30}
 .al-hw{display:flex;align-items:stretch}.al-hw .al-h{flex:1}.al-bx{display:flex;align-items:center;gap:4px;padding-right:12px}.al-bx button,.al-exp button{border:1px solid #cfe3d5;background:#f4f8f5;color:#155a30;font:inherit;font-size:11.5px;font-weight:700;border-radius:7px;padding:4px 9px;cursor:pointer}.al-bx button:hover,.al-exp button:hover{background:#1f6b3a;color:#fff}
 .al-exp{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.14);border-radius:10px;padding:6px 10px}.al-exp span{color:#fff;font-size:12px;font-weight:700;margin-right:2px}.al-exp button{background:#fff}
 .al-busca{display:flex;align-items:center;gap:10px;padding:8px 14px;border-top:1px solid #e3ebe5;background:#f8fbf9}.al-busca input{flex:0 1 380px;border:1px solid #cfe3d5;border-radius:8px;padding:5px 10px;font:inherit;font-size:12.5px}.al-busca small{color:#5f6f66;font-size:11.5px}
 .al-l{border-top:1px solid #e3ebe5;max-height:460px;overflow:auto}.al-t{border-collapse:collapse;font-size:12px;min-width:100%;font-variant-numeric:tabular-nums}
 .al-t th{position:sticky;top:0;z-index:1;background:#1f6b3a;color:#fff;text-align:left;padding:6px 8px;font-weight:600;white-space:nowrap}.al-t td{padding:5px 8px;border-bottom:1px solid #eef3ef;white-space:nowrap;max-width:240px;overflow:hidden;text-overflow:ellipsis}
-.al-t td.w{max-width:320px}.al-t td.mot{font-weight:600;color:#6b4500}.al-t .n{text-align:right}.al-t tbody tr:nth-child(even) td{background:#f8fbf9}.al-t tbody tr:hover td{background:#fff6dc}
+.al-t td.w{max-width:340px;white-space:normal;min-width:220px}.al-t td.mot{font-weight:600;color:#6b4500}.al-t .n{text-align:right}.al-t tbody tr:nth-child(even) td{background:#f8fbf9}.al-t tbody tr:hover td{background:#fff6dc}
 .al-t tfoot td{position:sticky;bottom:0;background:#dfeee3;font-weight:700;border-top:2px solid #1f6b3a}.al-t a{color:#1e7a3c;font-weight:700}.al-mais,.al-vazio{font-size:12.5px;color:#5f6f66;margin:8px 14px}
 @media(max-width:900px){.al-sv{grid-template-columns:1fr}.al-hw{flex-direction:column}.al-bx{padding:0 14px 10px}}`; document.head.appendChild(st); })();
 function desenharConstr(tela){ const [t, s] = TELAS_CONSTR[tela];
