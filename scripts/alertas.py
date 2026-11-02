@@ -103,6 +103,9 @@ def parcerias(saida):
         par = [r for r in exe if f(r['saldo_em_conta']) > 0 and str(r.get('dias_sem_desembolso') or '').isdigit() and int(r['dias_sem_desembolso']) > 365]
         out.append(alerta(menu, 'b', 'saldo', 'Saldo em conta parado há mais de 1 ano', 'Cobrar a aplicação do recurso no objeto ou a devolução do saldo.',
                           [I(r, f"saldo R$ {f(r['saldo_em_conta']):,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')) for r in par]))
+        pa = [r for r in inst if filtro(r) and re.search(r'Presta.*(enviada para An|em An|Comprovada em An)', r.get('situacao') or '', re.I)]
+        out.append(alerta(menu, 'b', 'pcanal', 'Prestação de contas em análise', 'Analisar e emitir o parecer dentro do prazo do regulamento; priorizar as mais antigas (prazo de envio mais antigo).',
+                          [I(r, r['situacao']) for r in sorted(pa, key=lambda r: data(r['limite_prestacao_contas']) or HOJE)]))
         tce = [r for r in L if (r.get('em_processo_tce') or '').upper().startswith('SIM')]
         out.append(alerta(menu, 'b', 'tce', 'Em Tomada de Contas Especial', 'Acompanhar o processo de TCE.', [I(r, 'TCE') for r in tce]))
         for a in out[n0:]:

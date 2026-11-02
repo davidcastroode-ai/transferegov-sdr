@@ -5,6 +5,7 @@ body{margin:0;background:transparent;font-family:Barlow,Arial,sans-serif;color:#
 .menu{display:flex;background:#1f4e79;border-radius:12px;overflow:hidden;margin-bottom:10px;flex-wrap:wrap}.menu a{flex:1;min-width:120px;text-align:center;color:#d6e4f0;padding:11px 6px;font-weight:600;font-size:14px;cursor:pointer;text-decoration:none}.menu a.on{background:#fff;color:#1f4e79;box-shadow:inset 0 -3px 0 #2fae5c}
 .nota{background:#fff8e1;border:1px solid #e6cf7a;border-radius:12px;padding:9px 14px;font-size:13px;margin-bottom:12px}
 .card{background:#fff;border-radius:14px;padding:14px 16px;box-shadow:0 4px 14px rgba(20,40,60,.07);margin-bottom:14px}.card h3{margin:0 0 2px;font-size:16px}.card p.d{margin:0 0 10px;font-size:12.5px;color:#66727c}
+.atalhos{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0 0 10px}.atalhos span{font-size:12px;font-weight:700;color:#3a4a55;margin-right:4px}.atalhos button{border:1px solid #cfe3d5;background:#f4f8f5;color:#155a30;font:inherit;font-size:12.5px;font-weight:600;border-radius:999px;padding:4px 11px;cursor:pointer}.atalhos button b{font-weight:700;opacity:.75;margin-left:2px}.atalhos button:hover{background:#e3f0e7}.atalhos button.on{background:#1f6b3a;color:#fff;border-color:#1f6b3a}
 .filtros{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px 14px}@media(max-width:900px){.filtros{grid-template-columns:1fr 1fr}}
 .filtros label{font-size:12px;font-weight:600;color:#3a4a55;display:flex;flex-direction:column;gap:3px}.filtros select{width:100%;min-width:0;font:inherit;font-size:13px;padding:5px 8px;border:1px solid #c9d3db;border-radius:8px;background:#f6f8fa}.filtros select.ativo{border-color:#1f4e79;background:#e3edf7;font-weight:600}
 .btn{margin-top:10px;background:#1f4e79;color:#fff;border:0;border-radius:8px;padding:8px 40px;font:inherit;font-weight:600;cursor:pointer}
@@ -33,7 +34,7 @@ a.lk{color:#1f4e79;font-weight:600}.pend{font-size:12px;color:#a04000}
 <div class="wrap">
 <nav class="menu" id="menu"><a data-aba="geral" class="on">Visão geral</a><a data-aba="cart">Carteira e vigência</a><a data-aba="obras">Obras</a><a data-aba="fin">Financeiro</a><a data-aba="pc">Prestação de contas e inadimplência</a><a data-aba="eme">Emendas</a></nav>
 <div class="nota"><b>Contrato de Repasse</b> · Caixa Econômica como mandatária (UG 135098) e demais contratos de repasse da SDR · Transferegov + Obrasgov, carga de __DATA__ · <span id="tesNota">Tesouro (EXE/RAP)</span> · filtros e cliques nos gráficos filtram a tela · clique nos cartões para ver a lista · clique na linha para abrir a ficha.</div>
-<section class="card"><div class="filtros" id="filtros"></div><button class="btn" id="limpar">Limpar filtros</button> <span id="contagem" style="font-size:13px;color:#66727c;margin-left:12px"></span></section>
+<section class="card"><div class="atalhos" id="atalhos"></div><div class="filtros" id="filtros"></div><button class="btn" id="limpar">Limpar filtros</button> <span id="contagem" style="font-size:13px;color:#66727c;margin-left:12px"></span></section>
 
 <div class="aba on" id="a-geral">
  <div class="grp">Carteira</div><div class="kp" id="kpCart"></div>
@@ -107,6 +108,14 @@ const FIL = [['sg','Grupo de situação'],['si','Situação no Transferegov'],['
   ['parl','Parlamentar'],['tp','Tipo de parlamentar'],['so','Situação da obra'],['inadS','Inadimplência'],['lj','Situação contratual'],
   ['fx','Vencimento da vigência'],['acao','Ação orçamentária'],['nj','Natureza jurídica'],['prop','Proponente'],['munN','Município']];
 const SEL = {sg:'Em execução'};
+// filtros rápidos: um clique troca o recorte inteiro
+const ATALHOS = [['Em execução',{sg:'Em execução'}],['Cláusula suspensiva',{lj:'Cláusula suspensiva'}],['Liminar judicial',{lj:'Liminar judicial'}],['Aguardando início',{sg:'Aguardando início'}],
+  ['Obra não iniciada',{so:'Não iniciada'}],['Obra em andamento',{so:'Em andamento'}],['Obra paralisada',{so:'Paralisada'}],['Obra inacabada',{so:'Inacabada'}],['Em prestação de contas',{sg:'Em prestação de contas'}],['Inadimplente',{inadS:'Inadimplente'}],['Em TCE',{inadS:'Em TCE'}],['Todos',{}]];
+const atalhoAtivo = a => { const k1 = Object.keys(a), k2 = Object.keys(SEL).filter(k => SEL[k]); return k1.length === k2.length && k1.every(k => SEL[k] === a[k]); };
+function desenharAtalhos(){ const el = document.getElementById('atalhos'); if(!el) return;
+  el.innerHTML = '<span>Filtro rápido</span>' + ATALHOS.map(([r, a], i) => { const q = D.filter(o => Object.entries(a).every(([k, v]) => String(o[k]) === v)).length;
+    return `<button type="button" data-atalho="${i}" class="${atalhoAtivo(a) ? 'on' : ''}">${esc(r)} <b>${q.toLocaleString('pt-BR')}</b></button>`; }).join(''); }
+document.addEventListener('click', e => { const b = e.target.closest('[data-atalho]'); if(!b) return; const a = ATALHOS[+b.dataset.atalho][1]; for(const k in SEL) delete SEL[k]; Object.assign(SEL, a); for(const p in PAG) PAG[p]=0; render(); });
 let ABA = 'geral';
 const esc = s => String(s??'').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const fm = v => { const a = Math.abs(v||0), s = v<0?'−':''; return s+(a>=1e9 ? (a/1e9).toFixed(2).replace('.',',')+' Bi' : a>=1e6 ? (a/1e6).toFixed(2).replace('.',',')+' Mi' : (a/1e3).toFixed(1).replace('.',',')+' Mil'); };
@@ -188,7 +197,7 @@ const kd = (ch, tit, l, s, extra) => { (window.KPI_DEF||(window.KPI_DEF={}))[ch]
 const kpi = (ch, tit, l, val, sub, cls, s, extra) => `<div class="k ${cls||''}" ${kd(ch, tit, l, s, extra)}><span>${tit}</span><b>${val}</b><small>${sub||''}</small></div>`;
 const cRep = [['Repasse',o=>fm(o.rep),'n'],['Desembolsado',o=>fm(o.des),'n'],['A desembolsar',o=>fm(o.aDes),'n']];
 function render(){
-  desenharFiltros();
+  desenharFiltros(); desenharAtalhos();
   const L = filtrar(), tot = L.length, ex = L.filter(o => o.sg==='Em execução');
   document.getElementById('contagem').textContent = `${n(tot)} contratos no recorte`;
   const rep = soma(L,'rep'), des = soma(L,'des'), aDes = soma(L,'aDes'), sc = soma(L,'sc');

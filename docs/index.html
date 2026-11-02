@@ -6510,6 +6510,8 @@ const VIEW_CONV = {
     ${ppSec('Lista de instrumentos · 420013', 'acompanha os filtros e os cliques · clique na linha para abrir a ficha')}
     ${ppLista({id:'conv', tit:'Execução 420013 · lista de instrumentos', lista:L, ord:'aDes', arquivo:'execucao-convenio-termo',
       filtros:[['statusFin','Status financeiro'],['exec','Técnico'],['faixaVig','Vigência',FAIXAS_VIG],['uf','UF']],
+      rapidos:[['Em execução', d => /EM EXECUCAO/.test(normAccent(d.situ))], ['Cláusula suspensiva', d => /SUSPENSIVA/.test(normAccent((d.susp||'')+' '+(d.situ||'')))], ['Em licitação / sem licitação apresentada', d => /LICITA/.test(normAccent((d.statusFin||'')+' '+(d.situ||'')))],
+        ['Prestação de contas', d => /PRESTACAO/.test(normAccent(d.situ))], ['Vigência vencida', d => d.diasFim !== null && d.diasFim !== undefined && d.diasFim < 0 && /EM EXECUCAO/.test(normAccent(d.situ))], ['Com saldo a desembolsar', d => (d.aDes||0) > 0]],
       resumo:LF => { const r = soma(LF,'repasse'); return [['Repasse','#1f4e79','R$ '+fmtC(r),intN(LF.length)],['Desembolsado','#2e8a57','R$ '+fmtC(soma(LF,'desemb')),fmtPct(r?soma(LF,'desemb')/r:0)],['A desembolsar','#b8650a','R$ '+fmtC(soma(LF,'aDes')),fmtPct(r?soma(LF,'aDes')/r:0)],['Saldo em conta','#5b6eae','R$ '+fmtC(soma(LF,'saldo')),'convenentes']]; },
       cols:[['Instrumento', d => `<b>${esc(d.num)}</b><small>${esc(d.situ||'')}</small>`], ['Técnico', d => esc(d.exec||'—')], ['Proponente / UF', d => `${esc(d.proponente||'')}<small>${esc(d.uf||'')}</small>`],
         ['Status financeiro', d => ppPill(d.statusFin, corSt[d.statusFin]||'#6b7280')], ['Vigência até', d => `${esc(d.fimTxt||'—')}<small>${d.diasFim===null ? '' : d.diasFim<0 ? 'vencida há '+(-d.diasFim)+' d' : 'em '+d.diasFim+' d'}</small>`],
@@ -6707,6 +6709,7 @@ function ppLeitura(g, k, un, fmt){
 }
 // lista no fim da página (modelo do esboço): busca, filtros próprios, faixas de total EXE/RAP e extração Excel/PDF
 const PPL = {}, PPL_D = {};
+(function(){ const st = document.createElement('style'); st.textContent = '.ppl-rap{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:8px 0 4px}.ppl-rap span{font-size:12px;font-weight:700;color:#3a4a55;margin-right:4px}.ppl-rap button{border:1px solid #cfe3d5;background:#f4f8f5;color:#155a30;font:inherit;font-size:12.5px;font-weight:600;border-radius:999px;padding:4px 11px;cursor:pointer}.ppl-rap button b{opacity:.75;margin-left:2px}.ppl-rap button:hover{background:#e3f0e7}.ppl-rap button.on{background:#1f6b3a;color:#fff;border-color:#1f6b3a}'; document.head.appendChild(st); })();
 function ppLista(o){
   // o = {id, tit, lista, cols, ord, abre:'inst'|'prop'|'ted', arquivo}
   PPL_D[o.id] = Object.assign({}, o, {lista: o.ord ? o.lista.slice().sort((a,b) => (b[o.ord]||0)-(a[o.ord]||0)) : o.lista, cols: o.cols, abre: o.abre||'inst'});
@@ -6719,7 +6722,8 @@ const pplCasa = (r, k, v) => (k==='fin' && (v==='EXE' || v==='RAP')) ? finInst(r
 const pplPassa = (r, f, fs, ign) => fs.every(([k]) => k===ign || !Array.isArray(f[k]) || !f[k].length || f[k].some(v => pplCasa(r, k, v)));
 function pplFiltrada(id){
   const d = PPL_D[id], f = PPL[id].f, fs = d.filtros || PPL_PADRAO;
-  return BM.filtrar('ppl', f.q, d.lista.filter(r => pplPassa(r, f, fs)),
+  const rp = d.rapidos && f.rap != null && d.rapidos[f.rap] ? d.rapidos[f.rap][1] : null;
+  return BM.filtrar('ppl', f.q, d.lista.filter(r => pplPassa(r, f, fs) && (!rp || rp(r))),
     r => [r.num, r.prop, r.proc, r.proponente, r.parl, r.objeto, r.ug, r.uf, r.ent, r.exec, r.instNum].join(' '));
 }
 function pplCorpo(id){
@@ -6731,11 +6735,12 @@ function pplCorpo(id){
     get:() => PPL[id].f[k]||[], set:a => { PPL[id].f[k] = a; PPL[id].pg = 0; pplRedesenhar(id); }})}</div>` : '';
   const temFin = d.abre==='inst' && TG && TG.mapa && TG.mapa.size;
   const attr = r => d.abre==='prop' ? `data-fichaprop="${esc(r.num)}"` : d.abre==='ted' ? `data-fichated="${esc(r.chave)}"` : `data-fichainst="${esc(r.num)}"`;
-  const algum = Object.keys(f).some(k => Array.isArray(f[k]) ? f[k].length : f[k]);
+  const algum = Object.keys(f).some(k => Array.isArray(f[k]) ? f[k].length : (f[k] !== null && f[k] !== undefined && f[k] !== ''));
   return `<div class="ppl-top"><label class="ppl-q"><span>🔎</span><input type="search" data-pplf="${id}|q" value="${esc(f.q||'')}" placeholder="Instrumento, proponente, processo… (vários: separe por ; ou cole do Excel)"></label>
       ${fs.map(([k, rot, ordem]) => k==='fin' ? (temFin ? sel('fin', ['EXE','RAP','EXE e RAP','Sem empenho'], rot) : '') : sel(k, ordem ? ordem.filter(v => d.lista.some(r => pplValor(r,k)===v)) : un(d.lista.map(r => pplValor(r,k))).sort((a,b) => a.localeCompare(b,'pt-BR',{numeric:true})), rot)).join('')}
       ${algum ? `<button type="button" class="ppl-bt" data-ppllimpa="${id}">Limpar</button>` : ''}
       <span class="ppl-ex"><button type="button" class="ppl-xl" data-pplxl="${id}">Extração em Excel</button><button type="button" class="ppl-pdf" data-pplpdf="${id}">Extração em PDF</button></span></div>
+    ${d.rapidos ? `<div class="ppl-rap"><span>Filtro rápido</span>${d.rapidos.map(([r, fn], i) => `<button type="button" data-pplrap="${id}|${i}" class="${f.rap === i ? 'on' : ''}">${esc(r)} <b>${intN(d.lista.filter(fn).length)}</b></button>`).join('')}</div>` : ''}
     ${d.resumo ? ppFaixas(d.resumo(LF, d.lista)) : kpiResumo(d, LF)}
     <div class="tabela-wrap"><table class="t ppl-t"><thead><tr>${d.cols.map(c => `<th class="${c[2]||''}">${c[0]}</th>`).join('')}</tr></thead>
     <tbody>${pg.map(r => `<tr class="kpi-lin" ${attr(r)} title="Abrir a ficha">${d.cols.map(c => `<td class="${c[2]||''}">${c[1](r)}</td>`).join('')}</tr>`).join('') || `<tr><td colspan="${d.cols.length}" class="vazio">Nada encontrado com esses filtros.</td></tr>`}</tbody></table></div>
@@ -6764,6 +6769,7 @@ let _pplT;
 document.addEventListener('input', e => { const x = e.target.closest && e.target.closest('[data-pplf]'); if(!x) return; const [id, k] = x.dataset.pplf.split('|');
   PPL[id].f[k] = x.value; PPL[id].pg = 0; clearTimeout(_pplT); _pplT = setTimeout(() => pplRedesenhar(id, k), x.type==='search' ? 250 : 0); });
 document.addEventListener('click', e => {
+  const rq = e.target.closest('[data-pplrap]'); if(rq){ const [id, i] = rq.dataset.pplrap.split('|'); PPL[id].f.rap = PPL[id].f.rap === +i ? null : +i; PPL[id].pg = 0; pplRedesenhar(id); return; }
   const l = e.target.closest('[data-ppllimpa]'); if(l){ const id = l.dataset.ppllimpa; PPL[id].f = {}; PPL[id].pg = 0; pplRedesenhar(id); return; }
   const p = e.target.closest('[data-pplpg]'); if(p){ const [id, s] = p.dataset.pplpg.split('|'); PPL[id].pg += +s; pplRedesenhar(id); return; }
   const xl = e.target.closest('[data-pplxl]'); if(xl){ const {d, cols, L} = pplDados(xl.dataset.pplxl);
@@ -9209,6 +9215,13 @@ const PPF = {exp:{}, mais:false, tab:null};
 .ppf-bar{height:8px;background:#e3ebe5;border-radius:4px;margin:8px 0 4px;overflow:hidden}.ppf-bar i{display:block;height:100%;background:#2e8a57}
 .ppf-fx{margin-top:12px}
 .ppf-acao{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+.rap-farol{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr) minmax(0,1fr) auto;gap:10px;align-items:stretch;margin-top:10px;background:#fff;border-radius:14px;padding:10px 12px;box-shadow:0 2px 10px rgba(20,60,30,.07)}
+.rap-farol .t{display:flex;flex-direction:column;justify-content:center}.rap-farol .t b{font-size:14px;color:#155a30}.rap-farol .t small{font-size:11.5px;color:#5f6f66}
+.rap-farol .f{display:flex;gap:10px;align-items:center;border-radius:10px;padding:8px 10px}.rap-farol .f.r{background:#fdecea;color:#8b1e16}.rap-farol .f.y{background:#fbf4dc;color:#6f5600}
+.rap-farol .f i{flex:0 0 18px;height:18px;border-radius:50%;box-shadow:0 0 0 4px rgba(255,255,255,.7)}.rap-farol .f.r i{background:#d93636}.rap-farol .f.y i{background:#e0a100}
+.rap-farol .f p{margin:0;font-size:12.5px;font-weight:700}.rap-farol .f b{font-size:20px;line-height:1.2}.rap-farol .f small{display:block;font-size:11.5px}
+.rap-farol .ir{border:1px solid #cfe3d5;background:#f4f8f5;color:#155a30;font:inherit;font-weight:700;font-size:12.5px;border-radius:9px;padding:6px 12px;cursor:pointer;align-self:center}.rap-farol .ir:hover{background:#1f6b3a;color:#fff}
+@media(max-width:1000px){.rap-farol{grid-template-columns:1fr}}
 .ppf-al{border-radius:12px;padding:11px 13px;border:2px solid transparent;transition:transform .12s,box-shadow .12s}
 .ppf-al[data-ppfin]{cursor:pointer}.ppf-al[data-ppfin]:hover{transform:translateY(-2px);box-shadow:0 8px 18px rgba(0,0,0,.1)}.ppf-al.on{border-color:currentColor}
 .ppf-al p{margin:0;font-size:13px;font-weight:700}.ppf-al b{display:block;font-size:24px;line-height:1.2;margin:3px 0}.ppf-al small{display:block;font-size:12px;opacity:.92}.ppf-al.zero{opacity:.5}
@@ -9301,7 +9314,7 @@ document.addEventListener('keydown', e => { if((e.key==='Enter'||e.key===' ') &&
 function ppfPagina(lista, t, rotAcao, g, sem){
   const rotAc = d => d.acao+' – '+d.acaoN, rotUG = d => d.ug+' – '+d.ugN, rotEl = d => d.el+' – '+d.elN+' (GND '+d.gnd+')', rotPI = d => d.pi ? d.pi+' – '+d.piN : '(sem PI)', rotPO = d => d.po+' – '+d.poN, rotFav = d => d.favN+' · '+d.fav;
   const V = VISAO, tE = V==='exerap' ? somar(lista.filter(d => d.origem==='EXE'), 'exe') : null;
-  let kp, fx, cards, nomeTot;
+  let kp, fx, cards, nomeTot, farolRap = '';
   if(V==='exe'){
     nomeTot = 'do crédito';
     kp = ppfK(t.temDot ? 'Crédito (dotação atualizada)' : 'Crédito na seleção', 'R$ '+fmtC(t.temDot ? t.dotAt : t.exec), 'provisão '+fmtC(t.prov)+' · destaque recebido '+fmtC(t.dr), {d:1, tip:fmtBRL(t.temDot ? t.dotAt : t.exec)})
@@ -9325,6 +9338,14 @@ function ppfPagina(lista, t, rotAcao, g, sem){
     const st = somar(sem('sit'), 'rap');
     cards = [['y','Processados a pagar',st.ppApg,'já liquidados · pedir financeiro','sit|rPApg'],['p','Não proc. liquidados a pagar',st.npLiqApg,'pagar','sit|rNLiq'],['o','Não proc. a liquidar',st.npAlq,'cobrar a entrega','sit|rNAlq'],
       ['r','Sem movimento no SIAFI',st.npSemMov,'NE bloqueada (Dec. 93.872/86) · provável cancelamento',''],['r','Cancelado',st.canc,'cancelamentos do ano','sit|rCanc']];
+    // farol do RAP não processado a liquidar pela idade da nota (Decreto 93.872/1986, art. 68: o não liquidado é bloqueado em 30/06 do 2º ano após a inscrição e cancelado em 31/12)
+    const ANO = new Date().getFullYear(), fz = {v:0, a:0, nv:new Set(), na:new Set()};
+    sem('sit').forEach(d => { const v = +d.npAlq || 0; if(v <= 0.004) return; const a = +(String(d.ne||'').match(/(\d{4})NE/)||[])[1] || 0; if(!a) return;
+      if(a <= ANO-2){ fz.v += v; fz.nv.add(d.ug+'|'+d.ne); } else { fz.a += v; fz.na.add(d.ug+'|'+d.ne); } });
+    farolRap = (fz.v || fz.a) ? `<div class="rap-farol"><div class="t"><b>Farol do RAP não processado a liquidar</b><small>pela idade da nota de empenho · Decreto 93.872/1986, art. 68 (há exceções: confira a situação da NE no SIAFI)</small></div>
+      <div class="f r"><i></i><div><p>NE de ${ANO-2} ou antes</p><b title="${fmtBRL(fz.v)}">R$ ${fmtC(fz.v)}</b><small>${fz.nv.size.toLocaleString('pt-BR')} nota(s) · prazo de 30/06/${ANO} já passou: liquidar ou será cancelado em 31/12/${ANO}</small></div></div>
+      <div class="f y"><i></i><div><p>NE de ${ANO-1}</p><b title="${fmtBRL(fz.a)}">R$ ${fmtC(fz.a)}</b><small>${fz.na.size.toLocaleString('pt-BR')} nota(s) · se não liquidar, bloqueio em 30/06/${ANO+1}</small></div></div>
+      <button type="button" class="ir" data-rapfarol>ver as notas →</button></div>` : '';
   } else {
     nomeTot = 'do total';
     kp = ppfK('Total pago no ano', 'R$ '+fmtC(t.pago), 'EXE '+fmtC(t.ePago)+' · RAP '+fmtC(t.rPago), {d:1, tip:fmtBRL(t.pago)})
@@ -9361,7 +9382,7 @@ function ppfPagina(lista, t, rotAcao, g, sem){
   }[V];
   return `${ppfSec('Situação geral')}<div class="ppf-k">${kp}</div>${fx}
     ${blocoAssociacao(lista)}
-    ${ppfSec('Precisa de ação','clique para filtrar')}${ppfAcao(cards)}
+    ${ppfSec('Precisa de ação','clique para filtrar')}${ppfAcao(cards)}${V === 'rap' ? farolRap : ''}
     ${ppfSec('Explorar por','escolha uma visão')}
     <section class="ppf-ex"><div class="ppf-seg" role="tablist">${OPS.map(([k,r]) => `<button type="button" role="tab" data-ppfexp="${k}" class="${k===at[0]?'on':''}" aria-selected="${k===at[0]}">${r}</button>`).join('')}</div>
       <div class="ppf-exc"><div>${vis.html}</div>${vis.leitura ? `<div class="ppf-ins"><b>Leitura rápida</b><br>${vis.leitura}<br><br><small>${esc(L)}</small></div>` : ''}</div></section>
@@ -9400,7 +9421,7 @@ function atualizar(){
   document.getElementById('rodLido').textContent = 'Lidos em '+(LIDO_EM||new Date()).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'});
   pintarDatasTela();
   const nA = nAtivos();
-  document.getElementById('filtrosResumo').textContent = rotMes(+SEL.mes) + (nA ? ' · '+nA+' ativo'+(nA>1?'s':'') : '') + (document.getElementById('filtros').classList.contains('aberto') ? ' ▴' : ' ▾');
+  document.getElementById('filtrosResumo').textContent = rotMes(+SEL.mes) + (nA ? ' · '+nA+' ativo'+(nA>1?'s':'') : '') + (document.getElementById('filtros').classList.contains('aberto') ? ' ▴' : ' ▾'); if(window.__rotRecFiltros) window.__rotRecFiltros();
   document.querySelectorAll('[data-nav]').forEach(s => s.value = VISAO);
 
   const chips = FILTROS.filter(filtroAtivo).map(f =>
@@ -9893,7 +9914,7 @@ const AL_CAUSA = {venc:'a renovação começou tarde', vig30:'o prazo está no l
   naoenc:'a Base tem número de contrato que não bate com o Contratos.gov.br', fimdif:'os termos aditivos não foram lançados nas duas bases', vgdif:'os termos aditivos não foram lançados nas duas bases', fora:'contratos novos não estão sendo cadastrados na Base',
   vigvenc:'instrumentos seguem "em execução" depois do fim da vigência, sem prorrogação ou prestação de contas registrada', pcvenc:'as notificações de prestação de contas não estão sendo feitas no prazo', pc30:'o convenente precisa ser lembrado do prazo',
   susp:'as pendências da cláusula suspensiva não estão sendo cobradas', semdes:'há execução parada (licitação ou obra) sem acompanhamento', ajuste:'há solicitações de ajuste esperando análise', obra:'obras sem medição podem estar paralisadas',
-  inad:'há convenentes inadimplentes', saldo:'há recurso parado na conta do convenente', tce:'há processos de TCE em curso', complem:'as propostas voltam para complementação e ficam paradas com o proponente', analise:'a fila de análise está grande', semprop:'beneficiários de emenda não cadastraram proposta',
+  inad:'há convenentes inadimplentes', pcanal:'a fila de análise de prestação de contas está acumulando', saldo:'há recurso parado na conta do convenente', tce:'há processos de TCE em curso', complem:'as propostas voltam para complementação e ficam paradas com o proponente', analise:'a fila de análise está grande', semprop:'beneficiários de emenda não cadastraram proposta',
   semnc:'o crédito não foi descentralizado ou o relatório do Tesouro está sem as NCs do ano', ncsemne:'a unidade recebeu o crédito e não empenhou', comprovar:'o relatório de cumprimento do objeto não foi cobrado depois do fim da vigência', diverg:'API e Tesouro registram valores ou datas diferentes',
   dotpar:'há dotação disponível sem empenho perto do fim do exercício', bloq:'há crédito bloqueado na dotação', aliq:'há empenho sem liquidação (execução atrasada)', apagar:'há despesa liquidada esperando pagamento', rapnp:'RAP não processado sem liquidação corre risco de bloqueio e cancelamento', rapp:'há RAP processado ainda a pagar'};
 // resumo explicativo de cada menu: de onde vêm os dados, o que é cada linha e como ler
@@ -9967,7 +9988,9 @@ async function alCarregar(tela){
     const CE = r => C0.concat([['emp','Empenhado','n'],['liq','Liquidado','n'],['pago','Pago','n'],['valor',r,'n']]), CR = r => C0.concat([['ins','RAP inscrito','n'],['pag','RAP pago','n'],['valor',r,'n']]);
     A('exe', 'y', 'apagar', 'Liquidado e ainda não pago', 'Pagar respeitando a ordem cronológica e o limite financeiro (PF).', porNE('exe', d => +d.apagar || 0, exX).map(x => base(x, 'liquidado a pagar')), CE('A pagar'));
     A('exe', 'b', 'aliq', 'Empenhado a liquidar', 'Cobrar a execução do contrato ou instrumento; avaliar a anulação do saldo sem uso antes do fim do ano.', porNE('exe', d => +d.aliq || 0, exX).map(x => base(x, 'empenhado a liquidar')), CE('A liquidar'));
-    A('rap', 'r', 'rapnp', 'RAP não processado a liquidar', 'Liquidar ou justificar a manutenção; sem liquidação, o RAP é bloqueado e cancelado (Decreto 93.872/1986, art. 68).', porNE('rap', d => +d.npAlq || 0, rpX).map(x => base(x, 'não processado a liquidar')), CR('A liquidar'));
+    const farol = a => !a ? '' : +a <= +ANO-2 ? '🔴 prazo de 30/06/'+ANO+' já passou · cancela em 31/12/'+ANO : '🟡 bloqueio em 30/06/'+(+a+2)+' se não liquidar';
+    A('rap', 'r', 'rapnp', 'RAP não processado a liquidar', 'Liquidar ou justificar a manutenção; sem liquidação, o RAP é bloqueado e cancelado (Decreto 93.872/1986, art. 68).', porNE('rap', d => +d.npAlq || 0, rpX).map(x => { const b = base(x, 'não processado a liquidar'); b.farol = farol(b.anoNE); return b; })
+      .sort((a, b) => (+a.anoNE||9999) - (+b.anoNE||9999) || b.valor - a.valor), [['farol','Farol (prazo do decreto)']].concat(CR('A liquidar')));
     A('rap', 'y', 'rapp', 'RAP a pagar', 'Programar o pagamento com o limite financeiro.', porNE('rap', d => (+d.ppApg || 0) + (+d.npApg || 0), rpX).map(x => base(x, (+x.d.ppApg > 0 ? 'processado' : 'não processado')+' a pagar')), CR('A pagar'));
   }
   if(!S.length && !AL.mesOrc) throw new Error('o SIOP SDR e o Tesouro não carregaram agora; tente de novo em instantes');
@@ -10053,6 +10076,7 @@ function desenharAlerta(tela){
         ${aberto ? `<div class="al-busca"><input type="search" placeholder="Procurar nesta lista (UG, fornecedor, PI, UF…)" value="${esc(q)}" data-alq="${esc(k)}"><small>${alCols(a).length} colunas · role para o lado para ver todas</small></div><div class="al-l" data-alcorpo="${esc(k)}">${alTabela(a, tela, q)}</div>` : ''}</div>`; }).join('')}</div>` : '<p class="al-vazio">✓ Sem alertas neste menu.</p>'}</div>`; }).join('');
   el.innerHTML = topo + tot + auto + secs + `<p class="em-n">Alertas calculados com os dados de hoje${tela === 'alertaorc' && AL.mesOrc ? ' (Tesouro: posição de '+esc(AL.mesOrc)+')' : ''}. Fonte: ${esc(AL_FONTE[tela])}. Clique no número do contrato ou do instrumento para abrir o relatório.</p>`;
 }
+document.addEventListener('click', e => { if(!e.target.closest('[data-rapfarol]')) return; AL.sel = 'alertaorc|rap|rapnp|RAP não processado a liquidar'; AL.filtroSev = ''; ir('alertaorc'); });
 document.addEventListener('input', e => { const i = e.target.closest('[data-alq]'); if(!i) return; const k = i.dataset.alq; AL.q[k] = i.value; const a = alAchar(k), c = document.querySelector(`[data-alcorpo="${CSS.escape(k)}"]`); if(a && c) c.innerHTML = alTabela(a, document.getElementById('v-extra').dataset.tela, i.value); });
 document.addEventListener('click', e => {
   const x = e.target.closest('[data-alx]'); if(x){ const a = alAchar(x.dataset.alk), tela = document.getElementById('v-extra').dataset.tela; if(a) (x.dataset.alx === 'xls' ? alXls : alPdf)(a, tela, AL.q[x.dataset.alk] || ''); return; }
@@ -12306,6 +12330,19 @@ document.getElementById('toggleFiltros').onclick = () => {
   document.getElementById('toggleFiltros').setAttribute('aria-expanded', ab);
   const r = document.getElementById('filtrosResumo'); r.textContent = r.textContent.replace(/[▾▴]$/, ab ? '▴' : '▾');
 };
+// filtros laterais recolhíveis (EXE, RAP, EXE+RAP): libera a largura para as tabelas em notebook · a escolha fica guardada
+(function(){ const f = document.getElementById('filtros'); if(!f || document.getElementById('recFiltros')) return;
+  const b = document.createElement('button'); b.type = 'button'; b.id = 'recFiltros'; b.title = 'Recolher ou mostrar os filtros'; f.prepend(b);
+  const rot = () => { const r = document.body.classList.contains('filt-rec'), res = ((document.getElementById('filtrosResumo')||{}).textContent||'').replace(/[▾▴]/g,'').trim();
+    b.innerHTML = r ? '▾ mostrar filtros'+(res ? ' <small>· '+esc(res)+'</small>' : '') : '▴ recolher filtros'; b.setAttribute('aria-expanded', !r); };
+  window.__rotRecFiltros = rot;
+  try{ if(localStorage.getItem('sdr_filt_rec') === '1') document.body.classList.add('filt-rec'); }catch(e){}
+  rot();
+  b.onclick = () => { const r = document.body.classList.toggle('filt-rec'); try{ localStorage.setItem('sdr_filt_rec', r ? '1' : '0'); }catch(e){} rot(); setTimeout(() => dispatchEvent(new Event('resize')), 60); };
+  const st = document.createElement('style'); st.textContent = `#recFiltros{display:block;margin:0 0 6px auto;border:1px solid #cfe3d5;background:#f4f8f5;color:#155a30;font:inherit;font-size:12px;font-weight:700;border-radius:8px;padding:4px 10px;cursor:pointer}#recFiltros:hover{background:#1f6b3a;color:#fff}#recFiltros small{font-weight:600;opacity:.8}
+body.filt-rec #filtros>*:not(#recFiltros){display:none !important}body.filt-rec #filtros{padding:6px 10px}body.filt-rec #recFiltros{margin:0;width:100%;text-align:left}
+@media(max-width:1180px){#recFiltros{display:none}body.filt-rec #filtros>*:not(#recFiltros){display:revert !important}}`;
+  document.head.appendChild(st); })();
 document.getElementById('bLimpar').onclick = () => { FILTROS.forEach(f => { if(f.k!=='mes') SEL[f.k]=[]; }); BUSCA=''; fecharMS(); mudarMes(ULTIMO_MES); };
 document.getElementById('bAtualizar').onclick = async () => { await IDB.limparPrefixos(['exe','rap'].flatMap(v => ['gq|'+PLANILHA[v]+'|', 'dt|'+PLANILHA[v]+'|'])); for(const v of ['exe','rap']) for(const f of FONTES[v]) await IDB.del(chavePrep(f, v)); DATAS.exe = DATAS.rap = null; _idxParc = null; DADOS.exe.det = {}; DADOS.rap.det = {}; DADOS.exe.pronto = DADOS.rap.pronto = false; MESES_TXT = {}; SEL.mes = ''; ir(VISAO==='menu' ? 'exe' : VISAO); };
 // =====================================================================
