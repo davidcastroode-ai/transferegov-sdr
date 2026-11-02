@@ -90,6 +90,9 @@ jobs:
                   os.remove(c)
           PY
 
+      - name: LGPD · mascarar o CPF de pessoas físicas em tudo o que vai ser publicado
+        run: python scripts/lgpd.py saida
+
       - name: Publicar na branch "dados"
         run: |
           cd saida

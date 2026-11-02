@@ -2051,8 +2051,12 @@ const MES_NUM = {JANEIRO:1,FEVEREIRO:2,MARCO:3,ABRIL:4,MAIO:5,JUNHO:6,JULHO:7,AG
 // UTILITÁRIOS
 // =====================================================================
 function normAccent(s){ return (s||'').toString().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().replace(/\s+/g,' ').trim(); }
+// LGPD (Lei 13.709/2018): CPF de pessoa física aparece mascarado (***.452.881-**, padrão do Portal da Transparência)
+const LGPD_CPF = /(?<![\d.\/-])(\d{3})\.?(\d{3})\.?(\d{3})-?(\d{2})(?!\d|[.,]\d)/g;
+const lgpd = s => typeof s === 'string' && s.length >= 11 ? s.replace(LGPD_CPF, (m, a, b, c) => '***.'+b+'.'+c+'-**') : s;
+const lgpdObj = o => typeof o === 'string' ? lgpd(o) : Array.isArray(o) ? o.map(lgpdObj) : o && typeof o === 'object' ? Object.fromEntries(Object.entries(o).map(([k, v]) => [k, lgpdObj(v)])) : o;
 function parseCSV(text){
-  if(Array.isArray(text)) return text;   // já veio em linhas (completarCelulas)
+  if(Array.isArray(text)) return text.map(r => Array.isArray(r) ? r.map(lgpd) : r);   // já veio em linhas (completarCelulas)
   const rows=[]; let row=[], field='', q=false;
   for(let i=0;i<text.length;i++){
     const c=text[i], n=text[i+1];
@@ -2060,7 +2064,7 @@ function parseCSV(text){
     else { if(c==='"') q=true; else if(c===','){row.push(field);field='';} else if(c==='\r'){} else if(c==='\n'){row.push(field);rows.push(row);row=[];field='';} else field+=c; }
   }
   if(field.length||row.length){row.push(field);rows.push(row);}
-  return rows;
+  return rows.map(r => r.map(lgpd));
 }
 function toNum(v){
   if(v===undefined||v===null) return 0;
@@ -8055,6 +8059,10 @@ function num(v){
 }
 const txt = v => v===null||v===undefined ? '' : (typeof v==='number' ? String(Number.isInteger(v) ? v : v) : String(v).trim());
 const limpo = s => { s=txt(s); const n=norm(s); return (n==="'-9"||n==='-9'||n==="'-8"||n==='-8'||n==='NAO SE APLICA'||n==='SEM INFORMACAO'||n==='-') ? '' : s; };
+// LGPD (Lei 13.709/2018): CPF de pessoa física aparece mascarado (***.452.881-**, padrão do Portal da Transparência)
+const LGPD_CPF = /(?<![\d.\/-])(\d{3})\.?(\d{3})\.?(\d{3})-?(\d{2})(?!\d|[.,]\d)/g;
+const lgpd = s => typeof s === 'string' && s.length >= 11 ? s.replace(LGPD_CPF, (m, a, b, c) => '***.'+b+'.'+c+'-**') : s;
+const lgpdObj = o => typeof o === 'string' ? lgpd(o) : Array.isArray(o) ? o.map(lgpdObj) : o && typeof o === 'object' ? Object.fromEntries(Object.entries(o).map(([k, v]) => [k, lgpdObj(v)])) : o;
 const esc = s => (s??'').toString().replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function fmtC(v){
   if(Math.abs(v)<0.005) v=0;
@@ -8123,7 +8131,7 @@ function gqRede(aba, params, tq, planilha, tempo){
     window[nome] = resp => {
       fim();
       if(!resp || resp.status==='error'){ falha(new Error(((resp&&resp.errors)||[]).map(e=>e.detailed_message||e.message).join(' · ') || 'erro na consulta')); return; }
-      ok({cols: resp.table.cols, rows: resp.table.rows.map(r => (r.c||[]).map(c => c==null ? null : c.v))});
+      ok({cols: resp.table.cols, rows: resp.table.rows.map(r => (r.c||[]).map(c => c==null ? null : lgpd(c.v)))});
     };
     s.onerror = () => { fim(); falha(new Error('não foi possível abrir a planilha — confira se ela está compartilhada como “Qualquer pessoa com o link · Leitor”')); };
     s.src = `https://docs.google.com/spreadsheets/d/${planilha || SHEET_ID}/gviz/tq?${aba}&${params}&tq=${encodeURIComponent(tq)}&tqx=responseHandler:${nome}`;
@@ -9628,13 +9636,20 @@ function marcarHash(t){ try{ if(location.hash !== '#'+t) history.replaceState(nu
 // TELAS NOVAS: Indicadores (IDTRU-DL) e Metodologia e fontes · esboços aprovados em 26/10/2026
 // =====================================================================
 const RAW_DADOS = 'https://raw.githubusercontent.com/davidcastroode-ai/transferegov-sdr/dados/';
+// telas reservadas no menu: o conteúdo entra quando a equipe passar a estrutura
+const TELAS_CONSTR = {alertactr:['ALERTA · CONTRATOS','alertas da gestão de contratos'], alertaorc:['ALERTA · ORÇAMENTO E FINANÇAS','alertas da execução orçamentária e financeira'],
+  alertaparc:['ALERTA · PARCERIAS','alertas de convênios, termos de fomento e contratos de repasse'], alertated:['ALERTA · TED','alertas dos termos de execução descentralizada'],
+  cartilhas:['PORTFÓLIO E CARTILHAS SDR','portfólio de ações e cartilhas da SDR'], captacao:['CAPTAÇÃO DE EMENDAS','captação de emendas parlamentares para as ações da SDR']};
+function desenharConstr(tela){ const [t, s] = TELAS_CONSTR[tela];
+  document.getElementById('v-extra').innerHTML = `<div class="vx-top"><div><h1>${esc(t)}</h1><small>${esc(s)}</small></div></div>
+    <div class="vx-card" style="margin-top:16px;text-align:center;padding:40px 20px"><div style="font-size:40px">🚧</div><h2 style="margin:8px 0 4px;color:#155a30">Em construção</h2><p style="color:#5f6f66;margin:0">Esta página será montada a partir das orientações da equipe.</p></div>`; }
 function telaExtra(tela){
   let el = document.getElementById('v-extra');
   if(!el){ el = document.createElement('section'); el.id = 'v-extra'; el.hidden = true; el.className = 'vx'; document.getElementById('v-visao').after(el); }
   ['v-antigo','v-visao','v-menu','v-painel'].forEach(id => { const x = document.getElementById(id); if(x) x.hidden = true; });
   document.body.style.overflow = ''; document.body.dataset.tema = '';
   el.hidden = false; el.dataset.tela = tela; window.scrollTo(0,0); marcarHash(tela);
-  if(tela === 'indic') desenharIndic(); else if(tela === 'assist') desenharAssist(); else if(tela === 'relinst') desenharRelInst(); else if(tela === 'relctr') desenharRelCtr(); else desenharMetodo();
+  if(TELAS_CONSTR[tela]) desenharConstr(tela); else if(tela === 'indic') desenharIndic(); else if(tela === 'assist') desenharAssist(); else if(tela === 'relinst') desenharRelInst(); else if(tela === 'relctr') desenharRelCtr(); else desenharMetodo();
 }
 (function(){ const st = document.createElement('style'); st.textContent = `
 .vx{box-sizing:border-box;max-width:100%;overflow-x:hidden;padding:18px 24px 40px;background:#e9efe9;min-height:100vh;font-family:Barlow,'Segoe UI',Arial,sans-serif;color:#1d2b24}
@@ -9925,7 +9940,10 @@ const MET = {
     ['Contratos administrativos','#b8650a',[['Lei nº 14.133/2021','licitações e contratos',PL+'_ato2019-2022/2021/lei/l14133.htm'],['Decreto nº 11.246/2022','gestão e fiscalização de contratos',PL+'_ato2019-2022/2022/decreto/d11246.htm'],
       ['Decreto nº 11.462/2023','sistema de registro de preços',PL+'_ato2023-2026/2023/decreto/d11462.htm'],['IN SEGES/MP nº 5/2017','serviços terceirizados (no que couber)','https://www.gov.br/compras/pt-br/acesso-a-informacao/legislacao']]],
     ['Orçamento e financeiro','#5f6f66',[['Lei nº 4.320/1964','normas gerais de direito financeiro',PL+'leis/l4320.htm'],['Lei Complementar nº 101/2000','responsabilidade fiscal',PL+'leis/lcp/lcp101.htm'],
-      ['Decreto nº 93.872/1986','execução financeira e restos a pagar',PL+'decreto/d93872.htm'],['Lei nº 15.321/2025','LDO 2026',PL+'_ato2023-2026/2025/lei/l15321.htm'],['Lei nº 15.346/2026','LOA 2026',PL+'_ato2023-2026/2026/lei/l15346.htm']]]],
+      ['Decreto nº 93.872/1986','execução financeira e restos a pagar',PL+'decreto/d93872.htm'],['Lei nº 15.321/2025','LDO 2026',PL+'_ato2023-2026/2025/lei/l15321.htm'],['Lei nº 15.346/2026','LOA 2026',PL+'_ato2023-2026/2026/lei/l15346.htm']]],
+    ['Proteção de dados pessoais (LGPD)','#a0522d',[['Lei nº 13.709/2018 (LGPD)','Lei Geral de Proteção de Dados Pessoais · no painel, o CPF de pessoa física aparece mascarado (***.452.881-**), como no Portal da Transparência',PL+'_ato2015-2018/2018/lei/l13709.htm'],
+      ['Lei nº 12.527/2011 (LAI)','acesso à informação · art. 31: informações pessoais têm acesso restrito',PL+'_ato2011-2014/2011/lei/l12527.htm'],
+      ['Decreto nº 7.724/2012','regulamenta a LAI no Poder Executivo federal',PL+'_ato2011-2014/2012/decreto/d7724.htm']]]],
   fontes: [['Transferegov · dados abertos (Siconv)','convênios, contratos de repasse, termos de fomento, propostas, emendas, desembolsos, histórico de situação','diário · robô','https://api-publica.transferegov.gestao.gov.br/downloads/dadosgov'],
     ['Transferegov · API de TED','todos os TEDs das 5 UGs, plano de ação, NC e PF','diário · robô','https://api-publica.transferegov.gestao.gov.br/ted/docs'],
     ['Obrasgov · API pública','obras, medições e execução física','diário · robô','https://api-publica.obrasgov.gestao.gov.br/obras'],
@@ -9935,7 +9953,7 @@ const MET = {
     ['PNCP · API de consulta','contratações públicas','sob demanda','https://pncp.gov.br/api/consulta'],
     ['SIOP · API','orçamento da União (consulta)','sob demanda','https://www.siop.planejamento.gov.br/modulo/main/static/api-explorer.html'],
     ['Planilhas da equipe','Parcerias, Propostas, Conv/TF 420013, TED equipe (130010 e 420013), Contratos CEPLAC (130010)','contínuo','']],
-  glos: [['Convênio','repasse a estado, município ou entidade sem fins lucrativos para execução de objeto de interesse comum.'],['Contrato de repasse','como o convênio, mas operado por instituição financeira mandatária (Caixa), que acompanha projeto e obra.'],
+  glos: [['CPF mascarado (LGPD)','o CPF de pessoa física (favorecido, bolsista, suprido) aparece como ***.452.881-**: só os 6 dígitos do meio, padrão do Portal da Transparência (Lei nº 13.709/2018). CNPJ de empresa e órgão aparece completo.'],['Convênio','repasse a estado, município ou entidade sem fins lucrativos para execução de objeto de interesse comum.'],['Contrato de repasse','como o convênio, mas operado por instituição financeira mandatária (Caixa), que acompanha projeto e obra.'],
     ['Termo de fomento','parceria com OSC, com plano de trabalho proposto pela própria OSC (Lei nº 13.019/2014).'],['TED','descentralização de crédito entre órgãos e entidades federais (Decreto nº 10.426/2020).'],
     ['EXE','execução do orçamento do ano: empenho, liquidação e pagamento.'],['RAP','restos a pagar: empenhos de anos anteriores ainda não pagos (processados = já liquidados; não processados = a liquidar).'],
     ['Cláusula suspensiva','instrumento assinado com pendência de projeto, licença ou terreno: o recurso só é liberado depois de resolvida.'],['Contrato administrativo','contratação de bens e serviços pela Lei nº 14.133/2021.'],
@@ -10717,7 +10735,7 @@ async function riGz(url){
   const r = await fetch(url+'?v='+new Date().toISOString().slice(0,13), {cache:'no-store'});
   if(!r.ok) throw new Error(r.status === 404 ? 'o robô ainda não gerou os dados do relatório' : 'HTTP '+r.status);
   if(typeof DecompressionStream === 'undefined') throw new Error('este navegador não descompacta os dados (atualize o navegador)');
-  return JSON.parse(await new Response(r.body.pipeThrough(new DecompressionStream('gzip'))).text());
+  return lgpdObj(JSON.parse(await new Response(r.body.pipeThrough(new DecompressionStream('gzip'))).text()));
 }
 function riCarregarIndice(){
   if(RI.ind) return Promise.resolve(RI.ind);
@@ -11036,7 +11054,7 @@ const histUG = ug => _histUG[ug] || (_histUG[ug] = (async () => {
   const r = await fetch(HIST_BASE+ug+'.json.gz?d='+new Date().toISOString().slice(0,10));
   if(!r.ok) throw new Error('o histórico da UG '+ug+' ainda não foi gerado pelo robô');
   if(typeof DecompressionStream === 'undefined') throw new Error('este navegador não descompacta os dados (atualize o navegador)');
-  return JSON.parse(await new Response(r.body.pipeThrough(new DecompressionStream('gzip'))).text());
+  return lgpdObj(JSON.parse(await new Response(r.body.pipeThrough(new DecompressionStream('gzip'))).text()));
 })().catch(e => { delete _histUG[ug]; throw e; }));
 const histChave = e => { const u = String(e.ug||'').match(/\d{6}/), n = String(e.ne||'').toUpperCase().match(/\d{4}NE\d{6}/); return u && n ? u[0]+'|'+n[0] : ''; };
 async function histDados(nes){
@@ -11792,7 +11810,7 @@ window.relExtrasParc = relExtrasParc; window.rgAbrir = rgAbrir;
 async function ir(tela, sel){
   if(!tela || tela==='menu') tela = 'visao';
   { const vx = document.getElementById('v-extra'); if(vx) vx.hidden = true; }
-  if(tela==='indic' || tela==='metodo' || tela==='assist' || tela==='relinst' || tela==='relctr'){ fecharMS(); VISAO = 'menu'; telaExtra(tela); if(tela==='relinst' && sel && sel.nr) riAbrir(sel.nr); if(tela==='relctr' && sel && sel.id) rcAbrir(sel.id); return; }   // a barra lateral substitui a página de MENU: o painel abre na Visão geral
+  if(tela==='indic' || tela==='metodo' || tela==='assist' || tela==='relinst' || tela==='relctr' || TELAS_CONSTR[tela]){ fecharMS(); VISAO = 'menu'; telaExtra(tela); if(tela==='relinst' && sel && sel.nr) riAbrir(sel.nr); if(tela==='relctr' && sel && sel.id) rcAbrir(sel.id); return; }   // a barra lateral substitui a página de MENU: o painel abre na Visão geral
   if(TELAS_ANTIGAS.includes(tela)){
     marcarHash(tela);
     fecharMS(); VISAO = 'menu'; abrirAntiga(tela, sel); return;
@@ -12103,12 +12121,12 @@ function preCarregar(){
 // =====================================================================
 (function(){
   const GRUPOS = [
-    ['GESTÃO', [['visao','▦','Visão geral'],['contratos','📑','Base Contratos (CEPLAC)'],['ctrsdr','📄','Contratos SDR'],['despesas','🧾','Despesas previstas'],['conferencia','✔','Conferência de Contratos'],['_relctr','📊','Relatório de gestão de contratos']]],
-    ['ORÇAMENTO E FINANÇAS', [['orcacao','🏛','Orçamento por ações'],['exe','$','Financeiro EXE'],['rap','⏱','Financeiro RAP'],['exerap','⇄','EXE + RAP'],['_relorc','📊','Relatório de gestão orçamentária e financeira']]],
+    ['GESTÃO', [['visao','▦','Visão geral'],['contratos','📑','Base Contratos (CEPLAC)'],['ctrsdr','📄','Contratos SDR'],['despesas','🧾','Despesas previstas'],['conferencia','✔','Conferência de Contratos'],['relctr','📄','Relatório do contrato'],['_relctr','📊','Relatório de gestão de contratos'],['alertactr','🔔','Alerta']]],
+    ['ORÇAMENTO E FINANÇAS', [['orcacao','🏛','Orçamento por ações'],['exe','$','Financeiro EXE'],['rap','⏱','Financeiro RAP'],['exerap','⇄','EXE + RAP'],['_relorc','📊','Relatório de gestão orçamentária e financeira'],['alertaorc','🔔','Alerta']]],
     ['PARCERIAS', [['parc','🤝','Parceria SDR',[['geral','Visão geral'],['prop','Propostas'],['inst','Instrumentos vigentes'],['pc','Prestação de contas']]],
-                   ['prop','📝','Propostas SDR'],['conv','📋','Execução Convênio/TF 420013'],['repasse','🏠','Contrato de Repasse'],['_rel','📊','Relatório de gestão de parcerias']]],
-    ['TED', [['tedapi','✉','TED GERAL SDR'],['ted','👥','TED EQUIPE SDR'],['_relted','📊','Relatório de gestão de TED']]],
-    ['RELATÓRIOS', [['relinst','📄','Relatório do instrumento'],['relctr','📄','Relatório do contrato'],['indic','🎯','Indicadores']]],
+                   ['prop','📝','Propostas SDR'],['conv','📋','Execução Convênio/TF 420013'],['repasse','🏠','Contrato de Repasse'],['relinst','📄','Relatório do instrumento'],['captacao','💡','Captação de Emendas'],['indic','🎯','Indicadores'],['_rel','📊','Relatório de gestão de parcerias'],['alertaparc','🔔','Alerta']]],
+    ['TED', [['tedapi','✉','TED GERAL SDR'],['ted','👥','TED EQUIPE SDR'],['_relted','📊','Relatório de gestão de TED'],['alertated','🔔','Alerta']]],
+    ['PORTFÓLIO E CARTILHAS SDR', [['cartilhas','📘','Portfólio e Cartilhas SDR']]],
     ['AJUDA', [['assist','🤖','Assistente virtual'],['metodo','📚','Metodologia e fontes']]],
   ];
   const st = document.createElement('style');
