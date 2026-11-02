@@ -9646,17 +9646,17 @@ const PORT_GOV = 'https://www.gov.br/agricultura/pt-br/centrais-de-conteudo/publ
 const PORT_PDF = 'https://davidcastroode-ai.github.io/transferegov-sdr/cartilhas/';
 const PORT_DRIVE = 'https://drive.google.com/drive/folders/1uSA_wT4G8u34CrzmJ4rUpqmu_5z8XKpS';
 const PORT_MAPA = [
-  ['Portfólio de ações MAPA 2026', 'todas as ações do Ministério que podem receber emendas', PORT_GOV+'/PLOA2025versofinal.pdf', '📗'],
-  ['Cartilha Capacitação e Eventos', 'exposições, feiras, cursos, dias de campo (IN MAPA nº 25/2023)', PORT_GOV+'/cartilha-capacitacao-e-eventos', '🎤'],
-  ['Cartilha Insumos', 'aquisição de insumos agropecuários', PORT_GOV+'/cartilhas-insumos', '🌾'],
-  ['Cartilha Obras de Fomento', 'obras de infraestrutura produtiva', PORT_GOV+'/cartilha-obras-de-fomento', '🏗'],
-  ['Cartilha Energia Fotovoltaica', 'energia solar para o desenvolvimento rural', PORT_GOV+'/energia-fotovoltaica-para-o-desenvolvimento-rural', '☀'],
-  ['Cartilhas Hortas Comunitárias', 'hortas comunitárias e urbanas', PORT_GOV+'/cartilhas-hortas-comunitarias', '🥬'],
-  ['PROMAQ', 'máquinas e equipamentos agrícolas', PORT_GOV+'/cartilha-promaq.pdf/view', '🚜'],
+  ['Portfólio de ações MAPA 2026', 'todas as ações do Ministério que podem receber emendas', PORT_GOV+'/PLOA2025versofinal.pdf', '📗', 'portfolio'],
+  ['Cartilha Capacitação e Eventos', 'exposições, feiras, cursos, dias de campo (IN MAPA nº 25/2023)', PORT_GOV+'/cartilha-capacitacao-e-eventos', '🎤', 'capacitacao'],
+  ['Cartilha Insumos', 'aquisição de insumos agropecuários', PORT_GOV+'/cartilhas-insumos', '🌾', 'insumos'],
+  ['Cartilha Obras de Fomento', 'obras de infraestrutura produtiva', PORT_GOV+'/cartilha-obras-de-fomento', '🏗', 'obras'],
+  ['Cartilha Energia Fotovoltaica', 'energia solar para o desenvolvimento rural', PORT_GOV+'/energia-fotovoltaica-para-o-desenvolvimento-rural', '☀', 'fotovoltaica'],
+  ['Cartilhas Hortas Comunitárias', 'hortas comunitárias e urbanas', PORT_GOV+'/cartilhas-hortas-comunitarias', '🥬', 'hortas'],
+  ['PROMAQ', 'máquinas e equipamentos agrícolas', PORT_GOV+'/cartilha-promaq.pdf/view', '🚜', 'promaq'],
   ['PRONER', 'estradas vicinais e recuperação de estradas rurais', PORT_GOV+'/proner', '🛣'],
-  ['Transferências Especiais (Ação 0EC2)', 'cartilha técnica de orientação', PORT_GOV+'/CartilhaTransfernciasEspeciaisAo0EC2.pdf', '💸'],
-  ['Catálogo de projetos Embrapa', 'projetos da Embrapa para emendas parlamentares', 'https://www.embrapa.br/busca-de-publicacoes/-/publicacao/1167976/catalogo-de-projetos-embrapa-emendas-parlamentares', '🔬'],
-  ['Tutorial Transferegov', 'passo a passo do cadastro na nova gestão das transferências', PORT_GOV+'/passo_a_passo_cadastro_nova_gestao_tranferencias_voluntarias.pdf', '🧭']];
+  ['Transferências Especiais (Ação 0EC2)', 'cartilha técnica de orientação', PORT_GOV+'/CartilhaTransfernciasEspeciaisAo0EC2.pdf', '💸', 'te0ec2'],
+  ['Catálogo de projetos Embrapa', 'projetos da Embrapa para emendas parlamentares', 'https://www.embrapa.br/busca-de-publicacoes/-/publicacao/1167976/catalogo-de-projetos-embrapa-emendas-parlamentares', '🔬', 'embrapa'],
+  ['Tutorial Transferegov', 'passo a passo do cadastro na nova gestão das transferências', PORT_GOV+'/passo_a_passo_cadastro_nova_gestao_tranferencias_voluntarias.pdf', '🧭', 'tutorial']];
 // [código, nome, resumo (eixo), POs, unidade, financia capacitação e eventos]
 const PORT_ACOES = [
   ['215A', 'Desenvolvimento das Cadeias Produtivas da Agropecuária', 'Fomento produtivo, eventos e agregação de valor', '0000 · 0004 · 0005 · 0006 · 0007 · 0008', 'SDR · Depto. de Desenvolvimento das Cadeias Produtivas', 1],
@@ -9671,7 +9671,7 @@ function desenharPortfolio(tela){
   const el = document.getElementById('v-extra'), bt = (u, t, cls) => `<a class="pf-bt ${cls||''}" href="${esc(u)}" target="_blank" rel="noopener">${t}</a>`;
   if(tela === 'portmapa'){
     el.innerHTML = `<div class="vx-top"><div><h1>PORTFÓLIO MAPA 2026</h1><small>cartilhas de emendas parlamentares do Ministério da Agricultura e Pecuária</small></div>${bt(PORT_GOV, 'Abrir no gov.br ↗', 'cl')}</div>
-      <div class="pf-g">${PORT_MAPA.map(([t, d, u, ic]) => `<a class="pf-c" href="${esc(u)}" target="_blank" rel="noopener"><span class="pf-ic">${ic}</span><b>${esc(t)}</b><small>${esc(d)}</small><i>abrir ↗</i></a>`).join('')}</div>
+      <div class="pf-g">${PORT_MAPA.map(([t, d, u, ic, im]) => `<a class="pf-c" href="${esc(u)}" target="_blank" rel="noopener">${im ? `<img src="${PORT_PDF}mapa_${im}.jpg" alt="Capa: ${esc(t)}" class="pf-capa" onerror="this.outerHTML='<span class=pf-ic>${ic}</span>'">` : `<div class="pf-capa pf-sem"><span class="pf-ic">${ic}</span></div>`}<b>${esc(t)}</b><small>${esc(d)}</small><i>abrir ↗</i></a>`).join('')}</div>
       <p class="pf-n">Fonte: gov.br/agricultura · Centrais de conteúdo · Publicações · Cartilhas de emendas parlamentares.</p>`;
   } else {
     el.innerHTML = `<div class="vx-top"><div><h1>AÇÕES SDR 2026</h1><small>as 8 ações orçamentárias da SDR e da CEPLAC · cartilhas de emendas parlamentares</small></div></div>
@@ -9692,7 +9692,7 @@ function desenharPortfolio(tela){
 .pf-gt{flex:1;min-width:240px;display:flex;flex-direction:column;gap:6px}.pf-tag{font-size:11px;font-weight:800;letter-spacing:.12em;color:#b8860b}.pf-gt b{font-size:19px;color:#155a30;line-height:1.2}.pf-gt>span{font-size:13.5px;color:#33433a;font-weight:600}.pf-gt p{margin:0;font-size:13px;color:#5f6f66}
 .pf-gt ul{margin:2px 0 4px;padding-left:18px;font-size:13px;color:#33433a;line-height:1.6}.pf-cods{display:flex;flex-wrap:wrap;gap:5px}.pf-cods span{background:#155a30;color:#fff;font-weight:800;font-size:12px;border-radius:7px;padding:2px 8px}
 .pf-ac{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;margin-top:14px}
-.pf-a{background:#fff;border-radius:14px;padding:14px 16px;border-top:4px solid #2e7d4f;display:flex;flex-direction:column;gap:8px}.pf-port{border-top-color:#c0392b;background:#fffaf8}.pf-capa{display:block;width:100%;height:170px;object-fit:cover;object-position:top;border-radius:10px;transition:transform .15s}.pf-capa:hover{transform:scale(1.02)}.pf-port .pf-cod{background:#c0392b}
+.pf-a{background:#fff;border-radius:14px;padding:14px 16px;border-top:4px solid #2e7d4f;display:flex;flex-direction:column;gap:8px}.pf-port{border-top-color:#c0392b;background:#fffaf8}.pf-capa{display:block;width:100%;height:170px;object-fit:cover;object-position:top;border-radius:10px;transition:transform .15s}.pf-capa:hover{transform:scale(1.02)}.pf-sem{display:grid;place-items:center;background:linear-gradient(135deg,#e3f1da,#c8e2ad)}.pf-sem .pf-ic{font-size:54px}.pf-port .pf-cod{background:#c0392b}
 .pf-ah{display:flex;gap:10px;align-items:flex-start}.pf-ah b{font-size:14.5px;color:#163d26;line-height:1.3}.pf-cod{background:#155a30;color:#fff;font-weight:800;border-radius:8px;padding:3px 9px;font-size:13px;letter-spacing:.04em;flex:none}
 .pf-a p{margin:0;font-size:13px;color:#4c5c53}.pf-meta{display:flex;flex-direction:column;gap:2px;font-size:12px;color:#33433a}.pf-meta em{font-style:normal;font-weight:700;color:#5f6f66;margin-right:6px}
 .pf-bts{display:flex;flex-wrap:wrap;gap:6px;margin-top:auto}.pf-bt{background:#1e7a3c;color:#fff;border-radius:8px;padding:6px 11px;font-size:12.5px;font-weight:700;text-decoration:none}.pf-bt.cl{background:#eef5f0;color:#155a30;border:1px solid #cfe3d5}.vx-top .pf-bt.cl{background:#fff}
