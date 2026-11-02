@@ -1,0 +1,3 @@
+"Código da Emenda";"Código do Autor da Emenda";"Nome do Autor da Emenda";"Número da emenda";"Tipo de Emenda";"Ano/Mês";"Código do Favorecido";"Favorecido";"Natureza Jurídica";"Tipo Favorecido";"UF Favorecido";"Município Favorecido";"Valor Recebido"
+"202571280004";"7128";"BANCADA DE TOCANTINS";"0004";"Emenda de Bancada";"202610";"07121982000119";"2M CONSTRUTORA LTDA";"Sociedade Empresária Limitada";"Pessoa Jurídica";"TO";"SANTA TEREZA DO TOCANTINS";"83346,73"
+"202617750015";"1775";"JANDIRA FEGHALI";"0015";"Emenda Individual - Transferências com Finalidade Definida";"202610";"61331581000139";"2WE CORPORATIVOS LTDA";"Sociedade Empresária Limitada";"Pessoa Jurídica";"DF";"BRASÍLIA";"397,00"

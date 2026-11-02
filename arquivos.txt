@@ -1,0 +1,9 @@
+total 282180
+drwxr-xr-x 2 runner runner      4096 Nov  2 15:11 .
+drwxr-xr-x 3 runner runner      4096 Nov  2 15:11 ..
+-rw-r--r-- 1 runner runner  47459049 Oct 29 19:18 EmendasParlamentares.csv
+-rw-r--r-- 1 runner runner  26043820 Oct 29 19:18 EmendasParlamentares_Convenios.csv
+-rw-r--r-- 1 runner runner 182890516 Oct 29 19:18 EmendasParlamentares_PorFavorecido.csv
+-rw-r--r-- 1 runner runner         0 Nov  2 15:11 arquivos.txt
+-rw-r--r-- 1 runner runner  32535934 Nov  2 15:11 em.zip
+-rw-r--r-- 1 runner runner        13 Nov  2 15:11 portal_status.txt
