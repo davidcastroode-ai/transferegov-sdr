@@ -9674,9 +9674,9 @@ function desenharPortfolio(tela){
       <p class="pf-n">Fonte: gov.br/agricultura · Centrais de conteúdo · Publicações · Cartilhas de emendas parlamentares.</p>`;
   } else {
     el.innerHTML = `<div class="vx-top"><div><h1>AÇÕES SDR 2026</h1><small>as 8 ações orçamentárias da SDR e da CEPLAC · cartilhas de emendas parlamentares</small></div></div>
-      <div class="pf-geral"><span class="pf-ic">📕</span><div><b>Portfólio Estratégico SDR 2026 · ações da equipe SDR · UGs 130010 e 420013</b><small>elaborado pela COAPI/SDR · as 8 ações, 21 planos orçamentários, valores mínimos e máximos por instrumento</small></div>
-        <div class="pf-bts">${bt(PORT_PDF+'portfolio_sdr_2026.pdf', 'Portfólio SDR (PDF)')}${bt(PORT_DRIVE, 'Pasta no Drive ↗', 'cl')}</div></div>
-      <div class="pf-ac">${PORT_ACOES.map(([c, n, r, po, u, ev]) => `<div class="pf-a"><div class="pf-ah"><span class="pf-cod">${c}</span><b>${esc(n)}</b></div><p>${esc(r)}</p>
+      <div class="pf-ac"><div class="pf-a pf-port"><div class="pf-ah"><span class="pf-cod">SDR</span><b>Portfólio Estratégico SDR 2026</b></div><p>Ações da equipe SDR · UGs 130010 e 420013 · elaborado pela COAPI/SDR</p>
+        <div class="pf-meta"><span><em>Ações</em>215A · 8593 · 214Z · 00PN · 8622 · 21B6 · 8606 · 20ZY</span><span><em>Conteúdo</em>21 planos orçamentários, valores mínimos e máximos por instrumento</span></div>
+        <div class="pf-bts">${bt(PORT_PDF+'portfolio_sdr_2026.pdf', 'Portfólio SDR (PDF)')}${bt(PORT_DRIVE, 'Pasta no Drive ↗', 'cl')}</div></div>${PORT_ACOES.map(([c, n, r, po, u, ev]) => `<div class="pf-a"><div class="pf-ah"><span class="pf-cod">${c}</span><b>${esc(n)}</b></div><p>${esc(r)}</p>
         <div class="pf-meta"><span><em>POs</em>${esc(po)}</span><span><em>Unidade</em>${esc(u)}</span></div>
         <div class="pf-bts">${bt(PORT_PDF+'cartilha_'+c+'.pdf', 'Cartilha da ação (PDF)')}</div></div>`).join('')}</div>
       <p class="pf-n">Cartilhas elaboradas pela COAPI/SDR (outubro de 2026).</p>`;
@@ -9686,9 +9686,12 @@ function desenharPortfolio(tela){
 .pf-g{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px;margin-top:16px}
 .pf-c{display:flex;flex-direction:column;gap:4px;background:#fff;border-radius:14px;padding:14px 16px;text-decoration:none;color:#1d2b24;border:1px solid #d7e5da;transition:transform .12s,box-shadow .12s}.pf-c:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(20,60,40,.12)}
 .pf-c b{font-size:15px;color:#155a30}.pf-c small{font-size:12.5px;color:#5f6f66;flex:1}.pf-c i{font-style:normal;font-size:12px;font-weight:700;color:#2e7d4f;margin-top:4px}.pf-ic{font-size:26px}
-.pf-geral{display:flex;align-items:center;gap:14px;flex-wrap:wrap;background:#fff;border-radius:14px;padding:14px 18px;margin-top:16px;border-left:5px solid #c0392b}.pf-geral>div:nth-child(2){flex:1;min-width:220px}.pf-geral b{display:block;font-size:15.5px;color:#155a30}.pf-geral small{color:#5f6f66;font-size:12.5px}
+.pf-geral{display:flex;gap:20px;flex-wrap:wrap;background:#fff;border-radius:16px;padding:16px 18px;margin-top:16px;border-top:5px solid #f2b33d;box-shadow:0 6px 18px rgba(20,60,40,.08)}
+.pf-capa{flex:none;display:block;width:170px;border-radius:10px;overflow:hidden;box-shadow:0 6px 16px rgba(0,0,0,.18);transition:transform .15s}.pf-capa:hover{transform:scale(1.03)}.pf-capa img{display:block;width:100%}
+.pf-gt{flex:1;min-width:240px;display:flex;flex-direction:column;gap:6px}.pf-tag{font-size:11px;font-weight:800;letter-spacing:.12em;color:#b8860b}.pf-gt b{font-size:19px;color:#155a30;line-height:1.2}.pf-gt>span{font-size:13.5px;color:#33433a;font-weight:600}.pf-gt p{margin:0;font-size:13px;color:#5f6f66}
+.pf-gt ul{margin:2px 0 4px;padding-left:18px;font-size:13px;color:#33433a;line-height:1.6}.pf-cods{display:flex;flex-wrap:wrap;gap:5px}.pf-cods span{background:#155a30;color:#fff;font-weight:800;font-size:12px;border-radius:7px;padding:2px 8px}
 .pf-ac{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;margin-top:14px}
-.pf-a{background:#fff;border-radius:14px;padding:14px 16px;border-top:4px solid #2e7d4f;display:flex;flex-direction:column;gap:8px}
+.pf-a{background:#fff;border-radius:14px;padding:14px 16px;border-top:4px solid #2e7d4f;display:flex;flex-direction:column;gap:8px}.pf-port{border-top-color:#c0392b;background:#fffaf8}.pf-port .pf-cod{background:#c0392b}
 .pf-ah{display:flex;gap:10px;align-items:flex-start}.pf-ah b{font-size:14.5px;color:#163d26;line-height:1.3}.pf-cod{background:#155a30;color:#fff;font-weight:800;border-radius:8px;padding:3px 9px;font-size:13px;letter-spacing:.04em;flex:none}
 .pf-a p{margin:0;font-size:13px;color:#4c5c53}.pf-meta{display:flex;flex-direction:column;gap:2px;font-size:12px;color:#33433a}.pf-meta em{font-style:normal;font-weight:700;color:#5f6f66;margin-right:6px}
 .pf-bts{display:flex;flex-wrap:wrap;gap:6px;margin-top:auto}.pf-bt{background:#1e7a3c;color:#fff;border-radius:8px;padding:6px 11px;font-size:12.5px;font-weight:700;text-decoration:none}.pf-bt.cl{background:#eef5f0;color:#155a30;border:1px solid #cfe3d5}.vx-top .pf-bt.cl{background:#fff}
