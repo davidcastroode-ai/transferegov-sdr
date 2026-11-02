@@ -9708,7 +9708,7 @@ async function emiAbrir(){
   EMI.carregando = false; desenharEmi();
   // EXE (Tesouro): empenhado e pago pelas notas cujo PI traz o nº da emenda (cobre também a aplicação direta)
   try{ await carregarVisao('exe'); const ms = Object.keys(MESES_TXT).map(Number).sort((a,b) => a-b), ult = ms[ms.length-1]; if(ult){ await garantirDetalhe('exe', String(ult));
-    const M = {}; (DADOS.exe.det[ult]||[]).forEach(x => { const m = String(x.pi||'').match(/(\d{8})/); if(!m) return; const o = M[m[1]] || (M[m[1]] = {emp:0, liq:0, pago:0, nes:new Set()}); o.emp += +x.emp||0; o.liq += +x.liq||0; o.pago += +x.pago||0; if(x.ne) o.nes.add(x.ne); });
+    const M = {}; (DADOS.exe.det[ult]||[]).forEach(x => { const m = String(x.pi||'').match(/(\d{8})/); if(!m) return; const an = String(x.ne||'').slice(0,4); const k = m[1]+'|'+an;   /* o nº da emenda (autor+seq) se repete todo ano: casa também pelo ano da nota */ const o = M[k] || (M[k] = {emp:0, liq:0, pago:0, nes:new Set()}); o.emp += +x.emp||0; o.liq += +x.liq||0; o.pago += +x.pago||0; if(x.ne) o.nes.add(x.ne); });
     EMI.exe = {M, mes: MESES_TXT[ult]||''}; desenharEmi(); } }catch(e){}
 }
 const EMI_UG = {'130010':'CEPLAC','130141':'CGPI/SDR','130255':'PROMAQ','135098':'Caixa/MA','420013':'SDR'};
@@ -9720,15 +9720,18 @@ function desenharEmi(){
     <div class="em-tabs"><button class="on">Emenda Individual</button></div>`;
   if(!EMI.d){ el.innerHTML = topo + `<div class="vx-card" style="margin-top:14px">${EMI.erro ? 'Não foi possível ler os dados: '+esc(EMI.erro) : 'Lendo as emendas…'}</div>`; return; }
   const X = EMI.exe && EMI.exe.M, soma = (A, k) => A.reduce((s, x) => s + (+x[k]||0), 0);
-  const pagoB = b => X ? (((X[emiCod(b.emenda)]||{}).pago||0) > 0 || b.desembolsado > 0) : b.desembolsado > 0;
+  // pago: desembolso do instrumento (Transferegov); na aplicação direta, o pago no Tesouro das notas do MESMO ano da emenda
+  const exeDe = b => X && X[emiCod(b.emenda)+'|'+b.ano] || null;
+  const pagoV = b => b.desembolsado > 0 ? b.desembolsado : (b.modalidade === 'Aplicação direta' ? ((exeDe(b)||{}).pago||0) : 0);
+  const pagoB = b => pagoV(b) > 0;
   const L0 = EMI.d.linhas.map(b => Object.assign(b, {autorP: b.autor+' · '+b.partido, acaoN: b.acao+' · '+(EMI_ACAO[b.acao]||''), ugP: b.ug ? b.ug+(EMI_UG[b.ug] ? ' · '+EMI_UG[b.ug] : '') : (b.modalidade === 'Aplicação direta' ? 'MAPA (aplicação direta)' : '—')}));
   const q = msxN(EMI.q||'');
   const LF = emiFiltrar(L0).filter(b => !q || msxN([b.entidade, b.cnpj, b.proposta, b.instrumento, b.emenda, b.autor, b.ne, b.processo].join(' ')).includes(q));
   const reg = {}; const R = (k, tit, lista) => { reg[k] = {tit, lista}; return ` data-emi="${esc(k)}" title="Clique para ver só estes"`; };
   // funil: indicado → com proposta → instrumento celebrado → empenhado → pago
-  const etapas = [['ind','Indicado', LF], ['prop','Com proposta', LF.filter(b => b.proposta)], ['inst','Instrumento celebrado', LF.filter(b => b.instrumento)], ['emp','Empenhado', LF.filter(b => b.ne)], ['pag','Pago', LF.filter(pagoB)]];
+  const etapas = [['ind','Indicado', LF], ['prop','Com proposta', LF.filter(b => b.proposta)], ['inst','Instrumento celebrado', LF.filter(b => b.instrumento)], ['emp','Empenhado', LF.filter(b => b.ne)], ['pag','Pago', LF.filter(pagoB).map(b => Object.assign(Object.create(b), {pagoX: pagoV(b)}))]];
   const sem = LF.filter(b => !b.proposta && b.modalidade !== 'Aplicação direta');
-  const funil = `<div class="em-fun">${etapas.map(([k, r, l], i) => `<div class="${EMI.sel === 'f|'+k ? 'on' : ''}"${R('f|'+k, r, l)}><span>${r}</span><b>${l.length.toLocaleString('pt-BR')}</b><small>${fmtC(soma(l, k === 'emp' ? 'empenhado' : k === 'pag' ? 'desembolsado' : 'indicado'))}${i ? ' · '+(LF.length ? Math.round(100*l.length/LF.length) : 0)+'%' : ''}</small></div>`).join('')}</div>
+  const funil = `<div class="em-fun">${etapas.map(([k, r, l], i) => `<div class="${EMI.sel === 'f|'+k ? 'on' : ''}"${R('f|'+k, r, l)}><span>${r}</span><b>${l.length.toLocaleString('pt-BR')}</b><small>${fmtC(soma(l, k === 'emp' ? 'empenhado' : k === 'pag' ? 'pagoX' : 'indicado'))}${i ? ' · '+(LF.length ? Math.round(100*l.length/LF.length) : 0)+'%' : ''}</small></div>`).join('')}</div>
     ${sem.length ? `<button type="button" class="em-alerta ${EMI.sel === 'f|sem' ? 'on' : ''}"${R('f|sem', 'Sem proposta no Transferegov', sem)}>⚠ ${sem.length} beneficiário(s) sem proposta no Transferegov · ${fmtC(soma(sem,'indicado'))} indicados</button>` : ''}`;
   // filtros (lista suspensa de várias escolhas) + busca
   const FT = [['ano','Ano'],['acaoN','Ação'],['ugP','UG'],['autorP','Parlamentar'],['partido','Partido'],['uf','UF'],['modalidade','Modalidade'],['area','Área técnica'],['situacao','Situação']];
