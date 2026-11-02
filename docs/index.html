@@ -9735,6 +9735,47 @@ function desenharEmi(){
   const filtros = `<div class="em-fil">${FT.map(([k, r]) => `<label>${r}${msxHTML('emi|'+k, {rot:r, todos:'Todos', opts:() => { const B = emiFiltrar(L0, k); return [...new Set(L0.map(b => String(b[k]||'')).filter(Boolean))].sort((a,b) => k === 'ano' ? b.localeCompare(a) : a.localeCompare(b,'pt-BR',{numeric:true})).map(v => [v, v, B.filter(b => String(b[k]||'') === v).length]); },
     get:() => EMI.f[k]||[], set:a => { EMI.f[k] = a; EMI.sel = null; desenharEmi(); }})}</label>`).join('')}
     <label class="em-bus">Buscar<input type="search" id="emiBusca" value="${esc(EMI.q||'')}" placeholder="entidade, CNPJ, proposta, NE…"></label><button type="button" class="vx-btn" data-emilimpa>Limpar</button></div>`;
+  // gráficos (sob demanda) · visuais: colunas por ano, rosca por modalidade, top parlamentares, mapa do Brasil, blocos por ação, barra por situação
+  let graf = '';
+  if(EMI.graf){
+    const grp = k => { const g = {}; LF.forEach(b => { const c = b[k] || '—'; const x = g[c] || (g[c] = {v:0, e:0, l:[]}); x.v += b.indicado||0; x.e += b.empenhado||0; x.l.push(b); }); return g; };
+    const PAL = ['#1d5e2c','#3f7f22','#8cc58c','#e0a100','#b8650a','#9aa59a','#1f6d86','#c75a00'];
+    // por ano (indicado × empenhado no SIOP, por emenda)
+    const EA = {}; EMI.d.emendas.filter(e => new Set(LF.map(b => b.emenda)).has(e.emenda)).forEach(e => { const x = EA[e.ano] || (EA[e.ano] = {i:0, e:0}); x.i += e.indicado||0; x.e += e.empenhado_siop||0; });
+    const anos = Object.keys(EA).sort(), gA = grp('ano'), mxA = Math.max(1, ...anos.map(a => Math.max(EA[a].i, EA[a].e))), WA = 600/Math.max(1, anos.length), H = 150;
+    const colA = anos.map((a, i) => { const x = 30 + i*WA, w = Math.min(28, WA*0.3), hI = H*EA[a].i/mxA, hE = H*EA[a].e/mxA;
+      return `<g${R('r|ano|'+a, 'Ano '+a, (gA[a]||{l:[]}).l)}><rect x="${x}" y="${H+14-hI}" width="${w}" height="${hI}" rx="4" fill="#9fd08a"><title>${a} · indicado ${fmtBRL(EA[a].i)}</title></rect><rect x="${x+w+3}" y="${H+14-hE}" width="${w}" height="${hE}" rx="4" fill="#2e7d32"><title>${a} · empenhado ${fmtBRL(EA[a].e)}</title></rect>
+        <text x="${x+w+1}" y="${H+14-Math.max(hI,hE)-5}" text-anchor="middle" class="em-gv">${fmtC(EA[a].i)}</text><text x="${x+w+1}" y="${H+30}" text-anchor="middle" class="em-ga">${a}</text></g>`; }).join('');
+    const gAno = `<div class="vx-card em-c em-2"><h3>Por ano · indicado × empenhado</h3><svg viewBox="0 0 640 ${H+36}" class="em-svg">${colA}</svg><div class="em-lg"><span><i style="background:#9fd08a"></i>indicado</span><span><i style="background:#2e7d32"></i>empenhado (SIOP)</span><span>clique numa coluna para ver o ano</span></div></div>`;
+    // rosca por modalidade
+    const gM = Object.entries(grp('modalidade')).sort((a,b) => b[1].v - a[1].v), totM = gM.reduce((s,[,x]) => s + x.v, 0) || 1;
+    let ang = -Math.PI/2; const arco = (a0, a1) => { const R1 = 52, R0 = 32, p = (a, r) => [60+r*Math.cos(a), 60+r*Math.sin(a)], g = a1-a0 > Math.PI ? 1 : 0, [x0,y0] = p(a0,R1), [x1,y1] = p(a1,R1), [x2,y2] = p(a1,R0), [x3,y3] = p(a0,R0); return `M${x0},${y0}A${R1},${R1} 0 ${g} 1 ${x1},${y1}L${x2},${y2}A${R0},${R0} 0 ${g} 0 ${x3},${y3}Z`; };
+    const fat = gM.map(([c, x], i) => { const a1 = ang + 2*Math.PI*x.v/totM - (x.v === totM ? 1e-4 : 0), d = arco(ang, a1); ang = a1; return `<path d="${d}" fill="${PAL[i%PAL.length]}"${R('r|modalidade|'+c, 'Modalidade: '+c, x.l)}><title>${esc(c)} · ${fmtBRL(x.v)}</title></path>`; }).join('');
+    const gMod = `<div class="vx-card em-c"><h3>Por modalidade</h3><div class="em-ro"><svg viewBox="0 0 120 120" width="130" height="130">${fat}<text x="60" y="58" text-anchor="middle" class="em-rt">${fmtC(totM)}</text><text x="60" y="72" text-anchor="middle" class="em-rs">indicado</text></svg>
+      <div class="em-lg2">${gM.map(([c, x], i) => `<div${R('r|modalidade|'+c, 'Modalidade: '+c, x.l)}><i style="background:${PAL[i%PAL.length]}"></i>${esc(c)}<b>${Math.round(100*x.v/totM)}%</b></div>`).join('')}</div></div></div>`;
+    // top parlamentares
+    const gP = Object.entries(grp('autorP')).sort((a,b) => b[1].v - a[1].v), mxP = Math.max(1, ...gP.map(([,x]) => x.v)), ini = s => s.split(' · ')[0].split(/\s+/).filter(w => w.length > 2 || /^[A-Z]/.test(w)).slice(0,2).map(w => w[0]).join('').toUpperCase();
+    const gPar = `<div class="vx-card em-c"><h3>Top parlamentares</h3>${gP.slice(0, EMI.parTodos ? 40 : 7).map(([c, x]) => `<div class="em-dep"${R('r|autorP|'+c, c, x.l)}><span class="em-av">${esc(ini(c))}</span><div><small>${esc(c)}</small><i><em style="width:${(100*x.v/mxP).toFixed(1)}%"></em></i></div><b>${fmtC(x.v)}</b></div>`).join('')}
+      ${gP.length > 7 ? `<button type="button" class="em-lk" data-emipar>${EMI.parTodos ? 'mostrar menos' : 'ver todos ('+gP.length+')'} →</button>` : ''}</div>`;
+    // mapa do Brasil (o mesmo das Parcerias)
+    let gMapa = '';
+    try{ const MB = asW().eval('MAPA_BR'), gU = grp('uf'), mxU = Math.max(1, ...Object.values(gU).map(x => x.v));
+      const cor = v => `color-mix(in srgb, #1d6b2a ${Math.round((0.14 + 0.86*Math.sqrt(v/mxU))*100)}%, #eef3ec)`;
+      const est = Object.entries(MB.ufs).map(([uf, d]) => { const x = gU[uf]; return `<path d="${d}" class="em-uf ${x ? 'tem' : ''}" style="fill:${x ? cor(x.v) : '#e9eee8'}"${x ? R('r|uf|'+uf, 'UF: '+uf, x.l) : ''}><title>${uf}${x ? ' · '+fmtBRL(x.v)+' indicado · '+new Set(x.l.map(b => b.emenda)).size+' emenda(s)' : ' · sem emendas'}</title></path>`; }).join('');
+      const rot = Object.entries(MB.centro).map(([uf, [x, y]]) => `<text x="${x}" y="${y}" class="em-ufr">${uf}</text>`).join('');
+      const nac = gU['Nacional'];
+      gMapa = `<div class="vx-card em-c"><h3>Por UF</h3><svg viewBox="0 0 ${MB.w} ${MB.h}" class="em-mapa">${est}${rot}</svg><div class="em-lg"><span><i class="em-gr"></i>cor: valor indicado</span>${nac ? `<span class="em-lk"${R('r|uf|Nacional', 'UF: Nacional', nac.l)}>Nacional: ${fmtC(nac.v)}</span>` : ''}<span>clique no estado</span></div></div>`; }catch(e){}
+    // blocos por ação
+    const gAc = Object.entries(grp('acaoN')).sort((a,b) => b[1].v - a[1].v), totAc = gAc.reduce((s,[,x]) => s + x.v, 0) || 1;
+    const gAcao = `<div class="vx-card em-c"><h3>Por ação</h3><div class="em-blk">${gAc.map(([c, x], i) => `<div style="flex:${Math.max(x.v/totAc, 0.025)};background:${PAL[i%PAL.length]}"${R('r|acaoN|'+c, 'Ação '+c, x.l)} title="${esc(c)} · ${fmtBRL(x.v)}">${x.v/totAc > 0.12 ? `<span>${esc(c.split(' · ')[0])}</span><b>${fmtC(x.v)}</b>` : ''}</div>`).join('')}</div>
+      <div class="em-lg2 em-lgr">${gAc.map(([c, x], i) => `<div${R('r|acaoN|'+c, 'Ação '+c, x.l)}><i style="background:${PAL[i%PAL.length]}"></i>${esc(c.split(' · ')[0])}<b>${fmtC(x.v)}</b></div>`).join('')}</div></div>`;
+    // barra única por situação
+    const corSit = s => /execu/i.test(s) ? '#2e7d32' : /conclu/i.test(s) ? '#1f6d86' : /enviada|em an[aá]lise|comprovada/i.test(s) ? '#e0a100' : /aguard|inici/i.test(s) ? '#b8650a' : /sem proposta|anulad|rejeit|cancel/i.test(s) ? '#c62828' : /aplica/i.test(s) ? '#8a6dbf' : '#9aa59a';
+    const gS = Object.entries(grp('situacao')).sort((a,b) => b[1].v - a[1].v), totS = gS.reduce((s,[,x]) => s + x.v, 0) || 1;
+    const gSit = `<div class="vx-card em-c em-3"><h3>Por situação no Transferegov</h3><div class="em-bar">${gS.map(([c, x]) => `<i style="flex:${x.v/totS};background:${corSit(c)}"${R('r|situacao|'+c, 'Situação: '+c, x.l)} title="${esc(c)} · ${fmtBRL(x.v)}"></i>`).join('')}</div>
+      <div class="em-lg2 em-lgr">${gS.slice(0, 10).map(([c, x]) => `<div${R('r|situacao|'+c, 'Situação: '+c, x.l)}><i style="background:${corSit(c)}"></i>${esc(c.replace('Proposta/Plano de Trabalho','PT').replace('Prestação de Contas','PC'))}<b>${fmtC(x.v)}</b></div>`).join('')}</div></div>`;
+    graf = `<div class="em-gg">${gAno}${gMod}${gPar}${gMapa}${gAcao}${gSit}</div>`;
+  }
   // planilha (colunas do CADASTRO DE EMENDAS)
   const COLS = [['ano','Ano'],['emenda','Número Emenda'],['autor','Autor (nome)'],['modalidade','Modalidade'],['partido','Partido'],['acao','Ação'],['ugP','UG'],['area','Área técnica'],['gnd','GND'],['ma','MA'],['programa','Programa'],['cnpj','Beneficiário'],['instrumento','Instrumento'],['proposta','Proposta'],['situacao','Situação'],['tipo_despesa','Tipo de Despesa'],['entidade','Entidade'],['processo','Processo SEI'],['tp_entidade','TP Entidade'],['uf','Estado'],['pi','PI'],['ptres','PTRES'],['indicado','Valor Indicado','n'],['nd','ND Beneficiário'],['ne','NE Beneficiário'],['empenhado','Empenhado (NE)','n'],['desembolsado','Desembolsado','n']];
   const S = EMI.sel && reg[EMI.sel], LT = S ? S.lista : LF;
@@ -9748,18 +9789,12 @@ function desenharEmi(){
     <tbody>${LT.slice(0, lim).map((b, i) => `<tr><td>${i+1}</td>${COLS.map(c => cel(b, c)).join('')}</tr>`).join('') || `<tr><td colspan="${COLS.length+1}">Nenhuma emenda com esses filtros.</td></tr>`}</tbody>
     <tfoot><tr><td colspan="23">Total</td><td class="n">${tot('indicado')}</td><td></td><td></td><td class="n">${tot('empenhado')}</td><td class="n">${tot('desembolsado')}</td></tr></tfoot></table></div>
     ${LT.length > lim ? `<button type="button" class="em-mais" data-emimais>mostrar mais ${Math.min(300, LT.length - lim)} de ${(LT.length - lim).toLocaleString('pt-BR')} · a extração em Excel leva todas</button>` : ''}</div>`;
-  // gráficos (sob demanda)
-  let graf = '';
-  if(EMI.graf){ const rank = (tit, k, lim) => { const g = {}; LF.forEach(b => { const c = b[k] || '—'; (g[c] = g[c] || {v:0, l:[]}).v += b.indicado||0; g[c].l.push(b); });
-      const G = Object.entries(g).sort((a,b) => k === 'ano' ? b[0].localeCompare(a[0]) : b[1].v - a[1].v), mx = Math.max(1, ...G.map(([,x]) => x.v));
-      return `<div class="vx-card em-r"><h3>${tit}</h3>${G.slice(0, lim).map(([c, x]) => `<div${R('r|'+k+'|'+c, tit+': '+c, x.l)}><span>${esc(c)} <small>${new Set(x.l.map(b => b.emenda)).size} emenda(s)</small></span><b>${fmtC(x.v)}</b><i><em style="width:${(100*x.v/mx).toFixed(1)}%"></em></i></div>`).join('')}</div>`; };
-    graf = `<div class="em-g">${rank('Por ano','ano',8)}${rank('Por parlamentar','autorP',10)}${rank('Por ação','acaoN',10)}</div><div class="em-g">${rank('Por UF','uf',10)}${rank('Por UG','ugP',8)}${rank('Por modalidade','modalidade',8)}${rank('Por situação','situacao',10)}</div>`; }
   EMI._reg = reg;
-  el.innerHTML = topo + funil + filtros + tab + graf + `<p class="em-n">Fontes: SIOP (extrator de emendas · ${esc((EMI.d.anos||[]).join(', '))}), Transferegov (propostas, instrumentos e empenhos, pelo nº da emenda + CNPJ do beneficiário)${X ? ' e Tesouro Gerencial (EXE, posição de '+esc(EMI.exe.mes)+')' : ''} · robô de ${esc(EMI.d.gerado_em||'')}.</p>`;
+  el.innerHTML = topo + funil + filtros + graf + tab + `<p class="em-n">Fontes: SIOP (extrator de emendas · ${esc((EMI.d.anos||[]).join(', '))}), Transferegov (propostas, instrumentos e empenhos, pelo nº da emenda + CNPJ do beneficiário)${X ? ' e Tesouro Gerencial (EXE, posição de '+esc(EMI.exe.mes)+')' : ''} · robô de ${esc(EMI.d.gerado_em||'')}.</p>`;
   const bu = document.getElementById('emiBusca'); if(bu && EMI.foco){ bu.focus(); const n = bu.value.length; bu.setSelectionRange(n, n); EMI.foco = false; }
 }
 document.addEventListener('input', e => { if(e.target.id === 'emiBusca'){ EMI.q = e.target.value; EMI.foco = true; EMI.sel = null; clearTimeout(EMI.t); EMI.t = setTimeout(desenharEmi, 250); } });
-document.addEventListener('click', e => { if(e.target.closest('[data-emigraf]')){ EMI.graf = !EMI.graf; desenharEmi(); } else if(e.target.closest('[data-emimais]')){ EMI.lim = (EMI.lim || 300) + 300; desenharEmi(); } });
+document.addEventListener('click', e => { if(e.target.closest('[data-emipar]')){ EMI.parTodos = !EMI.parTodos; desenharEmi(); return; } if(e.target.closest('[data-emigraf]')){ EMI.graf = !EMI.graf; desenharEmi(); } else if(e.target.closest('[data-emimais]')){ EMI.lim = (EMI.lim || 300) + 300; desenharEmi(); } });
 document.addEventListener('click', e => {
   const k = e.target.closest('[data-emi]'); if(k){ EMI.sel = EMI.sel === k.dataset.emi ? null : k.dataset.emi; EMI.lim = 300; desenharEmi(); const t = document.getElementById('emiTab'); if(t) t.scrollIntoView({behavior:'smooth', block:'start'}); return; }
   if(e.target.closest('[data-emisel]')){ EMI.sel = null; desenharEmi(); return; }
@@ -9784,6 +9819,18 @@ document.addEventListener('click', e => {
 .em-fil{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px 10px;margin-top:12px;align-items:end;background:#fff;border-radius:14px;padding:12px 14px}.em-fil label{display:flex;flex-direction:column;gap:3px;font-size:12px;font-weight:600}
 .em-bus input{border:1px solid #cfd8e3;border-radius:7px;padding:6px 9px;font:inherit;font-size:12.5px;background:#f7f9fb}
 .em-pl{display:inline-block;border-radius:10px;padding:1px 8px;font-size:11px;font-weight:700;white-space:nowrap}.em-pl.g{background:#e3f4e6;color:#1d6b35}.em-pl.a{background:#fdf0d5;color:#8a5a00}.em-pl.r{background:#fde4e4;color:#b3261e}.em-pl.n{background:#eef2f6;color:#4c5c66}
+.em-gg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:12px}.em-c h3{margin:0 0 8px;font-size:15px;color:#155a30}.em-2{grid-column:span 2}.em-3{grid-column:1/-1}
+.em-svg{width:100%;max-height:230px}.em-svg g{cursor:pointer}.em-svg g:hover rect{opacity:.8}.em-gv{font-size:10px;fill:#1d3a17;font-weight:700}.em-ga{font-size:12px;fill:#5f6f66;font-weight:600}
+.em-lg{display:flex;flex-wrap:wrap;gap:12px;font-size:12px;color:#5f6f66;margin-top:4px}.em-lg i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:4px;vertical-align:-1px}.em-gr{background:linear-gradient(90deg,#eef3ec,#1d6b2a)!important;width:40px!important}
+.em-ro{display:flex;align-items:center;gap:10px}.em-ro path{cursor:pointer}.em-ro path:hover{opacity:.8}.em-rt{font-size:15px;font-weight:800;fill:#1d3a17}.em-rs{font-size:9px;fill:#5f6f66}
+.em-lg2{flex:1;min-width:0}.em-lg2>div{display:grid;grid-template-columns:12px 1fr auto;gap:6px;align-items:center;font-size:12.5px;padding:3px 2px;cursor:pointer;border-radius:5px}.em-lg2>div:hover{background:#eef5f0}.em-lg2 i{width:11px;height:11px;border-radius:3px}.em-lgr{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:0 12px;margin-top:8px}
+.em-dep{display:grid;grid-template-columns:30px 1fr auto;gap:8px;align-items:center;padding:4px 2px;cursor:pointer;border-radius:6px}.em-dep:hover{background:#eef5f0}.em-av{width:28px;height:28px;border-radius:50%;background:#e3f1da;color:#1d5e2c;display:grid;place-items:center;font-size:11px;font-weight:800}
+.em-dep small{display:block;font-size:12.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.em-dep i{display:block;height:6px;background:#e3f1da;border-radius:3px;margin-top:3px}.em-dep em{display:block;height:6px;background:#3f7f22;border-radius:3px}.em-dep b{font-size:12.5px}
+.em-lk{border:0;background:none;color:#1e7a3c;font-weight:700;cursor:pointer;padding:4px 0;font:inherit;font-size:12.5px}
+.em-mapa{width:100%;max-height:300px;display:block}.em-uf{stroke:#fff;stroke-width:1.2}.em-uf.tem{cursor:pointer}.em-uf.tem:hover{stroke:#0b2545;stroke-width:2}.em-ufr{font-size:11px;font-weight:700;fill:#0b2545;opacity:.55;text-anchor:middle;pointer-events:none}
+.em-blk{display:flex;height:90px;gap:2px;border-radius:10px;overflow:hidden}.em-blk>div{cursor:pointer;color:#fff;padding:8px;min-width:0;overflow:hidden}.em-blk>div:hover{filter:brightness(1.12)}.em-blk span{display:block;font-size:12px;font-weight:700}.em-blk b{font-size:17px}
+.em-bar{display:flex;height:26px;border-radius:8px;overflow:hidden;gap:1px}.em-bar i{cursor:pointer;min-width:3px}.em-bar i:hover{filter:brightness(1.15)}
+@media(max-width:1100px){.em-gg{grid-template-columns:1fr}.em-2,.em-3{grid-column:auto}}
 .em-cl{background:#eef5f0;color:#155a30;border:1px solid #cfe3d5}.em-mais{margin-top:8px;border:1px solid #cfe3d5;background:#fff;border-radius:8px;padding:6px 12px;cursor:pointer;color:#155a30;font-weight:700}
 @media(max-width:1000px){.em-fun{grid-template-columns:repeat(2,minmax(0,1fr))}.em-fun>div{clip-path:none;border-radius:12px;padding:10px 12px}.em-fil{grid-template-columns:repeat(2,minmax(0,1fr))}}`; document.head.appendChild(st); })();
 function desenharConstr(tela){ const [t, s] = TELAS_CONSTR[tela];
