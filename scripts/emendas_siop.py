@@ -47,6 +47,7 @@ def main(saida):
             if n.strip():
                 porEmenda.setdefault((p.get('ano_proposta', ''), n.strip().lstrip('0'), dig(p.get('cnpj_proponente'))), []).append(p)
 
+    vistos_inst, vistos_ne = set(), set()
     em = {}      # nº da emenda → resumo (dotação: autorizado, empenhado, disponível)
     ben = []     # uma linha por beneficiário
     for r in linhas_siop:
@@ -86,6 +87,16 @@ def main(saida):
         ni = (p.get('nr_instrumento') or '').strip()
         it = insts.get(ni, {})
         nes = emps.get(ni, [])
+        cod = num[4:].lstrip('0')
+        daEm = [x for x in nes if cod and (cod in (x.get('PLANO_INTERNO') or '') or cod in (x.get('DESCRICAO_EMENDA_SIAFI') or ''))]   # a nota é desta emenda (PI I13390014 ou descrição da emenda no SIAFI)
+        nes = daEm if daEm else ([] if len({e for e in (p.get('nr_emenda') or '').split(' | ') if e.strip()}) > 1 else nes)   # instrumento com várias emendas: só as notas da emenda
+        nesG = [x for x in nes if str(x.get('NATUREZA_DESPESA', '')).startswith(gnd)] if gnd else nes   # custeio (3) e investimento (4) da mesma proposta ficam em linhas separadas
+        nes = nesG or ([] if ni in vistos_inst else nes)
+        nes = [x for x in nes if (ni, x.get('NR_EMPENHO'), x.get('ID_EMPENHO')) not in vistos_ne]   # cada nota conta uma vez só (a mesma entidade pode vir em várias linhas do SIOP)
+        vistos_ne.update((ni, x.get('NR_EMPENHO'), x.get('ID_EMPENHO')) for x in nes)
+        primeiro = ni and ni not in vistos_inst
+        if ni:
+            vistos_inst.add(ni)
         proc = dig(it.get('nr_processo'))
         proc = f'{proc[:5]}.{proc[5:11]}/{proc[11:15]}-{proc[15:17]}' if len(proc) == 17 else (it.get('nr_processo') or '')
         ug = (it.get('ug_emitente') or p.get('ug_emitente') or '').strip()
@@ -97,7 +108,7 @@ def main(saida):
             instrumento=ni, processo=proc, ug=ug,
             pi=' / '.join(sorted({x.get('PLANO_INTERNO', '') for x in nes} - {''})), ptres=' / '.join(sorted({x.get('PTRES', '') for x in nes} - {''})),
             nd=' / '.join(sorted({x.get('NATUREZA_DESPESA', '') for x in nes} - {''})), ne=' / '.join(sorted({x.get('NR_EMPENHO', '') for x in nes} - {''})),
-            empenhado=round(sum(f(x.get('VALOR_EMPENHO')) for x in nes), 2), desembolsado=round(f(it.get('valor_desembolsado')), 2),
+            empenhado=round(sum(f(x.get('VALOR_EMPENHO')) for x in nes), 2), desembolsado=round(f(it.get('valor_desembolsado')), 2) if primeiro else 0.0,   # o desembolso é do instrumento: conta uma vez só
             link=(p.get('link_proposta') or '').strip()))
     for e in em.values():
         for k in ('autorizado', 'empenhado_siop', 'disponivel', 'indicado'):
