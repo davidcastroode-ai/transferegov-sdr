@@ -7953,6 +7953,7 @@ setInterval(carregarAtualiz, 60000);
     <div><b>Dados</b><span id="rodPosicao">Posição —</span><small id="rodLido">Lidos em —</small></div>
   </div>
   <p class="rod-nota">Execução: dotação atualizada = crédito disponível + indisponível (bloqueado) + empenhado. RAP: inscrito (processados e não processados, inscritos e reinscritos) = cancelado + pago + a pagar. Os valores do Tesouro Gerencial são saldo acumulado até o mês escolhido; a evolução mensal mostra o movimento de cada mês (mês − mês anterior). Mi = milhões · Mil = milhares de reais.</p>
+  <p class="rod-nota"><b>Aviso:</b> este painel não é um site oficial do Ministério da Agricultura e Pecuária. É apenas uma ferramenta de controle interno da CAGOFEP (SDR/MAPA).</p>
 </footer>
 </section>
 <div id="tip"></div>
@@ -12977,6 +12978,11 @@ function preCarregar(){
     }).join('') + '</div>').join('')}</div>
     <div class="sb-pe">COAPI · SDR/MAPA<br><span id="sb-atu"></span></div>`;
   document.body.appendChild(nav);
+  // aviso fixo no fim de todas as páginas: o painel não é site oficial
+  { const av = document.createElement('footer'); av.id = 'sdr-aviso';
+    av.innerHTML = '<b>Aviso:</b> este painel <b>não é um site oficial</b> do Ministério da Agricultura e Pecuária. É apenas uma ferramenta de <b>controle interno da CAGOFEP</b> (SDR/MAPA). Os dados oficiais estão nos sistemas de origem: SIAFI, Tesouro Gerencial, SIOP, Transferegov e Contratos.gov.br.';
+    const sa = document.createElement('style'); sa.textContent = '#sdr-aviso{margin:18px 24px 14px;padding:10px 16px;border-top:2px solid #cfe3d5;background:#f4f8f5;border-radius:10px;color:#4c5c53;font-size:12px;line-height:1.5;text-align:center}#sdr-aviso b{color:#155a30}@media print{#sdr-aviso{margin:10px 0}}';
+    document.head.appendChild(sa); document.body.appendChild(av); }
   const abrirBt = document.createElement('button'); abrirBt.id = 'sb-abrir'; abrirBt.type = 'button'; abrirBt.textContent = '☰ Menu'; document.body.appendChild(abrirBt);
   const fundo = document.createElement('div'); fundo.id = 'sb-fundo'; document.body.appendChild(fundo);
   document.body.classList.add('sb-on');
