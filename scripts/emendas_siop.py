@@ -39,6 +39,9 @@ def main(saida):
     for r in ler_csv(os.path.join(saida, 'empenhos.csv.gz')) or ler_csv(os.path.join(saida, 'empenhos.csv')):
         emps.setdefault(r['NR_CONVENIO'], []).append(r)
     porEmenda = {}
+    # propostas (o robô baixa as de 2023 em diante) + instrumentos (todos os anos, trazem a proposta de origem)
+    vistos = {p.get('id_proposta') for p in props}
+    props = props + [r for r in insts.values() if r.get('id_proposta') not in vistos]
     for p in props:
         for n in (p.get('nr_emenda') or '').split(' | '):
             if n.strip():
@@ -74,6 +77,12 @@ def main(saida):
             ps = [p for k, L in porEmenda.items() if k[1] == num[4:].lstrip('0') and k[2] == cnpj for p in L]
         ps = sorted(ps, key=lambda p: (p.get('nr_instrumento') == '', p.get('nr_proposta', '')))
         p = ps[0] if ps else {}
+        pm = (p.get('modalidade') or '').strip().upper()
+        if pm:   # a modalidade de verdade é a da proposta no Transferegov (o MA 90 do SIOP às vezes vira convênio/termo depois)
+            mod = {'CONVENIO': 'Convênio', 'TERMO DE FOMENTO': 'Termo de Fomento', 'CONTRATO DE REPASSE': 'Contrato de Repasse', 'TERMO DE COLABORACAO': 'Termo de Colaboração'}.get(pm, pm.title())
+        nj = (p.get('natureza_juridica') or '').upper()
+        if nj:
+            tp = 'Município' if 'MUNICIPAL' in nj else 'Estado' if 'ESTADUAL' in nj or 'DISTRITO' in nj else 'OSC' if 'SOCIEDADE CIVIL' in nj or 'PRIVAD' in nj or 'ENTIDADE' in nj else 'Consórcio' if 'CONS' in nj else tp
         ni = (p.get('nr_instrumento') or '').strip()
         it = insts.get(ni, {})
         nes = emps.get(ni, [])
