@@ -8404,6 +8404,7 @@ async function carregarVisao1(v){
     if(!r.ok){ D.erros.push(F.nome+': '+r.e.message+' (clique em ↻ Atualizar)'); IDB.del(chavePrep(F, v)); return; }
     D.agg.push(...semDuplicar(v, r.v, F)); });
   D.agg.forEach(d => { if(d.mes){ const l = Array.isArray(MESES_TXT[d.mes]) ? MESES_TXT[d.mes] : (MESES_TXT[d.mes] = []); if(!l.includes(d.mesTxt)) l.push(d.mesTxt); } });
+  D.ultMes = Math.max(0, ...D.agg.map(d => +d.mes || 0));   // cada base tem o seu último mês (o RAP pode chegar com um mês a mais que o EXE)
   D.pronto = true;
   setTimeout(() => lerDatas(v).catch(() => {}), 0);
   LIDO_EM = new Date();
@@ -9491,8 +9492,8 @@ async function prepararTela(tela){
     if(!DADOS[v].pronto){ telaCarregando('Lendo as abas de '+(v==='exe'?'execução':'restos a pagar')+'…'); await carregarVisao(v); }
   }
   const meses = Object.keys(MESES_TXT).map(Number);
-  ULTIMO_MES = Math.max(...meses);
-  if(!SEL.mes || !MESES_TXT[SEL.mes]) SEL.mes = String(ULTIMO_MES);
+  { const ult = BASES_DA_TELA[tela].map(v => DADOS[v].ultMes).filter(Boolean); ULTIMO_MES = ult.length ? Math.min(...ult) : Math.max(...meses); }
+  if(!SEL.mes || !MESES_TXT[SEL.mes] || +SEL.mes > ULTIMO_MES) SEL.mes = String(ULTIMO_MES);   // um mês que esta tela ainda não tem não fica selecionado
   desenharFiltros();
   for(const v of BASES_DA_TELA[tela]){
     if(!DADOS[v].det[SEL.mes]){ telaCarregando('Carregando as notas de empenho de '+rotMes(+SEL.mes)+' ('+(v==='exe'?'execução':'RAP')+')…'); await garantirDetalhe(v, SEL.mes); }
@@ -12814,9 +12815,11 @@ async function abrirVisaoGeral(){
         if(VG.ant[k] || document.getElementById('v-visao').hidden) return;
         VG.ant[k] = await W.__dadosAntigo(k); vgRedesenhar(); }));
     }catch(e){ VG.erros.push('Parcerias/TED: '+e.message); } };
-  const meses = () => { const m = Object.keys(MESES_TXT).map(Number).sort((a,b)=>a-b); ULTIMO_MES = m[m.length-1]; if(!SEL.mes) SEL.mes = String(ULTIMO_MES);
-    VG.mes = String(ULTIMO_MES); VG.mesAnt2 = m.length>2 ? String(m[m.length-3]) : ''; };
-  VG.rapStatus = DADOS.rap.pronto && VG.mes && DADOS.rap.det[VG.mes] ? 'ok' : 'lendo';
+  const meses = () => { const m = Object.keys(MESES_TXT).map(Number).sort((a,b)=>a-b);
+    const uE = DADOS.exe.ultMes || m[m.length-1], uR = DADOS.rap.ultMes || uE;
+    ULTIMO_MES = uE; if(!SEL.mes) SEL.mes = String(ULTIMO_MES);
+    VG.mes = String(uE); VG.mesR = String(uR); const mE = m.filter(x => x <= uE); VG.mesAnt2 = mE.length>2 ? String(mE[mE.length-3]) : ''; };
+  VG.rapStatus = DADOS.rap.pronto && VG.mesR && DADOS.rap.det[VG.mesR] ? 'ok' : 'lendo';
   const pAnt = lerAntigas();                                         // Parcerias/TED/Propostas começam já
   const pRapRes = DADOS.rap.pronto ? Promise.resolve() : carregarVisao('rap').catch(e => e);   // resumo do RAP junto com o EXE
   try{
@@ -12827,7 +12830,7 @@ async function abrirVisaoGeral(){
   try{
     const er = await pRapRes; if(er instanceof Error) throw er;
     if(!DADOS.rap.pronto) await carregarVisao('rap');
-    meses(); await garantirDetalhe('rap', VG.mes);
+    meses(); await garantirDetalhe('rap', VG.mesR);
     VG.rapStatus = 'ok';
   }catch(e){ VG.rapStatus = 'erro'; VG.erros.push('RAP: '+e.message); }
   desenharVisaoGeral();
@@ -12868,18 +12871,18 @@ function saudeRobo(k){
 }
 function desenharVisaoGeral(){
   const el = document.getElementById('vg-corpo'); if(!el || document.getElementById('v-visao').hidden) return;
-  const exeL = (DADOS.exe.det[VG.mes]||[]).filter(vgPassa), rapL = (DADOS.rap.det[VG.mes]||[]).filter(vgPassa);
+  const exeL = (DADOS.exe.det[VG.mes]||[]).filter(vgPassa), rapL = (DADOS.rap.det[VG.mesR||VG.mes]||[]).filter(vgPassa);
   const e = somar(exeL,'exe'), r = somar(rapL,'rap');
   // filtros do topo
   const todasUG = [...new Set((DADOS.exe.det[VG.mes]||[]).map(d => d.ug))];
   const ugsOrd = UG_ORDEM.filter(u => todasUG.includes(u)).concat(todasUG.filter(u => !UG_ORDEM.includes(u)).sort());
-  const acoes = [...new Set((DADOS.exe.det[VG.mes]||[]).concat(DADOS.rap.det[VG.mes]||[]).map(d => d.acao))].filter(Boolean).sort();
-  { const base = (DADOS.exe.det[VG.mes]||[]).concat(DADOS.rap.det[VG.mes]||[]);
+  const acoes = [...new Set((DADOS.exe.det[VG.mes]||[]).concat(DADOS.rap.det[VG.mesR||VG.mes]||[]).map(d => d.acao))].filter(Boolean).sort();
+  { const base = (DADOS.exe.det[VG.mes]||[]).concat(DADOS.rap.det[VG.mesR||VG.mes]||[]);
     const cont = (k, outro, v) => base.filter(d => d[k]===v && (!VG[outro].length || VG[outro].includes(d[outro]))).length;
     document.getElementById('vg-ug').innerHTML = msxHTML('vg|ug', {rot:'UG', todos:'UG: todas', opts:() => ugsOrd.map(u => [u, u+(UG_NOMES_CURTOS[u]?' · '+UG_NOMES_CURTOS[u].split(' · ')[0]:''), cont('ug','acao',u)]), get:() => VG.ug, set:a => { VG.ug = a; desenharVisaoGeral(); }});
     document.getElementById('vg-acao').innerHTML = msxHTML('vg|acao', {rot:'Ação', todos:'Ação: todas', opts:() => acoes.map(a => [a, a, cont('acao','ug',a)]), get:() => VG.acao, set:a => { VG.acao = a; desenharVisaoGeral(); }}); }
   { const a = textoAtualTG(['exe','rap']); const sub = document.getElementById('vg-sub');
-    sub.textContent = 'Posição de '+rotMes(+VG.mes)+' · Tesouro Gerencial'+(a ? ' · '+a.replace('Atualizado','atualizado') : (LIDO_EM ? ' · lido às '+LIDO_EM.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}) : '')); sub.title = tituloAtualTG(['exe','rap']); }
+    sub.textContent = 'Posição de '+rotMes(+VG.mes)+(VG.mesR && VG.mesR!==VG.mes ? ' (EXE) · '+rotMes(+VG.mesR)+' (RAP)' : '')+' · Tesouro Gerencial'+(a ? ' · '+a.replace('Atualizado','atualizado') : (LIDO_EM ? ' · lido às '+LIDO_EM.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}) : '')); sub.title = tituloAtualTG(['exe','rap']); }
   // ---------- execução ----------
   const pagoAno = e.pago + r.pago;
   let h = `<h2 class="vg-sec">Execução do ano <i>· clique num card para abrir o Financeiro</i></h2>
@@ -12965,7 +12968,7 @@ function desenharVisaoGeral(){
   const tl = k => A[k] ? (A[k].erro ? 'não foi possível ler' : nfmt((A[k].linhas||[]).length)+' linhas'+linData(dataAnt(k))+tempo(k)) : 'carregando…';
   h += `<h2 class="vg-sec">Saúde dos dados <i>· o que foi lido de cada base</i></h2><div class="vg-saude">
     ${st('EXE · Tesouro', DADOS.exe.pronto && !DADOS.exe.erros.length && !(DATAS.exe && diasDesde(DATAS.exe.ult)>4), DADOS.exe.pronto ? nfmt((DADOS.exe.det[VG.mes]||[]).length)+' linhas em '+rotMes(+VG.mes)+dTG('exe')+(TEMPOS_PAI.exe ? `<em>⏱ leu em ${String(TEMPOS_PAI.exe).replace('.',',')} s</em>` : '') : 'carregando…')}
-    ${st('RAP · Tesouro', DADOS.rap.pronto && !DADOS.rap.erros.length && !(DATAS.rap && diasDesde(DATAS.rap.ult)>4), DADOS.rap.pronto ? nfmt((DADOS.rap.det[VG.mes]||[]).length)+' linhas'+(DADOS.rap.vazias.length?' · '+DADOS.rap.vazias.length+' aba(s) vazia(s)':'')+dTG('rap')+(TEMPOS_PAI.rap ? `<em>⏱ leu em ${String(TEMPOS_PAI.rap).replace('.',',')} s</em>` : '') : 'carregando…')}
+    ${st('RAP · Tesouro', DADOS.rap.pronto && !DADOS.rap.erros.length && !(DATAS.rap && diasDesde(DATAS.rap.ult)>4), DADOS.rap.pronto ? nfmt((DADOS.rap.det[VG.mesR||VG.mes]||[]).length)+' linhas'+(DADOS.rap.vazias.length?' · '+DADOS.rap.vazias.length+' aba(s) vazia(s)':'')+dTG('rap')+(TEMPOS_PAI.rap ? `<em>⏱ leu em ${String(TEMPOS_PAI.rap).replace('.',',')} s</em>` : '') : 'carregando…')}
     ${st('Parceria SDR', lin('parc'), tl('parc'))}${st('Propostas', lin('prop'), tl('prop'))}${st('TED vigentes', lin('tedVig'), tl('tedVig'))}${st('Contratos CEPLAC', lin('base'), tl('base'))}${['tg','ctr','ted'].map(saudeRobo).join('')}
   </div>${(VG.erros.concat(errAnt)).length ? `<p class="vg-erro">${esc(VG.erros.concat(errAnt).join(' · '))}</p>` : ''}`;
   el.innerHTML = h;
