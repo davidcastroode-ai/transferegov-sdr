@@ -51,6 +51,7 @@ def rp(v):
 
 
 ID = re.compile(r'\b(9\d{5}|[1-9]AA[A-Z0-9]{3}|6\d{5})\b')
+SDR = ('420013', '130141', '130010', '130255', '135098')
 GRAV = {'alta': 0, 'média': 1, 'baixa': 2}
 
 
@@ -82,9 +83,9 @@ def main():
     donos = {k: defaultdict(set) for k in ('NC', 'PF', 'NE')}
     for t, f in ficha.items():
         for x in f.get('ncs') or []:
-            donos['NC'][x[0]].add(t)
+            donos['NC'][(x[2], x[0])].add(t)
         for x in f.get('pfs') or []:
-            donos['PF'][x[0]].add(t)
+            donos['PF'][(x[2], x[0])].add(t)
         for x in f.get('nes') or []:
             donos['NE'][x[0]].add(t)
 
@@ -100,7 +101,7 @@ def main():
                  'mover para Prestação de contas no controle ou registrar a prorrogação (termo aditivo)')
         # 2. fim da vigência divergente
         fs = {k: v for k, v in fins.items() if v and k != 'Painel'}
-        if len(set(fs.values())) > 1:
+        if fs and (max(fs.values()) - min(fs.values())).days > 1:   # 1 dia de diferença é só a contagem (Tesouro conta o dia seguinte)
             prob(t, 'Fim da vigência divergente', 'média', ' · '.join(f'{k} {br(v)}' for k, v in fs.items()), 'API, controle, Tesouro',
                  'conferir o fim correto (último aditivo) e acertar a fonte errada')
         # 3. RP × emenda
@@ -109,7 +110,7 @@ def main():
         if len(set(rps.values())) > 1:
             prob(t, 'RP divergente', 'alta', ' · '.join(f'{k}: {v}' for k, v in rps.items()), 'API, controle, NC do Tesouro (pelo PTRES)',
                  'vale o RP da NC do Tesouro; corrigir no controle ou desconsiderar o da API')
-        emenda = (a.get('Emenda (autor)') or '').strip(' |')
+        emenda = ' | '.join(e for e in re.split(r'\s*\|\s*', a.get('Emenda (autor)') or '') if e.strip('0 '))
         rpReal = (rps.get('Tesouro (NC)') or rps.get('Controle') or rps.get('API') or '')
         if emenda and rpReal and not re.search(r'RP [678]', rpReal):
             prob(t, 'RP 2 com dado de emenda', 'alta', f'RP {rpReal.replace("RP ", "")} (sem emenda), mas a API traz autor de emenda {emenda[:60]}', 'API × Tesouro/controle',
@@ -120,8 +121,12 @@ def main():
         acs = {'API': (a.get('Ação orçamentária') or '').strip(), 'Controle': (c.get('Ação') or '').strip(), 'NC': ' / '.join(sorted(acNC.get(t, [])))}
         acs = {k: v for k, v in acs.items() if v}
         norm_ = lambda v: frozenset(re.findall(r'[0-9A-Z]{4}', v.upper()))
-        if len({norm_(v) for v in acs.values()}) > 1:
-            prob(t, 'Ação divergente', 'média', ' · '.join(f'{k}: {v}' for k, v in acs.items()), 'API, controle, NC', 'vale a ação da NC; corrigir no controle')
+        decl = frozenset().union(*[norm_(v) for k, v in acs.items() if k != 'NC']) if any(k != 'NC' for k in acs) else frozenset()
+        if 'NC' in acs and decl and not (norm_(acs['NC']) & decl):
+            prob(t, 'Ação divergente', 'alta',
+                 ' · '.join(f'{k}: {v}' for k, v in acs.items()), 'API, controle, NC', 'a NC é de outra ação: conferir se a NC é deste TED')
+        elif len({norm_(v) for v in acs.values()}) > 1:
+            prob(t, 'Ação divergente', 'baixa', ' · '.join(f'{k}: {v}' for k, v in acs.items()), 'API, controle, NC', 'vale a ação da NC; corrigir no controle')
         # 5. firmado divergente
         fr = {'API': num(a.get('Valor firmado')), 'Tesouro': num(ts.get('fir')), 'Controle': num(c.get('Firmado / total'))}
         fr = {k: v for k, v in fr.items() if v > 0}
@@ -142,8 +147,11 @@ def main():
                 if cit and t.upper() not in obs:
                     prob(t, f'{tipo} cita outro TED', 'alta', f'{tipo} {x[0]} ({x[1]}) cita o TED {", ".join(sorted(cit))} e não este', f'{tipo} do Tesouro',
                          f'retirar a {tipo} desta ficha (pertence a {", ".join(sorted(cit))})')
-                if iu is not None and ugr and str(x[iu]).strip() and str(x[iu]).strip() != ugr and tipo == 'PF':
-                    prob(t, 'PF para outra UG', 'média', f'PF {x[0]} foi para a UG {x[iu]}, mas o TED é da UG {ugr}', 'PF × cadastro', 'conferir se a PF é deste TED')
+                if iu is not None and tipo == 'PF' and str(x[iu]).strip() in SDR and str(x[2]).strip() in SDR:
+                    prob(t, 'PF interna somada como repasse', 'alta', f'PF {x[0]} ({x[1]}) foi da UG {x[2]} para a UG {x[iu]} (da própria SDR): é financeiro recebido pela SDR, não repasse ao parceiro', 'PF do Tesouro',
+                         'não somar esta PF no repassado do TED')
+                elif iu is not None and ugr and str(x[iu]).strip() and str(x[iu]).strip() != ugr and tipo == 'PF':
+                    prob(t, 'PF para outra UG', 'baixa', f'PF {x[0]} foi para a UG {x[iu]}, mas o TED é da UG {ugr}', 'PF × cadastro', 'conferir se a UG é do mesmo órgão (ex.: unidade x sede) ou se a PF é de outro TED')
         # 8. PF maior que o TED (PF de vários TEDs somada inteira)
         firm = max(fr.values()) if fr else num(f.get('fir'))
         for x in f.get('pfs') or []:
@@ -170,12 +178,13 @@ def main():
         for doc, ts_ in d.items():
             if len(ts_) > 1 and tipo != 'NE':
                 for t in ts_:
-                    prob(t, f'{tipo} em mais de uma ficha', 'alta', f'{tipo} {doc} aparece também em {", ".join(sorted(ts_ - {t}))}', 'fichas', 'manter só no TED citado no documento')
+                    prob(t, f'{tipo} em mais de uma ficha', 'alta', f'{tipo} {doc[1]} (UG {doc[0]}) aparece também em {", ".join(sorted(ts_ - {t}))}', 'fichas', 'manter só no TED citado no documento')
     # 12. mesmo processo com dois nº
     for t, r in cad.items():
         if r.get('Mesmo processo de'):
             prob(t, 'Mesmo processo com outro nº', 'média', f'processo {r.get("Processo")} também no TED {r["Mesmo processo de"]}', 'cadastro', 'confirmar se é o mesmo TED (nº duplicado) ou aditivo')
 
+    vis = set(); P_ = [p for p in P_ if not ((p['Nº TED'], p['Categoria'], p['O que foi encontrado']) in vis or vis.add((p['Nº TED'], p['Categoria'], p['O que foi encontrado'])))]
     P_.sort(key=lambda r: (GRAV[r['Gravidade']], r['Categoria'], r['Nº TED']))
     if P_:
         with open(os.path.join(P, 'ted_varredura.csv'), 'w', encoding='utf-8', newline='') as fh:

@@ -5803,6 +5803,8 @@ function lerTed(text, chave){
       fiscT:limpa(g(r,'fiscT')), fiscS:limpa(g(r,'fiscS')), situ:limpa(g(r,'situ')), trat:limpa(g(r,'trat')),
       firmado:toNum(g(r,'firmado')), aRep:toNum(g(r,'aRep')), rep:toNum(g(r,'rep')), pedFin:toNum(g(r,'pedFin')), orcPend:toNum(g(r,'orcPend')),
       total:toNum(g(r,'total')), aComp:toNum(g(r,'aComp')), comp:toNum(g(r,'comp'))};
+    // vigência já encerrada mas o TED ainda na aba de vigentes: não mostra como "Vigente" (pedido de 03/11/2026)
+    if(chave==='tedVig' && dias!==null && dias<0) d.fase = 'Vigência encerrada';
     d.ugResp = g(r,'ugResp').replace(/\.0+$/,'');
     // o controle interno é das UGs 420013 e 130010: sem a coluna preenchida, CEPLAC = 130010, o resto = 420013 (o SIAFI confirma depois, em tedLigarSis)
     if(!/^\d{6}$/.test(d.ugResp)){ d.ugResp = /CEPLAC/.test(d.depto) ? '130010' : '420013'; d.ugRespInf = true; }
@@ -6002,7 +6004,7 @@ const VIEW_TED = {
       const porEnt = agrupar(base('ent').filter(d => d.ent),'ent',KT).sort((a,b) => b[1].valor-a[1].valor);
       const t7 = porEnt.slice(0,7).reduce((s,[,t]) => s+t.valor, 0), totV = porEnt.reduce((s,[,t]) => s+t.valor, 0) || 1;
       const leitura = [porEnt.length > 7 ? `• 7 entidades concentram <b>${pc2(t7, totV)}</b> do valor dos TEDs.` : '', vA ? `• <b>R$ ${fmtC(vA)}</b> ainda a repassar.` : '', v90.length ? `• <b>${intN2(v90.length)}</b> TEDs vencem em até 90 dias.` : ''].filter(Boolean).join('<br>');
-      const corFase = {'Vigente':'#1d6fb8','Dispensa de TED':'#c8742f','Prestação de contas':'#d4a017','Aprovado / concluído':'#1e6b45'};
+      const corFase = {'Vigente':'#1d6fb8','Vigência encerrada':'#c0392b','Dispensa de TED':'#c8742f','Prestação de contas':'#d4a017','Aprovado / concluído':'#1e6b45'};
       const gF = agrupar(base('fase'),'fase',KT);
       const vigM = Object.fromEntries(agrupar(filtrar(D('tedVig'),null,'faixaVig'),'faixaVig',KT)), porVig = FAIXAS_VIG.filter(f => vigM[f]).map(f => [f, vigM[f]]);
       const corVig = {'Vencida':'#b3261e','Até 30 dias':'#d9822b','31 a 90 dias':'#e8b04a','91 a 180 dias':'#7fa36a','181 a 365 dias':'#2f7a3a','Mais de 1 ano':'#1f5236','Sem data':'#b9b2a2'};
@@ -6011,7 +6013,7 @@ const VIEW_TED = {
       const ops = [
         ['ent', 'Entidade (ranking)', () => `<div class="pp-don pp-fun"><div>${bullet(porEnt,'ent',camT,{limite:10, extraTip:t => '<br>'+t._n+' TED(s)'})}</div>${leitura ? `<div class="pp-ins"><b>Leitura rápida</b><br>${leitura}</div>` : ''}</div>`],
         ['ug', 'UG', () => ppDonut(agrupar(base('ugResp'),'ugResp',KT), 'ugResp', {sub:'TEDs', leitura:ppLeitura(agrupar(base('ugResp'),'ugResp',KT),'_n','dos TEDs')})],
-        ['fase', 'Situação', () => ppFunil(['Vigente','Dispensa de TED','Prestação de contas','Aprovado / concluído'].map(f => { const t = (gF.find(([k]) => k===f)||[,{_n:0,valor:0}])[1]; return [f, t._n, corFase[f], fmtBRL(t.valor)]; }).filter(x => x[1]), 'fase', leitura)],
+        ['fase', 'Situação', () => ppFunil(['Vigente','Vigência encerrada','Dispensa de TED','Prestação de contas','Aprovado / concluído'].map(f => { const t = (gF.find(([k]) => k===f)||[,{_n:0,valor:0}])[1]; return [f, t._n, corFase[f], fmtBRL(t.valor)]; }).filter(x => x[1]), 'fase', leitura)],
         ['dep', 'Departamento', () => secao('Departamentos','valor do TED e repassado · clique para filtrar', bullet(agrupar(base('depto'),'depto',KT).sort((a,b) => b[1].valor-a[1].valor),'depto',camT,{limite:10, extraTip:t => '<br>'+t._n+' TED(s)'}))],
         ['ano', 'Ano', () => secao('TEDs por ano','valor do TED e repassado · clique para filtrar', colunas(porAno, camT, 'ano', k => k, {largura:30, altura:160}))],
         ['vig', 'Vigência (faixas)', () => secao('Prazo de vigência','TEDs vigentes por tempo até o fim da vigência · clique para filtrar', colunas(porVig,[{k:'_n',nome:'TEDs',cor:'var(--s2)',corFn:k => corVig[k],tip:cntT}],'faixaVig',k => k,{largura:46, altura:160, fmt:cntT, semLegenda:true}))],
@@ -6043,7 +6045,7 @@ const VIEW_TED = {
       ${ppTabelas(tabs)}
       ${ppSec('Lista de TEDs', 'acompanha os filtros e os cliques · clique na linha para abrir a ficha')}
       ${ppLista({id:'ted', tit:'TED EQUIPE SDR · lista de TEDs', lista:todos, ord:'valor', abre:'ted', arquivo:'ted-equipe-sdr',
-        filtros:[['fase','Situação',['Vigente','Dispensa de TED','Prestação de contas','Aprovado / concluído']],['ugResp','UG'],['ent','Entidade'],['faixaVig','Vigência',FAIXAS_VIG]],
+        filtros:[['fase','Situação',['Vigente','Vigência encerrada','Dispensa de TED','Prestação de contas','Aprovado / concluído']],['ugResp','UG'],['ent','Entidade'],['faixaVig','Vigência',FAIXAS_VIG]],
         resumo:LF => { const f = soma(LF,'valor'); return [['Valor','#1f4e79','R$ '+fmtC(f),intN2(LF.length)],['Repassado','#2e8a57','R$ '+fmtC(soma(LF,'rep')),fmtPct(f?soma(LF,'rep')/f:0)],['A repassar','#b8650a','R$ '+fmtC(soma(LF,'aRep')),fmtPct(f?soma(LF,'aRep')/f:0)],['A comprovar','#5b6eae','R$ '+fmtC(soma(LF,'aComp')),'prestação de contas']]; },
         cols:[['TED', d => `<b>${esc(d.num||d.proc||'')}</b><small>${esc(d.proc && d.num ? 'proc. '+d.proc : '')}</small>`], ['Entidade', d => `${esc(d.ent||'')}<small>${esc(d.uf||'')}</small>`], ['UG', d => esc(d.ugResp||'')], ['Vigência até', d => `${esc(d.fimTxt||'—')}<small>${d.origem==='tedVig' && d.diasFim!==null ? (d.diasFim<0 ? 'vencida há '+(-d.diasFim)+' d' : 'em '+d.diasFim+' d') : ''}</small>`],
           ['Situação', d => ppPill(d.origem==='tedVig' && d.diasFim!==null && d.diasFim>=0 && d.diasFim<=90 ? 'Vence ≤ 90 d' : d.fase, d.origem==='tedVig' && d.diasFim!==null && d.diasFim>=0 && d.diasFim<=90 ? '#c75a00' : corFase[d.fase]||'#6b7280')], KV('Valor','valor'), KV('Repassado','rep'), KV('A repassar','aRep')]})}`;

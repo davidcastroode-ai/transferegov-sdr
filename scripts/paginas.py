@@ -479,7 +479,19 @@ def ted(pasta):
             ag[(x[11] or '', x[5] or '', x[6] or '', x[7] or '', x[8] or '')] += x[4]
         o['nca'] = [list(k) + [round(v, 2)] for k, v in sorted(ag.items(), key=lambda kv: -kv[1])][:20]
         pt_ = pfT.get(k, []) if k else []
+        # PF de uma UG da SDR para outra UG da SDR é financeiro que a SDR recebeu, não repasse ao parceiro (varredura de 03/11/2026)
+        if o['er'] != 'Recebido':
+            pt_ = [x for x in pt_ if str(x[3]) not in UGS_SDR]
         o['pfTes'] = pt_
+        # RP: vale o da NC do Tesouro (pelo PTRES); emenda só aparece em RP 6, 7 ou 8 e sem os códigos zerados da API
+        rpT = sorted({str(x[8]) for x in nt if re.fullmatch(r'RP \d', str(x[8] or ''))})
+        if rpT:
+            o['rpApi'] = o.get('rp', '')
+            o['rp'] = ' | '.join(rpT)
+        o['emd'] = ' | '.join(e for e in re.split(r'\s*\|\s*', o.get('emd') or '') if e.strip('0 '))
+        if o['emd'] and not re.search(r'[678]', o.get('rp') or ''):
+            o['emdApi'] = o['emd']
+            o['emd'] = ''
         if pt_ and not o['pfs']:
             o['pfs'] = pt_[:40]
         if nt and not o['ncs']:
@@ -617,7 +629,7 @@ def ted(pasta):
         # a descrição do empenho cita OUTRO TED conhecido (pelo nº ou pelo processo SEI de outro TED da lista): não é deste
         dsc = (e['desc'] or '').upper()
         procs = {dig(p_) for p_ in re.findall(r'\d{5}\.\d{6}/\d{4}-\d{2}', dsc)}
-        tedsCit = set(re.findall(r'\b(?:9\d{5}|[1-7]AA[A-Z]{3})\b', dsc)) & todosN
+        tedsCit = set(re.findall(r'\b(?:[69]\d{5}|[1-9]AA[A-Z0-9]{3})\b', dsc)) & todosN | set(re.findall(r'(?:TED|SIAFI|TRANSFER\w*)\D{0,14}\b([69]\d{5}|[1-9]AA[A-Z0-9]{3})\b', dsc))   # nº citado junto de TED/SIAFI vale mesmo fora da lista
         def outro(o):
             if tedsCit and o['n'] and o['n'].upper() not in tedsCit:
                 return True
@@ -865,6 +877,10 @@ def ted(pasta):
             ('Empenhado pela unidade (NE)', lambda o: o['neT'][0] if o.get('nes') else ''), ('Pago pela unidade (NE + RP)', lambda o: round(o['neT'][2] + o['neT'][3], 2) if o.get('nes') else ''),
             ('Notas de crédito', lambda o: ' | '.join(sorted({x[0] for x in o['ncs'] if x[0]}))), ('Programações financeiras', lambda o: ' | '.join(sorted({x[0] for x in o['pfs'] if x[0]}))),
             ('Divergências API x Tesouro', lambda o: ' · '.join(f'{r}: API {a_:,.2f} / Tesouro {b_:,.2f}' for r, a_, b_ in o.get('dif', [])))]
+    # PF entre UGs da SDR (financeiro recebido pela própria SDR) não é repasse ao parceiro: sai da lista de PF dos TEDs enviados
+    for o in linhas:
+        if o.get('er') != 'Recebido' and o.get('pfs'):
+            o['pfs'] = [x for x in o['pfs'] if str(x[3] if len(x) > 3 else '') not in UGS_SDR]
     with open(os.path.join(tp, 'ted_base_atualizada.csv'), 'w', encoding='utf-8', newline='') as fh:
         w = csv.writer(fh)
         w.writerow([h for h, _ in BASE])
