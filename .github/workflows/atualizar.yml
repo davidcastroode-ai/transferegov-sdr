@@ -31,6 +31,9 @@ jobs:
         env:
           HIST_ANTERIOR: /tmp/historico_obras.csv
 
+      - name: Proteção · download do Transferegov falhou? mantém os dados da rodada anterior
+        run: python scripts/manter_anterior.py saida
+
       - name: Base Celebração (Planilha Execução Parcerias SDR · UG 420013)
         continue-on-error: true
         run: python scripts/celebracao.py saida
