@@ -169,6 +169,11 @@ def propostas(pasta, data_carga):
         if v not in d:
             d[v] = len(d)
         return d[v]
+    # empenho do instrumento já criado para a proposta (o Transferegov registra a NE antes da assinatura): nº e valor
+    empInst = {}
+    for r in ler(pasta, 'instrumentos.csv'):
+        if r.get('nr_instrumento'):
+            empInst[r['nr_instrumento']] = (round(f(r.get('valor_empenhado'))), (r.get('notas_empenho') or '')[:120])
     for arq in sorted(glob.glob(os.path.join(pasta, 'propostas_por_ano', '*.csv'))):
         for r in ler(os.path.dirname(arq), os.path.basename(arq)):
             a = r.get('ano_proposta', '')
@@ -185,7 +190,8 @@ def propostas(pasta, data_carga):
                                ix(dic, 'r', r['proponente']), ix(dic, 'c', r['municipio']), int(r['id_proposta'] or 0), r['nr_emenda'],
                                (r['objeto'] or '')[:220 if int(a) >= anomin else 120],
                                r.get('ug_emitente', ''), r.get('inicio_vigencia_proposta', ''), r.get('fim_vigencia_proposta', ''), r.get('cnpj_proponente', ''),
-                               ix(dic, 'a', ' | '.join(sorted({x.strip()[-4:] for x in (r.get('acao_orcamentaria') or '').split('|') if x.strip()})))])
+                               ix(dic, 'a', ' | '.join(sorted({x.strip()[-4:] for x in (r.get('acao_orcamentaria') or '').split('|') if x.strip()}))),
+                               *empInst.get(r['nr_instrumento'], (0, ''))])
     emp = lambda pk: {'d': {k: list(v) for k, v in pk['dic'].items()}, 'r': pk['rows']}
     os.makedirs(os.path.join(pasta, 'propostas_pag'), exist_ok=True)
     antigos = sorted(a for a in pacotes if a != 'recentes')

@@ -5618,7 +5618,11 @@ async function preencherLigacaoProp(d){
         <p class="lg-acao">${String(x.num||'').trim() ? `<button type="button" class="lg-btn" data-fichainst="${esc(x.num)}">Abrir a ficha do instrumento ›</button>` : '<span class="lg-nota">Nº do instrumento não veio da planilha: ficha indisponível.</span>'}${x.link ? ` <a class="lg-btn lg-ext" href="${esc(x.link)}" target="_blank" rel="noopener">Abrir no Transferegov ↗</a>` : ''}</p></div>`; }).join('')
       : `<p class="lg-nota">${d.fase==='Celebrada' ? 'A proposta está como celebrada, mas o instrumento ainda não aparece na planilha de Parcerias (confira o Nº Proposta nas duas planilhas).' : 'Ainda não há instrumento: a proposta está '+esc(String(d.fase).toLowerCase())+'.'}</p>`);
   }
-  const r0 = await siafiDe(d.num, insts[0] ? insts[0].num : '', insts[0] ? insts[0].cnpj : d.cnpj, insts[0] ? insts[0].emenda : d.emenda, insts[0] ? insts[0].proc : '');
+  // empenhos que o Transferegov já registrou para o instrumento da proposta (vale mesmo antes da assinatura: o nº do instrumento já existe)
+  const nInst = String((insts[0] && insts[0].num) || d.inst || '').trim();
+  let nesTG = [];
+  if(nInst && TG_LIGADO){ try{ const emp = await carregarEmpTG(); nesTG = [...new Set((emp.porInst.get(nInst) || []).map(e => e.ug+'|'+e.ne))]; }catch(e){} }
+  const r0 = await siafiDe(d.num, nInst, insts[0] ? insts[0].cnpj : d.cnpj, insts[0] ? insts[0].emenda : d.emenda, insts[0] ? insts[0].proc : '', nesTG.length ? nesTG : undefined);
   const r = insts[0] ? conferirCandidatos(r0, insts[0]) : r0;
   const es = document.getElementById('lg-siafi'); if(es && fichaAberta()) es.innerHTML = '<h3>🔗 No SIAFI · notas de empenho desta proposta</h3>'+tabelaSiafi(r, insts.length ? {...insts[0], repasse: insts.reduce((a,x) => a+x.repasse, 0), desemb: insts.reduce((a,x) => a+x.desemb, 0)} : null);
 }
@@ -6159,7 +6163,7 @@ function lerPropostas(text){
     cnpj:ach('CNPJ'), proc:ach('Nº PROCESSO','NUMERO PROCESSO','PROCESSO SEI','PROCESSO'), programa:ach('NOME PROGRAMA','PROGRAMA'), acao:ach('ACAO ORCAMENTARIA','ACAO ORC'),
     rp:ach('RESULTADO PRIMARIO'), mod:ach('MODALIDADE'), uf:H.findIndex(h => h==='UF'), depto:ach('DEPARTAMENTO'), exec:ach('EXECUTOR','TECNICO RESPONSAVEL','RESPONSAVEL'),
     indicado:ach('VLR INDICADO','VALOR INDICADO'), global:ach('VLR GLOBAL','VALOR GLOBAL','VALOR DA PROPOSTA','VL GLOBAL'), situ:ach('COMPLEMENTACAO','SITUACAO DA PROPOSTA','SITUACAO','STATUS'),
-    obs:ach('OBSERVACAO','OBS'), objeto:ach('OBJETO')};
+    obs:ach('OBSERVACAO','OBS'), objeto:ach('OBJETO'), inst:H.findIndex(h => /^(N[º°O]?|NUMERO|NR)\s*(DO\s*)?INSTRUMENTO$/.test(h))};
   const g = (r,i) => i===-1 ? '' : (r[i]||'').trim(), limpa = v => v==='-' ? '' : v;
   const out = [];
   for(const r of rows.slice(hi+1)){
@@ -6168,7 +6172,7 @@ function lerPropostas(text){
     const d = {num:num||'(sem nº)', ano:g(r,ix.ano).replace(/\.0+$/,''), parl:limpa(g(r,ix.parl)), partido:limpa(g(r,ix.partido)), emenda:limpa(g(r,ix.emenda)), proponente, cnpj:g(r,ix.cnpj),
       proc:limpa(g(r,ix.proc)), programa:g(r,ix.programa), acao, rp:RP_NOME[rp] || (rp && rp!=='-' ? 'RP '+rp : 'Não informado'), mod:g(r,ix.mod) || '(sem modalidade)', uf:g(r,ix.uf).toUpperCase(),
       depto:g(r,ix.depto) || (acao.split(/\s*-\s*/)[0]||'') || '(sem departamento)', exec:g(r,ix.exec), indicado:toNum(g(r,ix.indicado)), global:toNum(g(r,ix.global)),
-      situ, situG:cfg.grupo, fase:FASE_PROP(cfg.grupo), obs:g(r,ix.obs), objeto:g(r,ix.objeto)};
+      situ, situG:cfg.grupo, fase:FASE_PROP(cfg.grupo), obs:g(r,ix.obs), objeto:g(r,ix.objeto), inst:g(r,ix.inst).replace(/\.0+$/,'')};
     d.repasse = d.global; d.desemb = d.fase==='Celebrada' ? d.global : 0; d.alerta = '';
     preencherColunas(d, r, COLS);
     out.push(d);

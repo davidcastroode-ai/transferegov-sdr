@@ -32,7 +32,7 @@
 window.BM_TABS = {'l':'b', k:'kpi'};
 const P = __DADOS__;
 // colunas de cada linha
-const C = {ano:0, s:1, m:2, u:3, g:4, p:5, t:6, j:7, cel:8, vr:9, vg:10, np:11, ni:12, r:13, c:14, id:15, em:16, ob:17, ug:18, vi:19, vf:20, cn:21, ac:22};
+const C = {ano:0, s:1, m:2, u:3, g:4, p:5, t:6, j:7, cel:8, vr:9, vg:10, np:11, ni:12, r:13, c:14, id:15, em:16, ob:17, ug:18, vi:19, vf:20, cn:21, ac:22, ve:23, ne:24};
 const ROTULO_F = {sit: v => curtoSit(v)};
 const AC420 = ['215A','8593','214Z','00PN','8622','21B6','8606'];   // ações da 420013 (a 2000 é de várias UGs)
 const curtoSit = s => String(s||'').replace(/^Proposta\/Plano de Trabalho /,'').replace(/^Proposta Aprovada e Plano de Trabalho /,'Aprovada · PT ').replace(/^Proposta /,'').replace(/^./, c => c.toUpperCase());
@@ -49,7 +49,7 @@ const decodificar = pk => { const DIC = pk.d; return pk.r.map(r => {
   // os dados abertos às vezes vêm sem a situação (ex.: "Proposta Aprovada e Plano de Trabalho enviado para Análise"): conta como em análise
   const sit = DIC.s[r[C.s]] || 'Proposta Aprovada e Plano de Trabalho enviado para Análise (situação que não vem nos dados abertos)';
   const o = {ano:String(r[C.ano]||''), sit, grupo: r[C.cel] ? 'Celebrada' : GRUPO(sit), mod:DIC.m[r[C.m]]||'', uf:DIC.u[r[C.u]]||'', prog:DIC.g[r[C.g]]||'(sem programa)',
-    parl:DIC.p[r[C.p]]||'(sem parlamentar)', tp:DIC.t[r[C.t]]||'(sem emenda)', nj:DIC.j[r[C.j]]||'', cel:r[C.cel] ? 'Sim' : 'Não', vr:r[C.vr], vg:r[C.vg], np:r[C.np], ni:r[C.ni],
+    parl:DIC.p[r[C.p]]||'(sem parlamentar)', tp:DIC.t[r[C.t]]||'(sem emenda)', nj:DIC.j[r[C.j]]||'', cel:r[C.cel] ? 'Sim' : 'Não', vr:r[C.vr], vg:r[C.vg], np:r[C.np], ni:r[C.ni], ve:r[C.ve]||0, nes:r[C.ne]||'',
     prop:DIC.r[r[C.r]]||'', mun:DIC.c[r[C.c]]||'', id:r[C.id], em:r[C.em], ob:r[C.ob], ug:r[C.ug]||'', vi:r[C.vi]||'', vf:r[C.vf]||'', cnpj:r[C.cn]||'', acao:(DIC.a||[])[r[C.ac]]||'(sem ação)'};
   o.ac420 = o.acao.split(' | ').some(a => AC420.includes(a));
   o.k = chaveProp(o.np); o.munN = o.mun; acomp(o);
@@ -113,6 +113,7 @@ function ficha(o){
    <div><span>Programa</span>${esc(o.prog)}</div><div><span>Parlamentar</span>${esc(o.parl)}${o.em?' · emenda '+esc(o.em):''}</div><div><span>Tipo</span>${esc(o.tp)}</div><div><span>Local</span>${esc(o.mun)}/${esc(o.uf)}</div>
    <div><span>Valor de repasse proposto</span>${R$(o.vr)}</div><div><span>Valor global</span>${R$(o.vg)}</div><div><span>Vigência proposta</span>${esc(o.vi)||'—'} a ${esc(o.vf)||'—'}</div><div><span>CNPJ</span>${esc(o.cnpj)||'—'}</div>
    <div><span>Ação orçamentária</span>${esc(o.acao)}</div><div><span>Instrumento</span>${o.ni ? esc(o.ni)+(o.ug?' · UG '+esc(o.ug):'') : '— (não celebrada)'}</div>
+   <div><span>Empenhado</span>${o.ve ? R$(o.ve)+'<small style="display:block;color:#5f6f7a">'+esc(o.nes)+'</small>' : '— (sem nota de empenho no Transferegov)'}</div>
   </div>
   <div class="crit">${e ? `<b>Equipe 420013:</b> técnico <b>${esc(e.exec||'—')}</b> · situação interna <b>${esc(e.situ||'—')}</b>${e.depto && e.depto!=='(sem departamento)'?' · departamento '+esc(e.depto):''}${e.indicado?' · indicado '+R$(e.indicado):''}${e.obs?'<br>Obs.: '+esc(e.obs):''}` : o.ac420 ? `<b>Ação ${esc(o.acao)} (420013):</b> <span style="color:#a04000">(atualizar)</span> · a proposta é de ação da 420013, mas não está na planilha de Propostas da equipe` : `<b>Acompanhamento:</b> ação ${esc(o.acao)}${o.ug?' · UG '+esc(o.ug):''} · fora da planilha da equipe 420013 (não é da 420013)`}</div>
   ${o.ob ? `<div style="font-size:12.5px"><b>Objeto:</b> ${esc(o.ob)}</div>` : ''}

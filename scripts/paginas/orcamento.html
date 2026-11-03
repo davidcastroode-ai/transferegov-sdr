@@ -2,6 +2,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">__CSS__
 <style>
 .cred-k{cursor:pointer;transition:box-shadow .12s}.cred-k:hover{box-shadow:0 6px 18px rgba(183,134,11,.35)}
+.k.gr{border-left:5px solid var(--b);cursor:pointer}.k.gr.sel{box-shadow:0 0 0 3px var(--b)}.k.gr b{font-size:24px}.gr-l{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px;font-size:12px;color:#66727c}.gr-l em{display:block;font-style:normal;font-weight:700;color:#1d2b24;font-size:13px}.gr-b{display:block;height:7px;border-radius:5px;background:#e3ebe5;margin-top:8px;overflow:hidden}.gr-b i{display:block;height:100%}
+.gr-ac{display:block;font-weight:500;font-size:11.5px;color:#4c5c53;margin-top:2px}
 .grp{font-size:12px;font-weight:700;color:#1f4e79;text-transform:uppercase;letter-spacing:.6px;margin:2px 0 6px 2px}
 .kp.k4{grid-template-columns:repeat(4,1fr)}@media(max-width:900px){.kp.k4{grid-template-columns:1fr 1fr}}.kp.k5{grid-template-columns:repeat(5,1fr)}@media(max-width:1100px){.kp.k5{grid-template-columns:repeat(3,1fr)}}@media(max-width:700px){.kp.k5{grid-template-columns:1fr 1fr}}
 .k.amar b{color:#b7860b}.k.verde b{color:#2e8a57}.k.red b{color:#c0392b}
@@ -75,6 +77,31 @@ document.addEventListener('click', e => { if(e.target.closest('.cred-k')){ e.sto
 const agr = (L, k) => { const m = new Map(); L.forEach(o => { const x = m.get(o[k]) || m.set(o[k], {}).get(o[k]); M.forEach(c => x[c] = (x[c]||0) + o[c]); }); return m; };
 const kpi = (rot, val, sub, cls) => `<div class="k ${cls||''}"><span>${rot}</span><b>${val}</b><small>${sub||''}</small></div>`;
 const ABERTO = new Set();
+// GND e resultado primário (discricionário × emendas) sempre à vista · acompanham os outros filtros (ação, PO, UG…) — 03/11/2026
+const RPN = {'RP 0':'Financeiro','RP 1':'Obrigatório','RP 2':'Discricionário','RP 3':'PAC','RP 6':'Emenda individual','RP 7':'Emenda de bancada','RP 8':'Emenda de comissão','RP 9':'Emenda de relator'};
+const RPC = {'RP 2':'#5f6f66','RP 6':'#2e8a57','RP 7':'#b8650a','RP 8':'#7b4fa0','RP 9':'#a0522d','RP 1':'#1f4e79','RP 3':'#1f4e79'};
+const dotDe = Lx => soma(Lx,'atu') || soma(Lx,'provRec');
+function cartaoGR(campo, chave, titulo, cor, Lx, sel){
+  const dot = dotDe(Lx), emp = soma(Lx,'emp'), pago = soma(Lx,'pago'), bloq = soma(Lx,'indisp'), p = dot ? Math.min(100, emp/dot*100) : 0;
+  return `<div class="k gr ${sel?'sel':''}" data-k="${campo}" data-v="${esc(chave)}" style="--b:${cor}" title="clique para filtrar a tela por ${esc(titulo)}">
+    <span style="color:${cor};font-weight:700">${esc(titulo)}</span><b>${ft(dot)}</b><small>dotação atual${soma(Lx,'atu')?'':' (provisionado)'}</small>
+    <div class="gr-l"><div>Bloqueado<em style="color:${bloq>1?'#c0392b':'inherit'}">${ft(bloq)}</em></div><div>Empenhado<em>${ft(emp)} · ${dot?Math.round(emp/dot*100)+'%':'—'}</em></div><div>Pago<em>${ft(pago)}</em></div></div>
+    <i class="gr-b"><i style="width:${p.toFixed(1)}%;background:${cor}"></i></i></div>`;
+}
+function blocosGndRp(){
+  const LG = filtrar('gnd'), LR = filtrar('rp');
+  const gs = [...new Set(LG.map(o => o.gnd))].sort(), rs = [...new Set(LR.map(o => o.rp))].sort();
+  const gC = g => /GND 4/.test(g) ? '#1f4e79' : '#1f6b3a';
+  return `<div class="grp">Grupo de despesa (GND) <small style="text-transform:none;letter-spacing:0;color:#7b8790;font-weight:500">· clique para filtrar</small></div>
+    <div class="kp" style="grid-template-columns:repeat(${Math.max(1,gs.length)},1fr)">${gs.map(g => cartaoGR('gnd', g, g.replace('Outras despesas correntes','Custeio (outras despesas correntes)').replace('Investimentos','Investimento'), gC(g), LG.filter(o => o.gnd===g), SEL.gnd===g)).join('') || '<p class="d">sem dados</p>'}</div>
+    <div class="grp">Discricionário × emendas <small style="text-transform:none;letter-spacing:0;color:#7b8790;font-weight:500">· resultado primário · clique para filtrar</small></div>
+    <div class="kp" style="grid-template-columns:repeat(${Math.min(4,Math.max(1,rs.length))},1fr)">${rs.map(r => cartaoGR('rp', r, r+' · '+(RPN[r]||''), RPC[r]||'#5f6f66', LR.filter(o => o.rp===r), SEL.rp===r)).join('') || '<p class="d">sem dados</p>'}</div>`;
+}
+function linhaGR(LA){   // resumo da ação: dotação por GND e discricionário × emendas
+  const d = k => dotDe(LA.filter(k)), g3 = d(o => o.gndC==='3'), g4 = d(o => o.gndC==='4'), em = d(o => /RP [6789]/.test(o.rp)), di = d(o => o.rp==='RP 2');
+  const p = [g3?'GND 3 '+fm(g3):'', g4?'GND 4 '+fm(g4):'', di?'discricionário '+fm(di):'', em?'<b style="color:#7b4fa0">emendas '+fm(em)+'</b>':''].filter(Boolean);
+  return p.length ? `<small class="gr-ac">${p.join(' · ')}</small>` : '';
+}
 function render(){
   desenharFiltros();
   const L = filtrar(), T = {}; M.forEach(k => T[k] = soma(L,k));
@@ -92,7 +119,7 @@ function render(){
     ${kpi('Pago', ft(T.pago), pct(T.pago,T.liq)+' do liquidado · '+pct(T.pago,T.emp)+' do empenhado')}
     ${(() => { const dS = soma(L.filter(o => o.ug==='130101'),'disp'), dU = T.disp - dS;
       return kpi('Crédito disponível', ft(T.disp), 'na setorial (ainda não provisionado) '+ft(dS)+' · nas UGs (provisionado, sem empenho) '+ft(dU)+'<br><b style="display:inline;font-size:12px;color:#1f4e79">'+(window.__cred?'▲ fechar o detalhe':'▼ clique para ver onde está')+'</b>', (T.disp>1?'amar ':'')+'cred-k'); })()}
-  </div>${window.__cred ? credDetalhe(L) : ''}<div class="g2">
+  </div>${blocosGndRp()}${window.__cred ? credDetalhe(L) : ''}<div class="g2">
     <section class="card"><h3>Empenhado × dotação atual, por ação</h3><p class="d">percentual empenhado · clique para filtrar</p>${hbar([...porAc].map(([k,x]) => [k, x.emp]).sort((a,b) => b[1]-a[1]), 'acaoN', '#2e8a57', fm, k => pct(porAc.get(k).emp, porAc.get(k).atu))}</section>
     <section class="card"><h3>Crédito disponível por ação</h3><p class="d">saldo para empenhar (setorial + UGs) · clique para filtrar</p>${hbar([...porAc].map(([k,x]) => [k, x.disp]).filter(x => Math.abs(x[1])>1).sort((a,b) => b[1]-a[1]), 'acaoN', '#b7860b', fm, k => pct(porAc.get(k).disp, porAc.get(k).atu))}</section>
     <section class="card"><h3>Crédito disponível por UG</h3><p class="d">onde está o saldo: na setorial (130101) ainda não foi provisionado; nas UGs já foi provisionado e falta empenhar · clique para filtrar</p>${(() => { const pu = agr(L,'ugN'); return hbar([...pu].map(([k,x]) => [k, x.disp]).filter(x => Math.abs(x[1])>1).sort((a,b) => b[1]-a[1]), 'ugN', '#b7860b', fm, k => pct(pu.get(k).disp, T.disp)); })()}</section>
@@ -103,7 +130,7 @@ function render(){
   const cel = (x, k) => `<td class="${k==='indisp'&&x[k]>1?'bloq':k==='canc'&&x[k]<0?'neg':k==='canc'&&x[k]>0?'pos':''}">${f2(x[k])}</td>`;
   let h = `<table class="ot"><tr><th>Ação / plano orçamentário</th>${cols.map(c => `<th>${c[0]}</th>`).join('')}<th>% emp.</th></tr>`;
   [...porAc].sort((a,b) => b[1].atu-a[1].atu).forEach(([ac, x]) => {
-    h += `<tr class="ac"><td>${esc(ac)} <button type="button" class="bf" data-ficha="${esc(ac)}">ficha</button></td>${cols.map(c => cel(x,c[1])).join('')}<td>${pct(x.emp,x.atu)}</td></tr>`;
+    h += `<tr class="ac"><td>${esc(ac)} <button type="button" class="bf" data-ficha="${esc(ac)}">ficha</button>${linhaGR(L.filter(o => o.acaoN===ac))}</td>${cols.map(c => cel(x,c[1])).join('')}<td>${pct(x.emp,x.atu)}</td></tr>`;
     const LA = L.filter(o => o.acaoN===ac), porPO = agr(LA,'poN');
     [...porPO].sort((a,b) => a[0].localeCompare(b[0])).forEach(([po, y]) => {
       const ch = ac+'|'+po, ab = ABERTO.has(ch);
