@@ -44,7 +44,7 @@ let EQ = null;
 // acompanhamento: equipe 420013 (planilha de Propostas) · ação da 420013 fora da planilha (atualizar) · demais UGs/ações
 function acomp(o){ o.equipe = EQ && EQ.has(o.k) ? 'Equipe 420013 (na planilha)' : o.ac420 ? 'Ação da 420013, fora da planilha (atualizar)' : 'Outras UGs / ações (20ZV, 2000…)'; }   // dados da equipe 420013 (planilha de Propostas, lida pelo painel)
 const chaveProp = t => { const m = String(t||'').match(/(\d{1,7})\s*\/\s*(\d{4})/); return m ? (+m[1])+'/'+m[2] : ''; };
-const BASE = 'https://raw.githubusercontent.com/davidcastroode-ai/transferegov-sdr/dados/propostas_pag/';
+const BASE = 'https://raw.githubusercontent.com/painel-sdr/transferegov-sdr/dados/propostas_pag/';
 const decodificar = pk => { const DIC = pk.d; return pk.r.map(r => {
   // os dados abertos às vezes vêm sem a situação (ex.: "Proposta Aprovada e Plano de Trabalho enviado para Análise"): conta como em análise
   const sit = DIC.s[r[C.s]] || 'Proposta Aprovada e Plano de Trabalho enviado para Análise (situação que não vem nos dados abertos)';

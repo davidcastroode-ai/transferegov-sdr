@@ -2005,7 +2005,7 @@ async function urlParcSemLinks(u, signal){
 // o robô grava essas células (planilha_celulas.json.gz) e o painel completa pela chave da proposta antes de ler a aba
 let _celulas = null;
 const CELULAS_FIX = {}; window.CELULAS_FIX = CELULAS_FIX;
-function planCelulas(){ return _celulas || (_celulas = textoGz('https://raw.githubusercontent.com/davidcastroode-ai/transferegov-sdr/dados/planilha_celulas.json.gz').then(t => t ? JSON.parse(t) : null).catch(() => null)); }
+function planCelulas(){ return _celulas || (_celulas = textoGz('https://raw.githubusercontent.com/painel-sdr/transferegov-sdr/dados/planilha_celulas.json.gz').then(t => t ? JSON.parse(t) : null).catch(() => null)); }
 async function completarCelulas(chave, texto){
   if(!['parc','prop','conv'].includes(chave) || typeof texto !== 'string' || !/\/gviz\//.test(FONTE_USADA[chave]||'')) return texto;
   const F = await planCelulas(); if(!F) return texto;
@@ -2024,7 +2024,7 @@ async function completarCelulas(chave, texto){
   return rows;
 }
 let _parcLinks = null;
-function parcLinks(){ return _parcLinks || (_parcLinks = textoGz('https://raw.githubusercontent.com/davidcastroode-ai/transferegov-sdr/dados/parc_links.json.gz').then(t => t ? JSON.parse(t) : null).catch(() => null)); }
+function parcLinks(){ return _parcLinks || (_parcLinks = textoGz('https://raw.githubusercontent.com/painel-sdr/transferegov-sdr/dados/parc_links.json.gz').then(t => t ? JSON.parse(t) : null).catch(() => null)); }
 async function completarLinksParc(P){
   if(!P || !P.linhas || P.linhas.every(d => d.link)) return;
   const L = await parcLinks(); if(!L) return;
@@ -2354,7 +2354,7 @@ const ORC_ESCOPO = {'20ZV':null,'20ZY':null,'2000':['000H','000K'],'215A':null,'
 const DEP_UG = {'130141':'CGPI', '130255':'PROMAQ', '135098':'CGPI'};
 const ORC_DEP_FIXO = {'2000|000H':'SDR · 420013', '2000|000K':'SDR · administração', '20ZY':'CEPLAC', '8593':'DEPROS', '214Z':'DIAGRO', '00PN':'DIAGRO', '215A':'DECAP', '8622':'DECAP', '21B6':'DECAP', '8606':'DECAP'};
 async function orcamentoDoTesouro(S){
-  const txt = await window.__tgGet('https://raw.githubusercontent.com/davidcastroode-ai/transferegov-sdr/dados/orcamento/orcamento.csv');
+  const txt = await window.__tgGet('https://raw.githubusercontent.com/painel-sdr/transferegov-sdr/dados/orcamento/orcamento.csv');
   const rows = parseCSV(txt), H = rows.shift(), ix = {}; H.forEach((h,i) => ix[h.trim()] = i);
   const g = (r,k) => (r[ix[k]]||'').trim(), n = (r,k) => parseFloat(g(r,k)) || 0;
   const pad = v => /^\d{1,3}$/.test(v) ? v.padStart(4,'0') : v;
@@ -3545,7 +3545,7 @@ function carregarApiCtr(){
     const T = {}, FONTE = {};
     // arquivo do robô: tenta o GitHub 2 vezes e depois a cópia do jsDelivr (o mesmo arquivo, servido por outra rede)
     const robo = async nome => { const url = TG_EMP_URL.replace('painel_empenhos.csv', nome);
-      for(const u of [url, url, 'https://cdn.jsdelivr.net/gh/davidcastroode-ai/transferegov-sdr@dados/'+nome]){
+      for(const u of [url, url, 'https://cdn.jsdelivr.net/gh/painel-sdr/transferegov-sdr@dados/'+nome]){
         try{ const r = await fetch(u + (u === url ? '' : '?v='+new Date().toISOString().slice(0,13)), {cache:'no-store'}); if(r.ok) return r; }catch(e){}
         await new Promise(z => setTimeout(z, 600)); }
       return null; };
@@ -5152,8 +5152,8 @@ const UG_NOMES_FICHA = {'130141':'Coord.-Geral de Parcerias Institucionais','130
 // ===================== Parceria SDR · dados do Transferegov (robô no GitHub, atualizado todo dia às 6h) =====================
 const TED_API_LIGADO = true;    // TED pela página do robô (API + Tesouro + controle interno)
 const TG_LIGADO = true;   // liga os blocos do Transferegov (por enquanto só no Painel SDR Teste)
-const TG_URL = 'https://raw.githubusercontent.com/davidcastroode-ai/transferegov-sdr/dados/painel_instrumentos.csv';
-const TG_META = 'https://raw.githubusercontent.com/davidcastroode-ai/transferegov-sdr/dados/atualizacao.json';
+const TG_URL = 'https://raw.githubusercontent.com/painel-sdr/transferegov-sdr/dados/painel_instrumentos.csv';
+const TG_META = 'https://raw.githubusercontent.com/painel-sdr/transferegov-sdr/dados/atualizacao.json';
 let TG = null, _tgP = null;
 const FAIXAS_VENC = ['Até 30 dias','Até 60 dias','Até 90 dias','Até 180 dias','Até 365 dias','Mais de 1 ano'];
 function carregarTG(){
@@ -5211,9 +5211,9 @@ function tgEspera(titulo){
 // notas de empenho do robô (Transferegov): nº exato da nota de cada instrumento
 // versão dos dados do robô: muda a cada rodada (versao.txt); entra na chave do cache, então página e dados novos aparecem na hora
 let TG_VER = null;
-function tgVer(){ return TG_VER || (TG_VER = fetch('https://raw.githubusercontent.com/davidcastroode-ai/transferegov-sdr/dados/versao.txt?_='+Date.now(), {cache:'no-store'})
+function tgVer(){ return TG_VER || (TG_VER = fetch('https://raw.githubusercontent.com/painel-sdr/transferegov-sdr/dados/versao.txt?_='+Date.now(), {cache:'no-store'})
   .then(r => r.ok ? r.text() : '').then(v => { const p = (v||'').trim() ? 'v'+v.trim()+'|' : ''; if(p) IDB2.limparTG(p); return p; }).catch(() => '')); }
-const TG_EMP_URL = 'https://raw.githubusercontent.com/davidcastroode-ai/transferegov-sdr/dados/painel_empenhos.csv';
+const TG_EMP_URL = 'https://raw.githubusercontent.com/painel-sdr/transferegov-sdr/dados/painel_empenhos.csv';
 let _tgEmp = null;
 function carregarEmpTG(){
   return _tgEmp || (_tgEmp = (async () => {
@@ -5846,7 +5846,7 @@ let TED_FIC = null, TED_FIC_P = null;
 const chaveTedNum = v => { const t = normAccent(v).split(/\s+-\s+|\s+/)[0].replace(/[^0-9A-Z]/g,''); return /^\d+$/.test(t) ? t.replace(/^0+(?=\d)/,'') : t; };
 function carregarTedFicha(){
   if(TED_FIC_P) return TED_FIC_P;
-  TED_FIC_P = window.__tgGet('https://raw.githubusercontent.com/davidcastroode-ai/transferegov-sdr/dados/ted/ted_ficha.json')
+  TED_FIC_P = window.__tgGet('https://raw.githubusercontent.com/painel-sdr/transferegov-sdr/dados/ted/ted_ficha.json')
     .then(t => { TED_FIC = JSON.parse(t); }).catch(() => { TED_FIC = {}; })
     .then(() => { if(VIEW && VIEW.def===VIEW_TED && TED_ABA!=='api') render(); });
   return TED_FIC_P;
@@ -8922,7 +8922,7 @@ async function pdfDireto(html, arquivo){
       pagebreak: {mode: ['css', 'legacy'], before: '.pg', avoid: ['tr', '.ri-al', '.ri-k > div']}}));
     await fr.contentWindow.html2pdf().set(op).from(d.body).save();
     avisoPDF('✓ PDF baixado: '+esc(nome)+'<br><small>confira a pasta de downloads do navegador</small>');
-  }catch(e){ avisoPDF('Não foi possível gerar o PDF aqui dentro do Google Sites ('+esc(e.message)+').<br><small>Abra o painel direto em <b>davidcastroode-ai.github.io/transferegov-sdr</b> e gere de lá.</small>', true); }
+  }catch(e){ avisoPDF('Não foi possível gerar o PDF aqui dentro do Google Sites ('+esc(e.message)+').<br><small>Abra o painel direto em <b>painel-sdr.github.io/transferegov-sdr</b> e gere de lá.</small>', true); }
   finally{ setTimeout(() => fr.remove(), 1500); }
 }
 window.__pdfDireto = pdfDireto;
@@ -9802,12 +9802,12 @@ function marcarHash(t){ try{ if(location.hash !== '#'+t) history.replaceState(nu
 // =====================================================================
 // TELAS NOVAS: Indicadores (IDTRU-DL) e Metodologia e fontes · esboços aprovados em 26/10/2026
 // =====================================================================
-const RAW_DADOS = 'https://raw.githubusercontent.com/davidcastroode-ai/transferegov-sdr/dados/';
+const RAW_DADOS = 'https://raw.githubusercontent.com/painel-sdr/transferegov-sdr/dados/';
 // telas reservadas no menu: o conteúdo entra quando a equipe passar a estrutura
 const TELAS_CONSTR = {};
 // ===== PORTFÓLIO E CARTILHAS SDR =====
 const PORT_GOV = 'https://www.gov.br/agricultura/pt-br/centrais-de-conteudo/publicacoes/cartilhas-emendas-parlamentares';
-const PORT_PDF = 'https://davidcastroode-ai.github.io/transferegov-sdr/cartilhas/';
+const PORT_PDF = 'https://painel-sdr.github.io/transferegov-sdr/cartilhas/';
 const PORT_DRIVE = 'https://drive.google.com/drive/folders/1uSA_wT4G8u34CrzmJ4rUpqmu_5z8XKpS';
 const PORT_MAPA = [
   ['Portfólio de ações MAPA 2026', 'todas as ações do Ministério que podem receber emendas', PORT_GOV+'/PLOA2025versofinal.pdf', '📗', 'portfolio'],
@@ -10568,7 +10568,7 @@ document.addEventListener('input', e => { if(e.target.id === 'metBusca'){ METV.q
 // por regras: dicionário de sinônimos + base de 420 perguntas (assistente/base.json) + consultas aos dados do painel.
 // Quando não entende, pergunta de volta com botões. Perguntas sem resposta ficam registradas (neste navegador) para ampliar a base.
 // =====================================================================
-const AS_BASE_URL = 'https://raw.githubusercontent.com/davidcastroode-ai/transferegov-sdr/main/assistente/base.json';
+const AS_BASE_URL = 'https://raw.githubusercontent.com/painel-sdr/transferegov-sdr/main/assistente/base.json';
 const AS = {base:null, idx:null, hist:[], esperando:null, dados:{}, carregando:{}, ctx:{}};
 const asN = s => String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[“”"']/g,' ').replace(/\s+/g,' ').trim();
 const UF_N = {AC:'acre',AL:'alagoas',AP:'amapa',AM:'amazonas',BA:'bahia',CE:'ceara',DF:'distrito federal',ES:'espirito santo',GO:'goias',MA:'maranhao',MT:'mato grosso',MS:'mato grosso do sul',MG:'minas gerais',PA:'para',PB:'paraiba',PR:'parana',PE:'pernambuco',PI:'piaui',RJ:'rio de janeiro',RN:'rio grande do norte',RS:'rio grande do sul',RO:'rondonia',RR:'roraima',SC:'santa catarina',SP:'sao paulo',SE:'sergipe',TO:'tocantins'};
@@ -11656,7 +11656,7 @@ function riFornecedor(c){
 }
 // Acesso Livre (robô "acesso_livre", branch abas): situação do momento de ajustes do PT, TAs (e solicitações), prorrogas e apostilamentos
 let _riAL = null, _riCarga = null;
-const riAL = () => _riAL || (_riAL = fetch('https://raw.githubusercontent.com/davidcastroode-ai/transferegov-sdr/abas/acesso_livre.json?d='+Date.now(), {cache:'no-store'}).then(r => r.ok ? r.json() : {}).catch(() => ({})));
+const riAL = () => _riAL || (_riAL = fetch('https://raw.githubusercontent.com/painel-sdr/transferegov-sdr/abas/acesso_livre.json?d='+Date.now(), {cache:'no-store'}).then(r => r.ok ? r.json() : {}).catch(() => ({})));
 const riCarga = () => _riCarga || (_riCarga = fetch(RAW_DADOS+'atualizacao.json?d='+Date.now(), {cache:'no-store'}).then(r => r.ok ? r.json() : {}).then(j => j.data_carga || '').catch(() => ''));
 const riNrAj = s => { const m = String(s||'').match(/0*(\d+)\s*\/\s*(\d{4})/); return m ? (+m[1])+'/'+m[2] : String(s||'').trim(); };
 function riAplicarAL(d, A, carga){
@@ -11920,7 +11920,7 @@ function riPagPC(d, C){
     <p class="ri-nota">Fonte: Transferegov (histórico de situações, pagamentos e saldos). Os pareceres e documentos da análise não estão nos dados abertos.</p></div></div>`;
 }
 // ===== Histórico 2014–2025 (Portal da Transparência, branch "historico" do robô): só o pago, ligado pelas notas de empenho =====
-const HIST_BASE = 'https://raw.githubusercontent.com/davidcastroode-ai/transferegov-sdr/historico/indice/hist_';
+const HIST_BASE = 'https://raw.githubusercontent.com/painel-sdr/transferegov-sdr/historico/indice/hist_';
 const _histUG = {};
 const histUG = ug => _histUG[ug] || (_histUG[ug] = (async () => {
   const r = await fetch(HIST_BASE+ug+'.json.gz?d='+new Date().toISOString().slice(0,10));

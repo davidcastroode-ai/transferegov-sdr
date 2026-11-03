@@ -2,7 +2,7 @@
 Pega uma amostra de NEs de 2023 a 2026 das UGs da SDR e grava a resposta de cada uma em PASTA/sta_*.json."""
 import csv, io, json, os, sys, time, urllib.request, urllib.error
 OUT = sys.argv[1] if len(sys.argv) > 1 else 'saida'; os.makedirs(OUT, exist_ok=True)
-raw = urllib.request.urlopen('https://raw.githubusercontent.com/davidcastroode-ai/transferegov-sdr/dados/contratos_api_emp.csv', timeout=60).read().decode('utf-8')
+raw = urllib.request.urlopen('https://raw.githubusercontent.com/painel-sdr/transferegov-sdr/dados/contratos_api_emp.csv', timeout=60).read().decode('utf-8')
 E = list(csv.DictReader(io.StringIO(raw)))
 amostra, vistos = [], set()
 for ano in ['2026', '2025', '2024', '2023']:

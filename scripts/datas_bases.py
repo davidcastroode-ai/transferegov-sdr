@@ -8,7 +8,7 @@ import csv, glob, gzip, hashlib, io, json, os, re, sys, urllib.request
 from datetime import datetime, timedelta, timezone
 
 SAIDA = sys.argv[1] if len(sys.argv) > 1 else 'saida'
-REPO = os.environ.get('GITHUB_REPOSITORY', 'davidcastroode-ai/transferegov-sdr')
+REPO = os.environ.get('GITHUB_REPOSITORY', 'painel-sdr/transferegov-sdr')
 AGORA = datetime.now(timezone.utc) - timedelta(hours=3)
 AGORA_T = AGORA.strftime('%d/%m/%Y %H:%M')
 PUB = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRyLjeoCobYSRx7o3tiZ7fvj4-FhvKnGiSVxoA8l6yD2CqfJsUidxWN00jLuFpBMrFL6MesSdYuWnrb/pub?gid={}&single=true&output=csv'

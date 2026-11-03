@@ -27,7 +27,7 @@ def main():
     if n:
         print(f'download ok · {n} instrumentos · nada a restaurar')
         return
-    repo = os.environ.get('GITHUB_REPOSITORY', 'davidcastroode-ai/transferegov-sdr')
+    repo = os.environ.get('GITHUB_REPOSITORY', 'painel-sdr/transferegov-sdr')
     print('::warning title=Transferegov sem dados::o download falhou (0 instrumentos) · mantendo os dados da rodada anterior')
     shutil.rmtree(ANT, ignore_errors=True)
     subprocess.run(['git', 'clone', '-q', '--depth', '1', '--single-branch', '-b', 'dados',

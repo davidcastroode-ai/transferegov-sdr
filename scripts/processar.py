@@ -371,7 +371,7 @@ def main(saida):
     # Acesso Livre (robô acesso_livre, branch abas): situação atual dos ajustes do PT, que nos dados abertos pode estar dias atrasada
     try:
         import urllib.request
-        AL = json.load(urllib.request.urlopen('https://raw.githubusercontent.com/davidcastroode-ai/transferegov-sdr/abas/acesso_livre.json', timeout=60))
+        AL = json.load(urllib.request.urlopen('https://raw.githubusercontent.com/painel-sdr/transferegov-sdr/abas/acesso_livre.json', timeout=60))
     except Exception as e:
         AL = {}
         log(f'acesso livre indisponível: {e}')

@@ -36,6 +36,6 @@ dados abertos do Transferegov (Discricionárias e Legais).
 | `atualizacao.json` | — | data da carga do Transferegov, hora da geração, contagens e registro da execução |
 
 Endereço para leitura direta (painel/planilha):
-`https://raw.githubusercontent.com/davidcastroode-ai/transferegov-sdr/dados/<arquivo>`
+`https://raw.githubusercontent.com/painel-sdr/transferegov-sdr/dados/<arquivo>`
 
 Rodar na hora: aba **Actions › Atualizar dados Transferegov › Run workflow**.
