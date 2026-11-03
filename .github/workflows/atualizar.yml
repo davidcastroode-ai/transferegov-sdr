@@ -83,6 +83,10 @@ jobs:
         continue-on-error: true
         run: python scripts/alertas.py saida
 
+      - name: Data de atualização de cada base (só muda quando o conteúdo muda)
+        continue-on-error: true
+        run: python scripts/datas_bases.py saida
+
       - name: Comprimir os arquivos grandes que só o robô usa (.csv → .csv.gz)
         run: |
           python - <<'PY'
