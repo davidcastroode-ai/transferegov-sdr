@@ -76,7 +76,9 @@ def main():
 
     def prob(ted, cat, grav, achado, fontes, sugestao):
         b = base.get(ted, {})
-        P_.append({'Nº TED': ted, 'Unidade': b.get('Unidade descentralizada') or (ctl.get(ted) or {}).get('Unidade', ''),
+        ugE = (b.get('UG descentralizadora') or (cad.get(ted) or {}).get('UG descentralizadora') or (ficha.get(ted) or {}).get('ugd') or (ctl.get(ted) or {}).get('UG responsável') or '').strip()
+        P_.append({'Nº TED': ted, 'UG emitente': ugE, 'Departamento': (ctl.get(ted) or {}).get('Departamento', ''),
+                   'Unidade': b.get('Unidade descentralizada') or (ctl.get(ted) or {}).get('Unidade', ''),
                    'Categoria': cat, 'Gravidade': grav, 'O que foi encontrado': achado, 'Fontes': fontes, 'O que fazer': sugestao})
 
     # ---------- documentos em mais de uma ficha ----------
