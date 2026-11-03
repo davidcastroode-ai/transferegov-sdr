@@ -294,6 +294,9 @@ def interpretar_nc(linhas, ptres):
     cT, cDt, cUe, cFav, cNC = col(r'NC - TRANSFER'), col(r'EMISSAO'), col(r'EMITENTE - UG'), col(r'FAVORECIDO'), col(r'^NC$')
     cND, cPI, cPT, cFt = col(r'NATUREZA'), col(r'PLANO INTERNO'), col(r'PTRES'), col(r'FONTE')
     cObs, cDesc, cVal = col(r'OBSERVACAO'), col(r'DESCRICAO'), col(r'VALOR LINHA')
+    # formato novo da NC (2026 em diante): valores nas células ("NC Célula - Valor", "NC Célula - PTRES"...), uma linha por célula de DESTINO
+    if cVal is None:
+        cVal = col(r'CELULA - VALOR')
     cAc = col(r'ACAO GOVERNO')   # se o relatório trouxer a ação, ela vale mais que o mapa de PTRES
     if cVal is None:   # o título do valor às vezes vem numa linha de baixo
         for l in linhas[ih + 1:ih + 4]:
