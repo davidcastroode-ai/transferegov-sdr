@@ -12717,29 +12717,34 @@ function vgPassa(d){ return (!VG.ug.length || VG.ug.includes(d.ug)) && (!VG.acao
 function vgCarregando(msg){ const el = document.getElementById('vg-corpo'); if(el && !VG.carregado) el.innerHTML = `<div class="card vg-estado">${esc(msg)}</div>`; }
 async function abrirVisaoGeral(){
   vgCarregando('Lendo as bases do Tesouro, Parcerias e TED…');
-  // bases do painel anterior em paralelo (não bloqueiam a parte do Tesouro)
+  // 03/11/2026: tudo em paralelo — antes era em fila (EXE → RAP → 7 bases do painel anterior, uma por vez)
   const lerAntigas = async () => { try{ const W = await garantirAntigo();
-      for(const k of ['parc','base','tedVig','tedPC','tedOk','prop','tedDisp']){
-        if(document.getElementById('v-visao').hidden) return;          // saiu da Visão geral: para de ler em segundo plano
-        if(!VG.ant[k]){ VG.ant[k] = await W.__dadosAntigo(k); desenharVisaoGeral(); } }
+      await Promise.all(['parc','base','tedVig','tedPC','tedOk','prop','tedDisp'].map(async k => {
+        if(VG.ant[k] || document.getElementById('v-visao').hidden) return;
+        VG.ant[k] = await W.__dadosAntigo(k); vgRedesenhar(); }));
     }catch(e){ VG.erros.push('Parcerias/TED: '+e.message); } };
   const meses = () => { const m = Object.keys(MESES_TXT).map(Number).sort((a,b)=>a-b); ULTIMO_MES = m[m.length-1]; if(!SEL.mes) SEL.mes = String(ULTIMO_MES);
     VG.mes = String(ULTIMO_MES); VG.mesAnt2 = m.length>2 ? String(m[m.length-3]) : ''; };
   VG.rapStatus = DADOS.rap.pronto && VG.mes && DADOS.rap.det[VG.mes] ? 'ok' : 'lendo';
+  const pAnt = lerAntigas();                                         // Parcerias/TED/Propostas começam já
+  const pRapRes = DADOS.rap.pronto ? Promise.resolve() : carregarVisao('rap').catch(e => e);   // resumo do RAP junto com o EXE
   try{
     if(!DADOS.exe.pronto){ vgCarregando('Lendo a execução do Tesouro…'); await carregarVisao('exe'); }
     meses(); await garantirDetalhe('exe', VG.mes);
   }catch(e){ VG.erros.push('EXE: '+e.message); }
   VG.carregado = true; desenharVisaoGeral();
-  // RAP em seguida, sem travar a tela
   try{
+    const er = await pRapRes; if(er instanceof Error) throw er;
     if(!DADOS.rap.pronto) await carregarVisao('rap');
     meses(); await garantirDetalhe('rap', VG.mes);
     VG.rapStatus = 'ok';
   }catch(e){ VG.rapStatus = 'erro'; VG.erros.push('RAP: '+e.message); }
   desenharVisaoGeral();
-  await lerAntigas(); desenharVisaoGeral();
+  await pAnt; desenharVisaoGeral();
 }
+// várias bases chegam quase juntas: redesenha uma vez por quadro, não a cada base
+let _vgRaf = 0;
+function vgRedesenhar(){ if(_vgRaf) return; _vgRaf = requestAnimationFrame(() => { _vgRaf = 0; desenharVisaoGeral(); }); }
 function vgKpi(tit, val, sub, cls, ir){ return `<div class="card vg-kpi ${cls||''}" ${ir?`data-vgir="${ir}"`:''}><h3>${tit}</h3><div class="v">${val}</div><div class="s">${sub}</div></div>`; }
 
 // ---------- robôs do GitHub: quando cada fonte automática foi lida pela última vez (Saúde dos dados) ----------
