@@ -2318,6 +2318,8 @@ function pintarSelos(){
 }
 function pintarTitulo(){
   const el = document.getElementById('tituloAtualiz'); if(!el) return;
+  // data de atualização padronizada (painel de fora): base do robô + carimbo do Tesouro
+  try{ if(window.parent!==window && parent.__chipData && VIEW){ const h = parent.__chipData(VIEW.id, document); if(h){ if(el.dataset.h !== h){ el.innerHTML = h; el.dataset.h = h; } el.title = ''; return; } } }catch(e){}
   if(!VIEW || !VIEW.def.abas || !ATUALIZ){ el.textContent=''; el.title=''; return; }
   const regs = infoAbas(VIEW.def.abas).filter(x => x.reg);
   if(!regs.length){ el.textContent = ''; el.title=''; return; }
@@ -9693,7 +9695,7 @@ function pintarDatas(){
     const ult = regs.slice().sort((a,b) => b.data-a.data)[0];
     el.textContent = 'Atualizado em '+fmtAtual(ult.data, true); el.title = regs.map(r => r.aba+': '+fmtAtual(r.data)).join('\n');
   });
-  pintarDatasTela();
+  pintarDatasTela(); try{ pintarChips(); }catch(e){}
   const vg = document.getElementById('v-visao'); if(vg && !vg.hidden && typeof desenharVisaoGeral==='function') desenharVisaoGeral();
 }
 function pintarDatasTela(){
@@ -9701,6 +9703,91 @@ function pintarDatasTela(){
   if(st && st.dataset.base && BASES_DA_TELA[VISAO]){ const a = textoAtualTG(BASES_DA_TELA[VISAO]); st.textContent = st.dataset.base + (a ? ' · '+a.replace('Atualizado','atualizado') : ''); st.title = tituloAtualTG(BASES_DA_TELA[VISAO]); }
   const rl = document.getElementById('rodLido'); if(rl && BASES_DA_TELA[VISAO]){ const a = textoAtualTG(BASES_DA_TELA[VISAO]); if(a && !rl.textContent.includes('·')) rl.textContent += ' · Tesouro '+a.replace('Atualizado','atualizado'); }
 }
+
+// =====================================================================
+// DATA DE ATUALIZAÇÃO NO CABEÇALHO DE CADA MENU (esboço aprovado em 03/11/2026)
+// robô: datas_bases.json (a data só muda quando o conteúdo da base muda) · Tesouro EXE/RAP: carimbo da carga (lerDatas)
+// =====================================================================
+let DB_DATAS = null, _dbDatasP = null;
+function carregarDatasBases(){
+  if(DB_DATAS || _dbDatasP) return _dbDatasP;
+  return _dbDatasP = fetch(RAW_DADOS+'datas_bases.json?v='+new Date().toISOString().slice(0,13), {cache:'no-store'})
+    .then(r => r.ok ? r.json() : null).then(j => { DB_DATAS = (j && j.bases) || {}; }).catch(() => { DB_DATAS = {}; }).finally(() => pintarChips());
+}
+const TELA_BASES = {
+  visao:['exe','rap','orcamento','transferegov','contratos','pl_parc','pl_prop','pl_ted','pl_base'],
+  contratos:['pl_base','exe','rap'], ctrsdr:['contratos','exe','rap'], despesas:['pl_despesas','contratos'], conferencia:['pl_base','contratos','exe'],
+  relctr:['contratos','exe','rap'], alertactr:['pl_base','contratos','exe','rap'],
+  orcacao:['orcamento','pl_siop'], orcamento:['orcamento','pl_siop','pl_despesas'], exe:['exe'], rap:['rap'], exerap:['exe','rap'], alertaorc:['orcamento','exe','rap'],
+  parc:['pl_parc','transferegov'], prop:['pl_prop','transferegov'], conv:['pl_conv','transferegov'], repasse:['transferegov','obras','exe'],
+  relinst:['transferegov','pl_parc','exe'], captacao:['emendas','transferegov','exe'], indic:['transferegov'], alertaparc:['pl_parc','pl_prop','transferegov'],
+  tedapi:['ted_api','ted_tesouro','pl_ted'], ted:['pl_ted','ted_tesouro'], alertated:['ted_api','ted_tesouro','pl_ted'],
+  portmapa:['cartilhas'], acoessdr:['cartilhas'],
+  assist:['exe','rap','orcamento','transferegov','contratos','ted_api','pl_parc','pl_ted'],
+  metodo:['exe','rap','orcamento','transferegov','obras','contratos','ted_api','ted_tesouro','emendas','pl_base','pl_despesas','pl_siop','pl_parc','pl_prop','pl_conv','pl_ted']};
+const CARTILHAS_DATA = '03/11/2026 07:20';   // última troca de cartilha publicada no painel (atualizar ao trocar um PDF)
+const DT_NOMES = {exe:'Tesouro Gerencial · EXE', rap:'Tesouro Gerencial · RAP', cartilhas:'Cartilhas e portfólio (PDF)'};
+const _dtTes = {};
+function dtInfo(k){
+  if(k==='exe' || k==='rap'){
+    if(!DATAS[k] && !_dtTes[k]){ _dtTes[k] = 1; setTimeout(() => lerDatas(k).catch(() => {}), 1500); }
+    const d = DATAS[k]; return d && d.ult ? {nome:DT_NOMES[k], data:d.ult, fonte:'Tesouro Gerencial'} : null; }
+  if(k==='cartilhas') return {nome:DT_NOMES[k], data:dataRobo(CARTILHAS_DATA), fonte:'cartilhas publicadas', fixa:1};
+  const b = DB_DATAS && DB_DATAS[k]; if(!b) return null;
+  const data = dataRobo(k==='transferegov' && b.carga ? b.carga : b.atualizado); if(!data) return null;
+  return {nome:b.nome, data, fonte:b.tipo==='planilha' ? 'planilha da equipe' : (k==='transferegov' ? 'carga do governo' : 'robô'),
+    obs:b.falha ? 'o último download falhou em '+b.falha+'; ficaram os dados anteriores' : (b.ok===false ? 'a última conferência não conseguiu ler esta base' : '')};
+}
+function dtUteis(d){ let n = 0; const x = new Date(d); x.setHours(0,0,0,0); const h = new Date(); h.setHours(0,0,0,0);
+  while(x < h){ x.setDate(x.getDate()+1); const w = x.getDay(); if(w && w<6) n++; } return n; }
+const dtFmt = d => d.toLocaleDateString('pt-BR') + (d.getHours()||d.getMinutes() ? ' às '+d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}) : '');
+const DT_CSS = `.dtchip{display:inline-block;position:relative;margin-top:5px;font:600 12.5px Barlow,'Segoe UI',Arial,sans-serif;letter-spacing:normal;text-transform:none;text-align:left}
+.dtchip>summary,.dtchip>span{display:inline-flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:center;list-style:none;cursor:default;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.45);color:#fff;border-radius:999px;padding:3px 12px}
+.dtchip>summary{cursor:pointer}.dtchip>summary::-webkit-details-marker{display:none}.dtchip b{font-weight:800}.dtchip em{font-style:normal;font-weight:500;opacity:.9}
+.dtchip.velha>summary,.dtchip.velha>span{background:#fdf3df;color:#6b4500;border-color:#f2b33d}
+.dtchip .dtp{position:absolute;left:50%;transform:translateX(-50%);top:calc(100% + 6px);z-index:9000;background:#fff;color:#1d2b24;border-radius:10px;box-shadow:0 10px 28px rgba(0,0,0,.25);padding:8px 12px;min-width:min(520px,92vw);font-weight:500}
+.dtchip table{border-collapse:collapse;width:100%;font-size:12.5px}.dtchip td{padding:4px 6px;border-bottom:1px solid #eef2ef;vertical-align:top}.dtchip td:last-child{text-align:right;white-space:nowrap}
+.dtchip td.v{color:#6b4500}.dtchip small{display:block;color:#7a8a80;font-size:11px}
+.vx-top .dtchip>summary,.vx-top .dtchip>span,.vg-topo .dtchip>summary,.vg-topo .dtchip>span{background:#eef5f0;color:#155a30;border-color:#cfe3d5}
+.vx-top .dtchip.velha>summary,.vx-top .dtchip.velha>span,.vg-topo .dtchip.velha>summary,.vg-topo .dtchip.velha>span{background:#fdf3df;color:#6b4500;border-color:#f2b33d}
+.vx-top .dtchip .dtp,.vg-topo .dtchip .dtp{left:0;transform:none}
+@media(max-width:700px){.dtchip{font-size:11.5px}}`;
+function dtEstilo(doc){ if(doc && !doc.getElementById('dt-css')){ const st = doc.createElement('style'); st.id = 'dt-css'; st.textContent = DT_CSS; doc.head.appendChild(st); } }
+function chipData(tela, doc){
+  const bases = TELA_BASES[tela]; if(!bases) return '';
+  dtEstilo(doc || document); carregarDatasBases();
+  const l = bases.map(k => [k, dtInfo(k)]).filter(([, x]) => x);
+  if(!l.length) return `<span class="dtchip"><span>🕒 <em>lendo a data de atualização…</em></span></span>`;
+  l.forEach(([, x]) => { x.velha = !x.fixa && dtUteis(x.data) > 2; });
+  const ult = l.map(([, x]) => x.data).sort((a,b) => b-a)[0], nV = l.filter(([, x]) => x.velha).length;
+  if(bases.length === 1 || l.length === 1){ const x = l[0][1];
+    const txt = x.velha ? `🕒 Última atualização em <b>${dtFmt(x.data)}</b><em>· sem alteração desde então · ${esc(x.nome)}</em>` : `🕒 Dados atualizados em <b>${dtFmt(x.data)}</b><em>· ${esc(x.nome)}</em>`;
+    return `<span class="dtchip ${x.velha?'velha':''}" title="${esc(x.obs||'')}"><span>${txt}</span></span>`; }
+  const falta = bases.length - l.length;
+  const linhas = l.slice().sort((a,b) => b[1].data-a[1].data).map(([, x]) => `<tr><td>${esc(x.nome)}<small>${esc(x.fonte)}${x.obs ? ' · '+esc(x.obs) : ''}</small></td><td class="${x.velha?'v':''}"><b>${dtFmt(x.data)}</b>${x.velha ? '<br>sem alteração' : ''}</td></tr>`).join('');
+  return `<details class="dtchip ${nV===l.length?'velha':''}"><summary>🕒 Dados atualizados em <b>${dtFmt(ult)}</b><em>· ${l.length} bases${nV ? ' · '+nV+' sem alteração há mais de 2 dias úteis' : ''} · ver ▾</em></summary>
+    <div class="dtp"><table>${linhas}</table>${falta ? `<small>${falta} base(s) ainda sem data registrada</small>` : ''}<small>A data só muda quando o conteúdo da base muda. Mais de 2 dias úteis sem mudança fica em amarelo.</small></div></details>`;
+}
+window.__chipData = chipData;
+let _dtPend = 0;
+function pintarChips(){ if(_dtPend) return; _dtPend = setTimeout(pintarChips0, 60); }
+function pintarChips0(){ _dtPend = 0;
+  const pon = (pai, id, tela, depois) => { if(!pai) return; let el = document.getElementById(id);
+    if(!el || !pai.contains(el)){ el = document.createElement('div'); el.id = id; el.className = 'dt-slot'; depois ? depois.after(el) : pai.appendChild(el); }
+    const h = chipData(tela); if(el.dataset.h !== h){ const ab = el.querySelector('details[open]'); el.innerHTML = h; el.dataset.h = h; if(ab){ const d = el.querySelector('details'); if(d) d.open = true; } } };
+  const vp = document.getElementById('v-painel');
+  if(vp && !vp.hidden && ['exe','rap','exerap'].includes(VISAO)) pon(vp.querySelector('.titulo-bloco'), 'dtChipP', VISAO);
+  const vg = document.getElementById('v-visao');
+  if(vg && !vg.hidden){ const s = document.getElementById('vg-sub'); pon(s && s.parentElement, 'dtChipV', 'visao', s); }
+  const vx = document.getElementById('v-extra');
+  if(vx && !vx.hidden){ const t = vx.querySelector('.vx-top > div'); if(t) pon(t, 'dtChipX', vx.dataset.tela); }
+  const va = document.getElementById('v-antigo');
+  if(va && !va.hidden){ try{ const w = document.getElementById('frAntigo').contentWindow; if(w && w.pintarTitulo) w.pintarTitulo(); }catch(e){} }
+}
+setTimeout(function(){ dtEstilo(document); const st = document.createElement('style'); st.textContent = '.dt-slot{text-align:inherit}#v-painel .titulo-bloco .dt-slot{text-align:center}'; document.head.appendChild(st);
+  const vx = document.getElementById('v-extra'); if(vx) new MutationObserver(() => { if(!vx.querySelector('#dtChipX')) pintarChips(); }).observe(vx, {childList:true});
+  ['v-visao','v-painel','v-antigo','v-extra'].forEach(id => { const e = document.getElementById(id); if(e) new MutationObserver(pintarChips).observe(e, {attributes:true, attributeFilter:['hidden']}); });
+  carregarDatasBases(); }, 0);
 
 // no Google Sites o painel roda num quadro em que mexer no endereço (#tela) pode dar erro: nunca deixa isso travar a navegação
 function marcarHash(t){ try{ if(location.hash !== '#'+t) history.replaceState(null, '', '#'+t); }catch(e){} }
@@ -10112,10 +10199,11 @@ function desenharConstr(tela){ const [t, s] = TELAS_CONSTR[tela];
     <div class="vx-card" style="margin-top:16px;text-align:center;padding:40px 20px"><div style="font-size:40px">🚧</div><h2 style="margin:8px 0 4px;color:#155a30">Em construção</h2><p style="color:#5f6f66;margin:0">Esta página será montada a partir das orientações da equipe.</p></div>`; }
 function telaExtra(tela){
   let el = document.getElementById('v-extra');
-  if(!el){ el = document.createElement('section'); el.id = 'v-extra'; el.hidden = true; el.className = 'vx'; document.getElementById('v-visao').after(el); }
+  if(!el){ el = document.createElement('section'); el.id = 'v-extra'; el.hidden = true; el.className = 'vx'; document.getElementById('v-visao').after(el);
+    new MutationObserver(() => { if(!el.querySelector('#dtChipX')) pintarChips(); }).observe(el, {childList:true}); }
   ['v-antigo','v-visao','v-menu','v-painel'].forEach(id => { const x = document.getElementById(id); if(x) x.hidden = true; });
   document.body.style.overflow = ''; document.body.dataset.tema = '';
-  el.hidden = false; el.dataset.tela = tela; window.scrollTo(0,0); marcarHash(tela);
+  el.hidden = false; el.dataset.tela = tela; window.scrollTo(0,0); marcarHash(tela); setTimeout(pintarChips, 0);
   if(/^alerta/.test(tela)) alAbrir(tela); else if(tela === 'captacao') emiAbrir(); else if(tela === 'portmapa' || tela === 'acoessdr') desenharPortfolio(tela); else if(TELAS_CONSTR[tela]) desenharConstr(tela); else if(tela === 'indic') desenharIndic(); else if(tela === 'assist') desenharAssist(); else if(tela === 'relinst') desenharRelInst(); else if(tela === 'relctr') desenharRelCtr(); else desenharMetodo();
 }
 (function(){ const st = document.createElement('style'); st.textContent = `
