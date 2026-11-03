@@ -6744,7 +6744,7 @@ function pplCorpo(id){
       ${fs.map(([k, rot, ordem]) => k==='fin' ? (temFin ? sel('fin', ['EXE','RAP','EXE e RAP','Sem empenho'], rot) : '') : sel(k, ordem ? ordem.filter(v => d.lista.some(r => pplValor(r,k)===v)) : un(d.lista.map(r => pplValor(r,k))).sort((a,b) => a.localeCompare(b,'pt-BR',{numeric:true})), rot)).join('')}
       ${algum ? `<button type="button" class="ppl-bt" data-ppllimpa="${id}">Limpar</button>` : ''}
       <span class="ppl-ex"><button type="button" class="ppl-xl" data-pplxl="${id}">Extração em Excel</button><button type="button" class="ppl-pdf" data-pplpdf="${id}">Extração em PDF</button></span></div>
-    ${d.rapidos ? `<div class="ppl-rap"><span>Filtro rápido</span>${d.rapidos.map(([r, fn], i) => `<button type="button" data-pplrap="${id}|${i}" class="${f.rap === i ? 'on' : ''}">${esc(r)} <b>${intN(d.lista.filter(fn).length)}</b></button>`).join('')}</div>` : ''}
+    ${d.rapidos ? `<div class="ppl-rap"><span>Filtro rápido</span>${d.rapidos.map(([r, fn], i) => `<button type="button" data-pplrap="${id}|${i}" class="${f.rap === i ? 'on' : ''}">${esc(r)} <b>${d.lista.filter(fn).length.toLocaleString('pt-BR')}</b></button>`).join('')}</div>` : ''}
     ${d.resumo ? ppFaixas(d.resumo(LF, d.lista)) : kpiResumo(d, LF)}
     <div class="tabela-wrap"><table class="t ppl-t"><thead><tr>${d.cols.map(c => `<th class="${c[2]||''}">${c[0]}</th>`).join('')}</tr></thead>
     <tbody>${pg.map(r => `<tr class="kpi-lin" ${attr(r)} title="Abrir a ficha">${d.cols.map(c => `<td class="${c[2]||''}">${c[1](r)}</td>`).join('')}</tr>`).join('') || `<tr><td colspan="${d.cols.length}" class="vazio">Nada encontrado com esses filtros.</td></tr>`}</tbody></table></div>
