@@ -46,6 +46,10 @@ jobs:
         continue-on-error: true
         run: python scripts/ted_tesouro.py saida
 
+      - name: TEDs · cadastro único (quais TEDs existem · Tesouro + NC + PF + API + controle)
+        continue-on-error: true
+        run: python scripts/ted_cadastro.py saida
+
       - name: Orçamento por ação (aba ORCAMENTO da BASE ORÇAMENTO SDR)
         continue-on-error: true
         run: python scripts/orcamento.py saida
