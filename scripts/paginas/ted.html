@@ -213,7 +213,16 @@ function fichaNE(o, t){
       return (meus.length ? t(cab, meus.map(lin).join('')) : '<p class="obs" style="background:#f4f6f8;color:#6b7a86">Nenhum empenho ligado só a este TED.</p>')
         + (dub.length ? `<details style="margin-top:8px"><summary style="cursor:pointer;color:#8a6d00;font-weight:700">⚠ ${dub.length} empenho(s) que podem ser deste TED ou de outro (${esc([...new Set(dub.map(x => x[12]).filter(Boolean))].join(' / '))}) · fora dos totais</summary>
           <p class="obs">Mesma UG e mesmo PTRES de outro TED, sem citar o nº do TED nem o processo na nota. Aparecem nos dois TEDs e não somam em nenhum: confira com a unidade de qual TED é cada nota.</p>${t(cab.concat(['Também ligado a']), dub.map(x => lin(x).replace('</tr>', `<td>TED ${esc(x[12]||'')}</td></tr>`)).join(''))}</details>` : ''); })()}
-   <p style="margin:4px 0 0;color:#7b8790;font-size:11.5px">Tesouro Gerencial · empenhos da UG ${esc(o.ugr)} com crédito do MAPA nos PTRES das NCs deste TED · pago inclui restos a pagar pagos.</p>`;
+   <p style="margin:4px 0 0;color:#7b8790;font-size:11.5px">Tesouro Gerencial · empenhos da UG ${esc(o.ugr)} com crédito do MAPA nos PTRES das NCs deste TED · pago inclui restos a pagar pagos.</p>
+   ${fichaOB(o, t)}`;
+}
+// pagamentos (OB, DARF, GPS…) dos empenhos ligados só a este TED · relatório TED OB do Tesouro
+function fichaOB(o, t){
+  const L = o.obs || []; if(!L.length) return '';
+  const tipos = {OB:'Ordem bancária', DF:'DARF', DR:'DAR', NS:'Nota de sistema', GP:'GPS', GR:'GRU'};
+  return `<details style="margin-top:10px"><summary style="cursor:pointer;font-weight:700;color:#1e6b45">Pagamentos dos empenhos (${L.length}) · ${R$(o.obT||0)}</summary>
+    ${t(['Documento','Data','Tipo','Favorecido','Empenho','Valor'], L.map(x => `<tr><td>${esc(x[0])}</td><td>${esc(x[1])}</td><td>${esc(tipos[x[2]]||x[2])}</td><td>${esc(x[3])}</td><td>${esc(x[7])}</td><td class="n">${f2(x[4])}</td></tr>`).join(''))}
+    <p style="margin:4px 0 0;color:#7b8790;font-size:11.5px">Tesouro Gerencial · pagamentos do ano e de restos a pagar dos empenhos acima (DARF e GPS são retenções de impostos e INSS do mesmo pagamento).</p></details>`;
 }
 function fichaTes(o){
   if(!TES.carregado) return '';

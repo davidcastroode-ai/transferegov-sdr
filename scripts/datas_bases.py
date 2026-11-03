@@ -21,7 +21,7 @@ BASES = {
     'obras':        ('Obrasgov · obras e medições', 'robô', ['painel_obras.csv']),
     'contratos':    ('Contratos.gov.br · API', 'robô', ['contratos_api_ctr.csv', 'contratos_api_emp.csv', 'contratos_api_fat.csv', 'contratos_api_cro.csv', 'contratos_api_pag.csv']),
     'ted_api':      ('TED · API do Transferegov', 'robô', ['ted/ted_controle.csv', 'ted/ted_ajustes.csv']),
-    'ted_tesouro':  ('TED · Tesouro Gerencial (NC, PF, NE)', 'robô', ['ted/ted_tesouro_nc.csv', 'ted/ted_tesouro_pf.csv', 'ted/ted_tesouro_ne.csv']),
+    'ted_tesouro':  ('TED · Tesouro Gerencial (NC, PF, NE, OB)', 'robô', ['ted/ted_tesouro_nc.csv', 'ted/ted_tesouro_pf.csv', 'ted/ted_tesouro_ne.csv', 'ted/ted_tesouro_ob.csv']),
     'orcamento':    ('Orçamento · BASE ORÇAMENTO SDR (Tesouro Gerencial)', 'robô', ['orcamento/orcamento.csv']),
     'emendas':      ('Emendas · SIOP', 'robô', ['emendas_siop.json']),
     # planilhas da equipe (abas publicadas)

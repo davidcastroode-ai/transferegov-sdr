@@ -595,6 +595,12 @@ def ted(pasta):
     porId = {o['id']: o for o in linhas}
     for o in linhas:
         o['nes'], o['neT'] = [], [0.0, 0.0, 0.0, 0.0]
+    # pagamentos (OB, DARF, GPS…) de cada empenho: relatório TED OB do Tesouro (etapa 2 · 03/11/2026)
+    obIdx = collections.defaultdict(list)
+    for x in ler(tp, 'ted_tesouro_ob.csv'):
+        obIdx[(x['ug'], x['ne'])].append([x['ob'] or '—', x['data'], x['tipo'], x['fav_nome'] or x['fav'], f(x['valor']), f(x['pago']), round(f(x['rpp']) + f(x['rpnp']), 2), x['ne']])
+    for o in linhas:
+        o['obs'], o['obT'], o['_obv'] = [], 0.0, set()
     n_lig = n_fora = 0
     todosN = {(o['n'] or '').upper() for o in linhas if o['n']}
     seiTED = {dig(o['sei']): o['id'] for o in linhas if len(dig(o['sei'])) > 10}
@@ -652,10 +658,17 @@ def ted(pasta):
         for o in cand:
             outros = ' / '.join(sorted({x['n'] or x['cod'] or x['id'] for x in cand if x is not o})) if comp else ''
             o['nes'].append([e['ne'], e['data'], e['fav_nome'] or e['fav'], e['ptres'], e['pi'], e['nd'], v[0], v[1], v[2], v[3], e['desc'][:220], 1 if comp else 0, outros])
+            if not comp and (e['ug'], e['ne']) not in o['_obv']:
+                o['_obv'].add((e['ug'], e['ne']))
+                pg_ = obIdx.get((e['ug'], e['ne']), [])
+                o['obs'].extend(pg_)
+                o['obT'] = round(o['obT'] + sum(x[4] for x in pg_), 2)
             if not comp:
                 o['neT'] = [round(a_ + b_, 2) for a_, b_ in zip(o['neT'], v)]
     for o in linhas:
         o['nes'] = sorted(o['nes'], key=lambda x: (x[1][6:10], x[1][3:5], x[1][:2]), reverse=True)[:60]
+        o['obs'] = sorted(o.get('obs') or [], key=lambda x: (x[1][6:10], x[1][3:5], x[1][:2]), reverse=True)[:120]
+        o.pop('_obv', None)
     print(f'empenhos ligados a TED: {n_lig} · descartados por citar outro instrumento: {n_fora}', flush=True)
     # ---- ajustes da equipe (aba TED ATUALIZADA): valem sobre a API e o Tesouro (a API guarda só a vigência original)
     pdata = lambda v: datetime.datetime.strptime(v[:10], '%d/%m/%Y').date() if re.match(r'\d{2}/\d{2}/\d{4}', v or '') else None
@@ -895,7 +908,7 @@ def ted(pasta):
         t = o.get('tes') or {}
         fic[k] = dict(fir=o.get('fir') or 0, nc=o.get('nc') or 0, pf=o.get('pf') or 0, ar=o.get('ar') or 0, neT=o.get('neT') or [0, 0, 0, 0],
                       tes={c: t.get(c) for c in ('fir', 'nc', 'rep', 'aRep', 'aComp', 'comp')} if t else None,
-                      ncs=o.get('ncs') or [], pfs=o.get('pfs') or [], nes=o.get('nes') or [], nca=o.get('nca') or [], acao=o.get('acao', ''), fase=o.get('fase', ''), firOrig=o.get('firOrig'), ajValor=o.get('ajValor'), ugd=o.get('ugd', ''))
+                      ncs=o.get('ncs') or [], pfs=o.get('pfs') or [], nes=o.get('nes') or [], obs=o.get('obs') or [], obT=o.get('obT') or 0, nca=o.get('nca') or [], acao=o.get('acao', ''), fase=o.get('fase', ''), firOrig=o.get('firOrig'), ajValor=o.get('ajValor'), ugd=o.get('ugd', ''))
     with open(os.path.join(tp, 'ted_ficha.json'), 'w', encoding='utf-8') as fh:
         json.dump(fic, fh, ensure_ascii=False, separators=(',', ':'))
     print(f'ted/ted_ficha.json · {len(fic)} TEDs', flush=True)
