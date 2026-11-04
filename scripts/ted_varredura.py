@@ -146,7 +146,7 @@ def main():
                 if iu is not None and tipo == 'PF' and str(x[iu]).strip() in SDR and str(x[2]).strip() in SDR:
                     prob(t, 'PF interna somada como repasse', 'alta', f'PF {x[0]} ({x[1]}) foi da UG {x[2]} para a UG {x[iu]} (da própria SDR): é financeiro recebido pela SDR, não repasse ao parceiro', 'PF do Tesouro',
                          'não somar esta PF no repassado do TED')
-                elif iu is not None and ugr and str(x[iu]).strip() and str(x[iu]).strip() != ugr and tipo == 'PF':
+                elif iu is not None and ugr and str(x[iu]).strip() and str(x[iu]).strip() != ugr and tipo == 'PF' and not str(x[5] if len(x) > 5 else '').startswith('Devolução'):
                     prob(t, 'PF para outra UG', 'baixa', f'PF {x[0]} foi para a UG {x[iu]}, mas o TED é da UG {ugr}', 'PF × cadastro', 'conferir se a UG é do mesmo órgão (ex.: unidade x sede) ou se a PF é de outro TED')
         # 8. PF maior que o TED (PF de vários TEDs somada inteira)
         firm = max(fr.values()) if fr else num(f.get('fir'))

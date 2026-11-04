@@ -47,6 +47,15 @@ def num(v):
 VAZIO_TG = re.compile(r'^(SEM INFORMACAO|CODIGO INVALIDO|NAO SE APLICA|NAO INFORMADO|-9|-8|-7|-|)$')
 
 
+# devolução de crédito (NC) ou de financeiro (PF) da unidade para a SDR: pelo evento OU pela descrição
+# (às vezes a unidade usa o evento errado, mas escreve "devolução" na observação)
+EV_DEV = {'300301', '701202', '701459'}
+def eh_devolucao(evento='', evento_nome='', obs=''):
+    if str(evento or '').strip() in EV_DEV or re.search(r'\bDEV', na(evento_nome or '')):
+        return True
+    return bool(re.search(r'DEVOLU|RESTITU|ESTORNO DE (DESCENTRAL|REPASSE)|ANULACAO DE (DESCENTRAL|DESTAQUE)', na(obs or '')))
+
+
 def chave_ted(v):
     """nº do TED como na API: '0984760' → '984760'; '7aaaqn' → '7AAAQN'; '984760 - IFMT…' → '984760'"""
     t = na(v)
@@ -298,6 +307,7 @@ def interpretar_nc(linhas, ptres):
     if cVal is None:
         cVal = col(r'CELULA - VALOR')
     cAc = col(r'ACAO GOVERNO')   # se o relatório trouxer a ação, ela vale mais que o mapa de PTRES
+    cEv = col(r'EVENTO')         # relatórios de devolução (TED_NC_DEV…) trazem o evento: 300300 descentralização, 300301 devolução
     if cVal is None:   # o título do valor às vezes vem numa linha de baixo
         for l in linhas[ih + 1:ih + 4]:
             for i, c in enumerate(l):
@@ -322,7 +332,8 @@ def interpretar_nc(linhas, ptres):
         info = ptres.get(pt, {})
         out.append({'ted': ted, 'data': g(l, cDt), 'nc': nc[-12:] if len(nc) > 12 else nc, 'nc_completa': nc, 'ug_emit': g(l, cUe), 'ug_fav': g(l, cFav),
                     'nome_fav': g(l, nome(cFav)), 'nd': g(l, cND), 'pi': g(l, cPI), 'pi_nome': g(l, nome(cPI)), 'ptres': pt, 'acao': (g(l, cAc) if cAc is not None and re.fullmatch(r'[0-9A-Z]{4}', g(l, cAc)) else '') or info.get('acao', ''),
-                    'rp': info.get('rp', ''), 'fonte': g(l, cFt), 'obs': (g(l, cObs) or g(l, cDesc))[:400], 'valor': v if v is not None else ''})
+                    'rp': info.get('rp', ''), 'fonte': g(l, cFt), 'obs': (g(l, cObs) or g(l, cDesc))[:400], 'valor': v if v is not None else '',
+                    'evento': g(l, cEv), 'evento_nome': g(l, nome(cEv))})
     return out, sem
 
 
@@ -344,7 +355,7 @@ def ler_nc(pasta_saida):
             info.append({'link': u, 'erro': str(e)[:200], 'ok': False})
             print(f'Tesouro TED NC: erro em {u[-60:]}: {e}', flush=True)
     os.makedirs(os.path.join(pasta_saida, 'ted'), exist_ok=True)
-    campos = ['ted', 'data', 'nc', 'nc_completa', 'ug_emit', 'ug_fav', 'nome_fav', 'nd', 'pi', 'pi_nome', 'ptres', 'acao', 'rp', 'fonte', 'obs', 'valor']
+    campos = ['ted', 'data', 'nc', 'nc_completa', 'ug_emit', 'ug_fav', 'nome_fav', 'nd', 'pi', 'pi_nome', 'ptres', 'acao', 'rp', 'fonte', 'obs', 'valor', 'evento', 'evento_nome']
     with open(os.path.join(pasta_saida, 'ted', 'ted_tesouro_nc.csv'), 'w', encoding='utf-8', newline='') as fh:
         w = csv.DictWriter(fh, fieldnames=campos)
         w.writeheader()
@@ -371,6 +382,7 @@ def interpretar_pf(linhas):
         return i + 1 if i is not None and i + 1 < len(H) and not H[i + 1] else None
     cT, cDoc, cDt, cFav, cObs = col(r'^TRANSFERENCIA$'), col(r'^DOCUMENTO$'), col(r'EMISSAO'), col(r'FAVORECIDO'), col(r'OBSERVACAO')
     cCat, cFt = col(r'CATEGORIA'), col(r'FONTE')
+    cEv = col(r'EVENTO')
     cVal = col(r'MOVIM|SALDO|VALOR')
     g = lambda l, i: l[i].strip() if i is not None and i < len(l) else ''
     out = []
@@ -384,7 +396,7 @@ def interpretar_pf(linhas):
         v = num(g(l, cVal))
         out.append({'ted': ted, 'data': g(l, cDt), 'doc': doc[-12:], 'tipo': doc[-8:-6], 'ug_emit': doc[:6] if len(doc) > 12 else '',
                     'ug_fav': g(l, cFav), 'nome_fav': g(l, nome(cFav)), 'categoria': g(l, cCat), 'fonte': g(l, cFt), 'obs': g(l, cObs)[:300],
-                    'valor': v if v is not None else ''})
+                    'valor': v if v is not None else '', 'evento': g(l, cEv), 'evento_nome': g(l, nome(cEv))})
     return out
 
 
@@ -404,7 +416,7 @@ def ler_pf(pasta_saida):
             info.append({'link': u, 'erro': str(e)[:200], 'ok': False})
             print(f'Tesouro TED PF: erro em {u[-60:]}: {e}', flush=True)
     os.makedirs(os.path.join(pasta_saida, 'ted'), exist_ok=True)
-    campos = ['ted', 'data', 'doc', 'tipo', 'ug_emit', 'ug_fav', 'nome_fav', 'categoria', 'fonte', 'obs', 'valor']
+    campos = ['ted', 'data', 'doc', 'tipo', 'ug_emit', 'ug_fav', 'nome_fav', 'categoria', 'fonte', 'obs', 'valor', 'evento', 'evento_nome']
     with open(os.path.join(pasta_saida, 'ted', 'ted_tesouro_pf.csv'), 'w', encoding='utf-8', newline='') as fh:
         w = csv.DictWriter(fh, fieldnames=campos)
         w.writeheader()

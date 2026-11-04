@@ -447,9 +447,18 @@ def ted(pasta):
             acs.sort(key=lambda y: (y['acao'] != ac_orc.get(pt), -freq[(pt, y['acao'])]))
         nc_uni.append(acs[0])
     print(f'NC do Tesouro: {len(nc_lin)} linhas, {n_dup} repetidas por ação descartadas', flush=True)
+    # devolução de crédito da unidade para a SDR (relatórios TED_NC_DEV…): evento 300301 ou "devolução" na descrição → entra NEGATIVA no TED
+    dev_sem_ted = []
+    for x in nc_uni:
+        x['dev'] = x['ug_fav'] in UGS_SDR and x['ug_emit'] not in UGS_SDR and ted_tesouro.eh_devolucao(x.get('evento'), x.get('evento_nome'), x.get('obs'))
+        if x['dev']:
+            x['valor'] = -abs(f(x['valor']))
     for x in nc_uni:
         if not x['acao'] and x['ptres'].strip() in ac_orc:   # sem ação no relatório nem no mapa da API: usa a base de orçamento
             x['acao'] = ac_orc[x['ptres'].strip()]
+        if x['dev'] and not x['ted']:
+            dev_sem_ted.append(x)   # liga depois: pelo processo da descrição ou pela NC de envio (mesma unidade, PTRES, PI e ND)
+            continue
         if x['ted']:
             ncT[x['ted']].append([x['nc'], x['data'], x['ug_emit'], x['ug_fav'], f(x['valor']), x['ptres'], x['pi'], x['nd'], x['rp'], 'Tesouro', '', x['acao'], x['obs'][:200]])
         elif x['ug_fav'] in UGS_SDR and x['ug_emit'] not in UGS_SDR:
@@ -459,9 +468,35 @@ def ted(pasta):
         if not x['ted'] and x['ug_emit'] in UGS_SDR:   # NC da SDR sem nº de TED (dispensa de TED): liga pelo processo escrito na observação
             for pr in re.findall(r'\d{5}\.?\d{6}/?\d{4}-?\d{2}', x['obs'] or ''):
                 ncProc[re.sub(r'\D', '', pr)].append([x['nc'], x['data'], x['ug_emit'], x['ug_fav'], f(x['valor']), x['ptres'], x['pi'], x['nd'], x['rp'], 'Tesouro', '', x['acao'], x['obs'][:200]])
+    # devoluções sem nº de TED: 1º processo citado na descrição · 2º a NC de envio da SDR para a mesma unidade com mesmo PTRES, PI e ND
+    envio = collections.defaultdict(set)
+    for x in nc_uni:
+        if x['ug_emit'] in UGS_SDR and not x['dev']:
+            prs = [re.sub(r'\D', '', pr) for pr in re.findall(r'\d{5}\.?\d{6}/?\d{4}-?\d{2}', x['obs'] or '')]
+            for dono in ([('ted', x['ted'])] if x['ted'] else []) + [('proc', pr) for pr in prs]:
+                envio[(x['ug_fav'], x['ptres'].strip(), x['pi'].strip(), x['nd'].strip())].add(dono)
+    n_dev = [0, 0]
+    for x in dev_sem_ted:
+        lin = [x['nc'], x['data'], x['ug_emit'], x['ug_fav'], f(x['valor']), x['ptres'], x['pi'], x['nd'], x['rp'], 'Devolução', '', x['acao'],
+               ('devolução · evento ' + (x.get('evento') or '') + ' · ' + (x['obs'] or ''))[:200]]
+        prs = [re.sub(r'\D', '', pr) for pr in re.findall(r'\d{5}\.?\d{6}/?\d{4}-?\d{2}', x['obs'] or '')]
+        donos = {('proc', pr) for pr in prs} or envio.get((x['ug_emit'], x['ptres'].strip(), x['pi'].strip(), x['nd'].strip()), set())
+        if len(donos) == 1 or (donos and len({d[0] for d in donos}) == 2 and len([d for d in donos if d[0] == 'ted']) == 1):
+            tp_, v_ = next((d for d in donos if d[0] == 'ted'), next(iter(donos)))
+            (ncT if tp_ == 'ted' else ncProc)[v_].append(lin)
+            n_dev[0] += 1
+        else:
+            n_dev[1] += 1
+    print(f'NC devolvidas sem nº de TED: {n_dev[0]} ligadas · {n_dev[1]} sem dono certo (ficam fora)', flush=True)
     pfT = collections.defaultdict(list)
+    vistos_pf = set()
     for x in ler(tp, 'ted_tesouro_pf.csv'):
-        pfT[x['ted']].append([x['doc'], x['data'], x['ug_emit'], x['ug_fav'], f(x['valor']), 'Tesouro · ' + (x['tipo'] or ''), x['obs'][:160]])
+        if (x['doc'], x['ted'], x['valor']) in vistos_pf:   # o mesmo documento vem no TED_PF e no TED_PF_DEV
+            continue
+        vistos_pf.add((x['doc'], x['ted'], x['valor']))
+        dev = x['ug_fav'] in UGS_SDR and x['ug_emit'] not in UGS_SDR and ted_tesouro.eh_devolucao(x.get('evento'), x.get('evento_nome'), x.get('obs'))
+        rot = ('Devolução · ' if dev else 'Tesouro · ') + ((x.get('evento') or '') + ' ' + (x.get('evento_nome') or '')).strip() if x.get('evento') else ('Devolução' if dev else 'Tesouro · ' + (x['tipo'] or ''))
+        pfT[x['ted']].append([x['doc'], x['data'], x['ug_emit'], x['ug_fav'], -abs(f(x['valor'])) if dev else f(x['valor']), rot, x['obs'][:160]])
     usados = set()
     for o in linhas:
         k = ted_tesouro.chave_ted(o['n'])
@@ -487,7 +522,7 @@ def ted(pasta):
         pt_ = pfT.get(k, []) if k else []
         # PF de uma UG da SDR para outra UG da SDR é financeiro que a SDR recebeu, não repasse ao parceiro (varredura de 03/11/2026)
         if o['er'] != 'Recebido':
-            pt_ = [x for x in pt_ if str(x[3]) not in UGS_SDR]
+            pt_ = [x for x in pt_ if str(x[3]) not in UGS_SDR or str(x[5]).startswith('Devolução')]
         o['pfTes'] = pt_
         # RP: vale o da NC do Tesouro (pelo PTRES); emenda só aparece em RP 6, 7 ou 8 e sem os códigos zerados da API
         rpT = sorted({str(x[8]) for x in nt if re.fullmatch(r'RP \d', str(x[8] or ''))})
@@ -916,7 +951,7 @@ def ted(pasta):
     # PF entre UGs da SDR (financeiro recebido pela própria SDR) não é repasse ao parceiro: sai da lista de PF dos TEDs enviados
     for o in linhas:
         if o.get('er') != 'Recebido' and o.get('pfs'):
-            o['pfs'] = [x for x in o['pfs'] if str(x[3] if len(x) > 3 else '') not in UGS_SDR]
+            o['pfs'] = [x for x in o['pfs'] if str(x[3] if len(x) > 3 else '') not in UGS_SDR or str(x[5] if len(x) > 5 else '').startswith('Devolução')]
     with open(os.path.join(tp, 'ted_base_atualizada.csv'), 'w', encoding='utf-8', newline='') as fh:
         w = csv.writer(fh)
         w.writerow([h for h, _ in BASE])
