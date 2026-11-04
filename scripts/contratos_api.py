@@ -74,11 +74,13 @@ def compras_pncp(anos):
         for ini, fim in [('0101', '0331'), ('0401', '0630'), ('0701', '0930'), ('1001', '1231')]:
             pg = 1
             while True:
+                if sem_tempo():
+                    DIAG.append(f'consulta {ano}{ini}-{fim}: sem tempo, parou'); break
                 q = urllib.parse.urlencode({'dataInicial': f'{ano}{ini}', 'dataFinal': f'{ano}{fim}', 'cnpjOrgao': '00396895000125', 'pagina': pg, 'tamanhoPagina': 500})
                 j = None
                 for tent in range(3):   # a API do PNCP oscila: tenta 3 vezes antes de desistir da janela
                     try:
-                        with urllib.request.urlopen(urllib.request.Request('https://pncp.gov.br/api/consulta/v1/contratos?' + q, headers={'Accept': 'application/json', 'User-Agent': 'painel-sdr-mapa/1.0'}), timeout=120) as r:
+                        with urllib.request.urlopen(urllib.request.Request('https://pncp.gov.br/api/consulta/v1/contratos?' + q, headers={'Accept': 'application/json', 'User-Agent': 'painel-sdr-mapa/1.0'}), timeout=60) as r:
                             j = json.loads(r.read() or b'{}')
                         break
                     except Exception as e:
@@ -96,12 +98,18 @@ def compras_pncp(anos):
 
 
 DIAG = []
+INICIO = time.time()
+PRAZO_PNCP = 18 * 60   # passou disso desde o início do script: para de consultar o PNCP (o passo do robô tem limite de 30 min)
+
+
+def sem_tempo():
+    return time.time() - INICIO > PRAZO_PNCP
 
 
 def compra_do_contrato(link):
     """Plano B, um contrato por vez: consulta o contrato na API do PNCP e devolve o id da contratação (edital)."""
     mm = re.search(r'/app/contratos/(\d{14})/(\d{4})/0*(\d+)', link or '')
-    if not mm:
+    if not mm or sem_tempo():
         return ''
     url = f'https://pncp.gov.br/api/pncp/v1/orgaos/{mm.group(1)}/contratos/{mm.group(2)}/{mm.group(3)}'
     for tent in range(2):
@@ -333,9 +341,10 @@ def main():
             L['pag'].append(ch + r[3:])
     if REUSO['pag']:
         print(f"Contratos.gov.br: página de {REUSO['pag']} contrato(s) não abriu hoje · mantida a leitura anterior", flush=True)
-    ligar_editais(L['pag'])
-    for k in ARQ:
+    for k in ARQ:   # grava já: se o PNCP travar e o passo for interrompido, os contratos do dia ficam salvos
         gravar(k, L[k])
+    ligar_editais(L['pag'])
+    gravar('pag', L['pag'])
     print('Contratos.gov.br: ' + ' · '.join(f'{k} {len(v)}' for k, v in L.items()) + f' · {time.time()-t0:.0f}s', flush=True)
     print(f"Contratos.gov.br: campos das ocorrências {CHAVES['oco']} · das garantias {CHAVES['gar']}", flush=True)
 

@@ -60,7 +60,10 @@ jobs:
         run: |
           mkdir -p /tmp/ctr_ant
           for k in ctr emp fat his res arq itn ith cro pag oco gar; do curl -sfL "https://raw.githubusercontent.com/${{ github.repository }}/dados/contratos_api_$k.csv" -o /tmp/ctr_ant/contratos_api_$k.csv || true; done
-          mkdir -p saida && python scripts/contratos_api.py saida 2>&1 | tee saida/log_contratos.txt
+          mkdir -p saida
+          # deixa a leitura anterior já no lugar: se este passo for interrompido, o painel não fica sem contratos
+          for f in /tmp/ctr_ant/contratos_api_*.csv; do if [ -s "$f" ]; then cp "$f" saida/; fi; done
+          python scripts/contratos_api.py saida 2>&1 | tee saida/log_contratos.txt
         env:
           CONTRATOS_ANTERIOR: /tmp/ctr_ant
 
