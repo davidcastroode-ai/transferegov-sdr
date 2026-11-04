@@ -367,7 +367,11 @@ def ted(pasta):
     for x in ler(tp, 'ted_cronograma.csv'):
         cro[x['id_plano_acao']].append([x['ano_cronograma_plano_trabalho'], MES.get(x['mes_cronograma_plano_trabalho'], 0), f(x['valor_cronograma_plano_trabalho'])])
     for x in ler(tp, 'ted_analises_pareceres.csv'):
-        par[x['id_plano_acao']].append([x['tipo'], x['resultado_analise'], x['tx_situacao_analise'], (x['tx_justificativa_analise'] or '')[:400]])
+        # análise: resultado + situação + justificativa · parecer: tipo do parecer + resultado + texto + data (antes vinha vazio)
+        if (x.get('tipo') or '').lower().startswith('parecer'):
+            par[x['id_plano_acao']].append(['parecer', x.get('resultado_parecer') or '', x.get('tp_analise_parecer') or '', (x.get('tx_parecer') or '')[:6000], dt(x.get('dt_data_parecer'))])
+        else:
+            par[x['id_plano_acao']].append(['análise', x['resultado_analise'], x['tx_situacao_analise'], (x['tx_justificativa_analise'] or '')[:6000], ''])
     for x in ler(tp, 'ted_metas.csv'):
         met[x['id_plano_acao']].append([x['nr_numero_meta'], x['tx_nome_meta'][:160], x['nr_quantidade_meta'], x['tp_unidade_meta'], f(x['vl_valor_unitario_meta']),
                                         dt(x['dt_inicio_vigencia_meta']), dt(x['dt_fim_vigencia_meta'])])
