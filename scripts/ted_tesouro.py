@@ -425,6 +425,66 @@ def ler_pf(pasta_saida):
               open(os.path.join(pasta_saida, 'ted', 'ted_tesouro_pf.json'), 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
     return todas
 
+# ============== crédito recebido pela contabilidade (relatório "TED NC CONTA 2026", aba TED_NC_CONTA) ==============
+# Em 2026 a NC de outro órgão não aparece nos relatórios de NC (formato novo); na contabilidade da UG da SDR ela entra como
+# documento RO (ex.: 530023…2026RO001108 = 2026NC000690 do MIDR), conta 52222… (destaque recebido) ou 52221… (provisão recebida).
+# O nº do TED vem na descrição ("TED Nº 995343/2026"), porque a transferência fica -9.
+CONFIG_NCC = os.path.join(AQUI, '..', 'config', 'ted_tesouro_nc_conta.txt')
+RX_TED_OBS = re.compile(r'TED\s*(?:N\W{0,2}|NO\.?|NUMERO)?\s*([69]\d{5}|[1-9]AA[A-Z0-9]{3})\b')
+
+
+def interpretar_nc_conta(linhas):
+    linhas = [[c.strip() for c in l] for l in linhas]
+    ih = next((i for i, l in enumerate(linhas[:40]) if any(na(c) == 'DOCUMENTO' for c in l) and any(na(c) == 'UG EXECUTORA' for c in l)), None)
+    if ih is None:
+        raise ValueError('não achei as colunas "UG Executora" e "Documento"')
+    H = [na(h) for h in linhas[ih]]
+    col = lambda rx: next((i for i, h in enumerate(H) if re.search(rx, h)), None)
+    cUG, cCt, cDt, cT, cDoc, cPt, cObs = col(r'^UG EXECUTORA$'), col(r'CONTA CONTABIL'), col(r'EMISSAO'), col(r'^TRANSFERENCIA$'), col(r'^DOCUMENTO$'), col(r'^PTRES$'), col(r'OBSERVACAO')
+    cVal = col(r'MOVIM|SALDO|VALOR')
+    g = lambda l, i: l[i].strip() if i is not None and i < len(l) else ''
+    out = []
+    for l in linhas[ih + 1:]:
+        doc = g(l, cDoc)
+        if not re.search(r'\d{4}[A-Z]{2}\d{6}$', doc):
+            continue
+        conta = next((c for c in l[(cCt or 0):(cCt or 0) + 3] if re.fullmatch(r'\d{9}', c.strip())), '')
+        obs = g(l, cObs)
+        ted = chave_ted(g(l, cT))
+        if not ted or ted in ('8', '-8', '9', '-9'):
+            m = RX_TED_OBS.search(na(obs))
+            ted = m.group(1) if m else ''
+        v = num(g(l, cVal))
+        out.append({'ted': ted, 'data': g(l, cDt), 'doc': doc[-12:], 'doc_completo': doc, 'ug_emit': doc[:6], 'ug_fav': g(l, cUG), 'conta': conta,
+                    'tipo': 'Destaque recebido' if conta.startswith('52222') else 'Provisão recebida' if conta.startswith('52221') else conta,
+                    'ptres': g(l, cPt), 'obs': obs[:300], 'valor': v if v is not None else ''})
+    return out
+
+
+def ler_nc_conta(pasta_saida):
+    if not os.path.exists(CONFIG_NCC):
+        return []
+    urls = [l.strip() for l in open(CONFIG_NCC, encoding='utf-8') if l.strip() and not l.strip().startswith('#')]
+    todas, info = [], []
+    for u in urls:
+        try:
+            out = interpretar_nc_conta(list(csv.reader(io.StringIO(baixar(u)))))
+            todas += out
+            info.append({'link': u, 'linhas': len(out), 'ok': True})
+            print(f'Tesouro TED crédito recebido (conta): {len(out)} linhas em {u[-60:]}', flush=True)
+        except Exception as e:
+            info.append({'link': u, 'erro': str(e)[:200], 'ok': False})
+            print(f'Tesouro TED crédito recebido (conta): erro em {u[-60:]}: {e}', flush=True)
+    os.makedirs(os.path.join(pasta_saida, 'ted'), exist_ok=True)
+    campos = ['ted', 'data', 'doc', 'doc_completo', 'ug_emit', 'ug_fav', 'conta', 'tipo', 'ptres', 'obs', 'valor']
+    with open(os.path.join(pasta_saida, 'ted', 'ted_tesouro_nc_conta.csv'), 'w', encoding='utf-8', newline='') as fh:
+        w = csv.DictWriter(fh, fieldnames=campos)
+        w.writeheader()
+        w.writerows(todas)
+    json.dump({'gerado_em': time.strftime('%d/%m/%Y %H:%M'), 'fontes': info, 'linhas': len(todas)},
+              open(os.path.join(pasta_saida, 'ted', 'ted_tesouro_nc_conta.json'), 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
+    return todas
+
 # ---- empenhos feitos pelas unidades que receberam TED (relatório "EMPENHOS TED" · aba TESOURO TED NE)
 CONFIG_NE = os.path.join(AQUI, '..', 'config', 'ted_tesouro_ne.txt')
 ITENS_NE = [('emp', r'EMPENHAD'), ('rpp', r'RESTOS A PAGAR PROCESSADOS PAGOS'), ('rpnp', r'RESTOS A PAGAR NAO PROCESSADOS PAGOS'), ('liq', r'LIQUIDAD'), ('pago', r'^DESPESAS PAGAS')]
@@ -694,6 +754,7 @@ if __name__ == '__main__':
     ler(sys.argv[1] if len(sys.argv) > 1 else 'saida')
     ler_nc(sys.argv[1] if len(sys.argv) > 1 else 'saida')
     ler_pf(sys.argv[1] if len(sys.argv) > 1 else 'saida')
+    ler_nc_conta(sys.argv[1] if len(sys.argv) > 1 else 'saida')
     ler_aj(sys.argv[1] if len(sys.argv) > 1 else 'saida')
     ler_ne(sys.argv[1] if len(sys.argv) > 1 else 'saida')
     ler_ob(sys.argv[1] if len(sys.argv) > 1 else 'saida')

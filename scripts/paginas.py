@@ -488,6 +488,17 @@ def ted(pasta):
         else:
             n_dev[1] += 1
     print(f'NC devolvidas sem nº de TED: {n_dev[0]} ligadas · {n_dev[1]} sem dono certo (ficam fora)', flush=True)
+    # crédito recebido em 2026 pela contabilidade (ted_tesouro_nc_conta.csv): destaque recebido entra como NC do TED;
+    # provisão recebida (crédito passado de uma UG da SDR para outra, ex.: 130141 → 130255 no 995343) fica numa lista própria
+    provT = collections.defaultdict(list)
+    for x in ler(tp, 'ted_tesouro_nc_conta.csv'):
+        if not x['ted']:
+            continue
+        if x['tipo'].startswith('Destaque'):
+            ncT[x['ted']].append([x['doc'], x['data'], x['ug_emit'], x['ug_fav'], f(x['valor']), x['ptres'], '', '', '', 'Tesouro', 'destaque recebido',
+                                  ac_orc.get(x['ptres'].strip(), ''), x['obs'][:200]])
+        elif x['tipo'].startswith('Provisão'):
+            provT[x['ted']].append([x['doc'], x['data'], x['ug_emit'], x['ug_fav'], f(x['valor']), x['ptres'], x['obs'][:200]])
     pfT = collections.defaultdict(list)
     vistos_pf = set()
     for x in sorted(ler(tp, 'ted_tesouro_pf.csv'), key=lambda x: not x.get('evento')):   # o mesmo documento: fica o que traz o evento
@@ -516,6 +527,7 @@ def ted(pasta):
             nt = [x[:4] + [-abs(x[4])] + x[5:9] + ['Devolução'] + x[10:] if str(x[2]) not in UGS_SDR and str(x[3]) in UGS_SDR else x for x in nt]
         o['ncT'] = len(nt)
         o['ncTes'] = nt
+        o['provs'] = provT.get(k, []) if k else []
         ag = collections.defaultdict(float)
         for x in nt:
             ag[(x[11] or '', x[5] or '', x[6] or '', x[7] or '', x[8] or '')] += x[4]
@@ -631,6 +643,8 @@ def ted(pasta):
             d_ = _dt(x[1])
             if d_ and f(x[4] if not isinstance(x[4], (int, float)) else str(x[4])) > 0 and (o['id'] not in ncIni or d_ < ncIni[o['id']]):
                 ncIni[o['id']] = d_
+        for x in o.get('provs') or []:   # provisão para outra UG da SDR: os empenhos dela nesse PTRES também são deste TED
+            liq_[(str(x[3]).strip(), str(x[5]).strip())] += x[4]
         for k, v_ in liq_.items():
             if v_ > 0.005:
                 idx[k].add(o['id'])
@@ -967,7 +981,7 @@ def ted(pasta):
         t = o.get('tes') or {}
         fic[k] = dict(fir=o.get('fir') or 0, nc=o.get('nc') or 0, pf=o.get('pf') or 0, ar=o.get('ar') or 0, neT=o.get('neT') or [0, 0, 0, 0],
                       tes={c: t.get(c) for c in ('fir', 'nc', 'rep', 'aRep', 'aComp', 'comp')} if t else None,
-                      ncs=o.get('ncs') or [], pfs=o.get('pfs') or [], nes=o.get('nes') or [], obs=o.get('obs') or [], obT=o.get('obT') or 0, nca=o.get('nca') or [], acao=o.get('acao', ''), fase=o.get('fase', ''), firOrig=o.get('firOrig'), ajValor=o.get('ajValor'), ugd=o.get('ugd', ''))
+                      ncs=o.get('ncs') or [], provs=o.get('provs') or [], pfs=o.get('pfs') or [], nes=o.get('nes') or [], obs=o.get('obs') or [], obT=o.get('obT') or 0, nca=o.get('nca') or [], acao=o.get('acao', ''), fase=o.get('fase', ''), firOrig=o.get('firOrig'), ajValor=o.get('ajValor'), ugd=o.get('ugd', ''))
     with open(os.path.join(tp, 'ted_ficha.json'), 'w', encoding='utf-8') as fh:
         json.dump(fic, fh, ensure_ascii=False, separators=(',', ':'))
     print(f'ted/ted_ficha.json · {len(fic)} TEDs', flush=True)

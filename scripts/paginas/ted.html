@@ -81,12 +81,13 @@ const sitN = s => SIT[s] || String(s||'').replace(/_/g,' ').toLowerCase().replac
 // envio × devolução (devolução: evento 300301/701202/701459 ou "devolução" na observação · vem negativa do robô)
 const ehDevNC = x => x[9] === 'Devolução' || (+x[4] || 0) < 0, ehDevPF = x => String(x[5]||'').startsWith('Devolução') || (+x[4] || 0) < 0;
 const somaDev = (L, ehDev) => L.filter(ehDev).reduce((a, x) => a + (+x[4] || 0), 0);
-const TIPO_B = (d, x) => { const rot = !d ? 'Envio' : (x && x[9] !== 'Devolução' && !String(x[5]||'').startsWith('Devolução')) ? 'Anulação' : 'Devolução';
+let FICHA_REC = false;   // TED recebido: o crédito "entra" (Recebido), não é envio
+const TIPO_B = (d, x) => { const rot = !d ? (FICHA_REC ? 'Recebido' : 'Envio') : (x && x[9] !== 'Devolução' && !String(x[5]||'').startsWith('Devolução')) ? 'Anulação' : 'Devolução';
   return `<span style="display:inline-block;font-size:11px;font-weight:700;padding:1px 8px;border-radius:999px;background:${d?'#fdecea':'#e3f1da'};color:${d?'#a3271b':'#1f5d34'}">${rot}</span>`; };
-const subEnvDev = (liq, dev) => `<small style="display:block;font-size:11.5px;color:#5f6f66;line-height:1.5;margin-top:4px">enviado <b style="display:inline;font-size:11.5px">${R$(liq - dev)}</b><br>devolvido <b style="display:inline;font-size:11.5px;color:#c0392b">− ${R$(-dev)}</b></small>`;
+const subEnvDev = (liq, dev) => `<small style="display:block;font-size:11.5px;color:#5f6f66;line-height:1.5;margin-top:4px">${FICHA_REC?'recebido':'enviado'} <b style="display:inline;font-size:11.5px">${R$(liq - dev)}</b><br>devolvido <b style="display:inline;font-size:11.5px;color:#c0392b">− ${R$(-dev)}</b></small>`;
 const f2z = v => Number(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
 const totEnvDev = (L, ehDev, liq, cols, rotLiq) => { const dev = somaDev(L, ehDev), nE = L.filter(x => !ehDev(x)).length, nD = L.length - nE;
-  return `<tr style="background:#f4f7f5;font-weight:700"><td colspan="${cols}">Enviado (${nE})</td><td class="n">${f2z(liq - dev)}</td></tr>`
+  return `<tr style="background:#f4f7f5;font-weight:700"><td colspan="${cols}">${FICHA_REC ? 'Recebido' : 'Enviado'} (${nE})</td><td class="n">${f2z(liq - dev)}</td></tr>`
    + `<tr style="background:#f4f7f5;font-weight:700;color:#a3271b"><td colspan="${cols}">Devolvido / anulado (${nD})</td><td class="n">− ${f2z(-dev)}</td></tr>`
    + `<tr style="background:#e3edf7;font-weight:700;color:#1f4e79"><td colspan="${cols}">${rotLiq}</td><td class="n">${f2z(liq)}</td></tr>`; };
 const UGN = {'420013':'420013 · SDR','130141':'130141','130010':'130010','130255':'130255','135098':'135098'};
@@ -152,6 +153,7 @@ const credTED = o => (o.fir||0) > 0 ? o.fir : (o.nc||0);
 const empAcima = o => o.neT && o.neT[0] > credTED(o) + 1;
 const mesN = m => ['','jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'][m]||'';
 function ficha(o){
+  FICHA_REC = o.er === 'Recebido';
   const t = (cab, linhas) => `<div class="rolar"><table class="mini"><tr>${cab.map(c => `<th class="${/Valor|Qtd|Previsto|Repassado|Descentralizado|Empenhado|Liquidado|Pago/.test(c)?'n':''}">${c}</th>`).join('')}</tr>${linhas}</table></div>`;
   const T = o.tes || {}, comp = T.comp||0, aComp = T.aComp||0, pRep = o.fir ? o.pf/o.fir : 0, pComp = (comp+aComp) ? comp/(comp+aComp) : 0;
   const corD = o.dias===null ? '' : o.dias<0 ? 'vm' : o.dias<=90 ? 'am' : 'vd';
@@ -183,6 +185,7 @@ function ficha(o){
    ${o.eq&&o.eq.et?`<div class="sb">Etapas da prestação de contas (controle interno)</div><ul class="etp">${['Relatório de cumprimento','Parecer do fiscal','Parecer do departamento','Parecer e nota técnica','Aprovação final'].map((t_,i) => `<li class="${o.eq.et[i]==='1'?'ok':''}">${o.eq.et[i]==='1'?'✓':i+1} · ${t_}</li>`).join('')}</ul>${o.eq.aComp?`<p class="obs">A comprovar (controle): ${R$(o.eq.aComp)}${o.eq.comp?' · comprovado '+R$(o.eq.comp):''}</p>`:''}`:''}
    ${nca.length?`<div class="sb">Ações usadas neste TED</div>${t(['Ação','PTRES','PI','Natureza','RP','Descentralizado'], nca.map(x => `<tr><td>${esc(x[0])||'—'}</td><td>${esc(x[1])}</td><td>${esc(x[2])}</td><td>${esc(x[3])}</td><td>${esc(x[4])}</td><td class="n">${f2(x[5])}</td></tr>`).join(''))}`:''}
    ${o.ncs.length?`<div class="sb">Orçamento · notas de crédito</div>${t(['Tipo','Nota','Emissão','UG emitente → favorecida','PTRES · PI','Natureza','RP','Evento','Valor'], o.ncs.map(x => { const d = ehDevNC(x); return `<tr${d?' style="background:#fff7f6"':''}><td>${TIPO_B(d, x)}</td><td>${esc(x[0])}</td><td>${esc(x[1])}</td><td>${esc(x[2])} → ${esc(x[3])}</td><td>${esc(x[5])} · ${esc(x[6])}</td><td>${esc(x[7])}</td><td>${esc(x[8])}</td><td>${esc(x[10]||'')}</td><td class="n"${d?' style="color:#c0392b;font-weight:700"':''}>${f2(x[4])}</td></tr>`; }).join('') + totEnvDev(o.ncs, ehDevNC, o.nc, 8, 'Descentralizado líquido'))}`:''}
+   ${(o.provs||[]).length?`<div class="sb">Provisão entre UGs da SDR · crédito repassado para a UG que executa</div>${t(['Documento','Data','UG que passou → UG que recebeu','PTRES','Descrição','Valor'], o.provs.map(x => `<tr><td>${esc(x[0])}</td><td>${esc(x[1])}</td><td>${esc(x[2])} → ${esc(x[3])}</td><td>${esc(x[5])}</td><td class="just">${esc(x[6])}</td><td class="n">${f2(x[4])}</td></tr>`).join('') + `<tr style="background:#e3edf7;font-weight:700;color:#1f4e79"><td colspan="5">Total provisionado</td><td class="n">${f2z(o.provs.reduce((a,x)=>a+(+x[4]||0),0))}</td></tr>`)}`:''}
    ${o.pfs.length?`<div class="sb">Financeiro · programações financeiras</div>${t(['Tipo','PF','Data','Evento','Observação','Valor'], o.pfs.map(x => { const d = ehDevPF(x); return `<tr${d?' style="background:#fff7f6"':''}><td>${TIPO_B(d, x)}</td><td>${esc(x[0])}</td><td>${esc(x[1])}</td><td>${esc(x[7] || (/^(Tesouro · PF|Devolução)$/.test(String(x[5]||'')) ? '—' : sitN(String(x[5]||'').replace(/^(Tesouro|Devolução) · ?/,''))))}</td><td class="just">${esc(x[6])}</td><td class="n"${d?' style="color:#c0392b;font-weight:700"':''}>${f2(x[4])}</td></tr>`; }).join('') + totEnvDev(o.pfs, ehDevPF, o.pf, 5, 'Repassado líquido'))}`:''}
    ${cro.length?`<div class="sb">Cronograma × repassado</div>${t(['Parcela','Previsto','Repassado','Situação'], cro.map(([c,cob,st]) => `<tr><td>${mesN(c[1])}/${esc(c[0])}</td><td class="n">${f2(c[2])}</td><td class="n">${f2(cob)}</td><td style="color:${st[1]}">${st[0]}</td></tr>`).join(''))}`:''}
    ${fichaNE(o, t)}
