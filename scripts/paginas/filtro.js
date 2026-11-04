@@ -68,13 +68,23 @@ function imprimirFicha(el, titulo, paisagem){
   const c = el.cloneNode(true);
   c.querySelectorAll('details').forEach(d => d.open = true);
   c.querySelectorAll('.fa,.acoes,[data-fecha],[data-imp]').forEach(x => x.remove());
+  // quadros: cada título de seção (.sb ou h3) e o que vem depois dele, até o próximo título, ficam numa caixa
+  [...c.querySelectorAll('.sb, h3')].forEach(h => {
+    if(h.parentElement && h.parentElement.classList.contains('qd')) return;
+    const q = document.createElement('div'); q.className = 'qd'; h.parentNode.insertBefore(q, h);
+    let x = h; while(x){ const prox = x.nextSibling; q.appendChild(x); x = prox; if(x && x.nodeType===1 && x.matches('.sb, h3')) break; }
+  });
   const css = [...document.querySelectorAll('style')].map(x => x.textContent).join('\n');
   const html = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>${String(titulo||'Ficha').replace(/</g,'')}</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet"><style>${css}
 @page{size:A4 ${paisagem ? 'landscape' : 'portrait'};margin:10mm}html,body{background:#fff!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}body{padding:12px;font-family:Barlow,Arial,sans-serif}
 .fi,.ficha,.fo{box-shadow:none!important;max-width:980px;margin:0 auto!important;position:static!important}.rolar,.tw{overflow:visible!important;max-height:none!important}
+.qd{border:1px solid #cfdcd3;border-radius:8px;margin:10px 0;overflow:hidden;background:#fff}.qd>.sb,.qd>h3{background:#eef4ef!important;margin:0!important;padding:6px 10px!important;border:0!important;border-bottom:1px solid #cfdcd3!important;border-radius:0!important}.qd>:not(.sb):not(h3){margin-left:10px;margin-right:10px}.qd>:last-child{margin-bottom:8px}
+details{border:1px solid #cfdcd3;border-radius:8px;margin:10px 0;overflow:hidden}details>summary{background:#eef4ef;padding:6px 10px;border-bottom:1px solid #cfdcd3}details>:not(summary){margin-left:10px;margin-right:10px}
+.moldura{position:fixed;top:0;left:0;right:0;bottom:0;border:1.5px solid #9fb8a8;border-radius:10px;pointer-events:none;z-index:0}
+@media print{body{padding:14px 16px!important}.cx{grid-template-columns:repeat(5,1fr)!important}}
 .wrap{max-width:none}body>#impressao{display:block!important}.aviso-imp{max-width:980px;margin:0 auto 10px;font:13px Arial,sans-serif;color:#444}@media print{.aviso-imp{display:none}body{padding:0}}</style></head>
-<body><p class="aviso-imp">Na janela de impressão, escolha <b>Salvar como PDF</b> em "Destino".</p><div style="font:11px Arial,sans-serif;color:#5a6672;text-align:right;margin:0 auto 6px;max-width:980px">Extraído em ${new Date().toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'})} · Painel SDR 2026</div>${c.outerHTML}
+<body><div class="moldura"></div><p class="aviso-imp">Na janela de impressão, escolha <b>Salvar como PDF</b> em "Destino".</p><div style="font:11px Arial,sans-serif;color:#5a6672;text-align:right;margin:0 auto 6px;max-width:980px">Extraído em ${new Date().toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'})} · Painel SDR 2026</div>${c.outerHTML}
 <script>window.addEventListener('load',function(){setTimeout(function(){window.focus();window.print();},600);});<\/script></body></html>`;
   let w = null; try{ w = window.open('', '_blank'); }catch(e){}
   if(w && w.document){ w.document.open(); w.document.write(html); w.document.close(); return; }

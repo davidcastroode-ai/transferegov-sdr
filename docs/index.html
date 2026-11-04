@@ -3625,8 +3625,13 @@ function documentoFicha(){
     @media print{body{padding:0}.ficha{max-width:none}.f-tab{font-size:9px}.f-tab th,.f-tab td{padding:3px 4px}.f-card b{font-size:13px}.aviso-imp{display:none}
       .f-sec h3{font-size:12px}.f-sec h4{font-size:12px !important}.f-dl b{font-size:11px}.f-cab h2{font-size:24px}}
     .aviso-imp{max-width:980px;margin:0 auto 10px;font:13px Arial,sans-serif;color:#444}
+    /* bordas: moldura em toda página + quadro em cada seção */
+    .moldura{position:fixed;top:0;left:0;right:0;bottom:0;border:1.5px solid #9fb8a8;border-radius:10px;pointer-events:none;z-index:0}
+    .f-sec,.fi-sec{border:1px solid #cfdcd3 !important;border-radius:8px !important;box-shadow:none !important}
+    .f-sec h3,.fi-sec h3{background:#eef4ef !important;border-bottom:1px solid #cfdcd3 !important}
+    @media print{body{padding:14px 16px !important}}
     </style></head>
-    <body data-tema="${document.body.dataset.tema||'verde'}"><p class="aviso-imp">Na janela de impressão, escolha <b>Salvar como PDF</b> em "Destino".</p>${carimboExt()}${el.outerHTML}
+    <body data-tema="${document.body.dataset.tema||'verde'}"><div class="moldura"></div><p class="aviso-imp">Na janela de impressão, escolha <b>Salvar como PDF</b> em "Destino".</p>${carimboExt()}${el.outerHTML}
     <script>window.addEventListener('load', function(){ setTimeout(function(){ window.focus(); window.print(); }, 600); });<\/script></body></html>`;
 }
 function imprimirFicha(){
