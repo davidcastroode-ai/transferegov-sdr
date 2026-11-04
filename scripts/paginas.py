@@ -438,7 +438,7 @@ def ted(pasta):
     nc_uni, n_dup = [], 0
     for g in grp.values():
         acs = []
-        for y in g:
+        for y in sorted(g, key=lambda y: not y.get('evento')):   # a mesma NC vem em mais de um relatório: fica a que traz o evento
             if y['acao'] not in [a['acao'] for a in acs]:
                 acs.append(y)
         if len(acs) > 1:
@@ -490,7 +490,7 @@ def ted(pasta):
     print(f'NC devolvidas sem nº de TED: {n_dev[0]} ligadas · {n_dev[1]} sem dono certo (ficam fora)', flush=True)
     pfT = collections.defaultdict(list)
     vistos_pf = set()
-    for x in ler(tp, 'ted_tesouro_pf.csv'):
+    for x in sorted(ler(tp, 'ted_tesouro_pf.csv'), key=lambda x: not x.get('evento')):   # o mesmo documento: fica o que traz o evento
         if (x['doc'], x['ted'], x['valor']) in vistos_pf:   # o mesmo documento vem no TED_PF e no TED_PF_DEV
             continue
         vistos_pf.add((x['doc'], x['ted'], x['valor']))
