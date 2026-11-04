@@ -3602,6 +3602,7 @@ function documentoFicha(){
   const el = document.getElementById('ficha').cloneNode(true);
   el.querySelectorAll('select').forEach(sel => { const sp = document.createElement('b'); sp.textContent = sel.options[sel.selectedIndex]?.textContent || ''; sel.replaceWith(sp); });
   el.querySelectorAll('.f-acoes').forEach(x => x.remove());
+  el.querySelectorAll('table').forEach(tb => { if(tb.tHead) return; const r = tb.querySelector('tr'); if(r && r.querySelector('th') && !r.querySelector('td')){ const th = tb.createTHead(); th.appendChild(r); } });
   el.style.marginTop = '0';
   // emojis viram quadradinhos no PDF: tira (ícones decorativos)
   const tw = document.createTreeWalker(el, NodeFilter.SHOW_TEXT); let nd;
@@ -3627,7 +3628,8 @@ function documentoFicha(){
     .aviso-imp{max-width:980px;margin:0 auto 10px;font:13px Arial,sans-serif;color:#444}
     /* bordas: moldura em toda página + quadro em cada seção */
     .moldura{position:fixed;top:0;left:0;right:0;bottom:0;border:1.5px solid #9fb8a8;border-radius:10px;pointer-events:none;z-index:0}
-    .f-sec,.fi-sec{border:1px solid #cfdcd3 !important;border-radius:8px !important;box-shadow:none !important}
+    .f-sec,.fi-sec{border:1px solid #cfdcd3 !important;border-radius:8px !important;box-shadow:none !important;-webkit-box-decoration-break:clone;box-decoration-break:clone}
+    thead{display:table-header-group}
     .f-sec h3,.fi-sec h3{background:#eef4ef !important;border-bottom:1px solid #cfdcd3 !important}
     @media print{body{padding:14px 16px !important}}
     </style></head>
