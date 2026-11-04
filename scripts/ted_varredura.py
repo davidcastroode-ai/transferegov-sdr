@@ -110,19 +110,21 @@ def main():
         # 3. RP × emenda
         rps = {'Controle': rp(c.get('RP')), 'Tesouro (NC)': ' / '.join(sorted(rpNC.get(t, [])))}
         rps = {k: v for k, v in rps.items() if v}
-        if len(set(rps.values())) > 1:
+        # TED pode ter mais de um RP (ex.: RP 2 + emenda RP 7): só acusa quando o RP da planilha não aparece em NENHUMA NC
+        rpC, rpT = set(re.findall(r'RP \d', rps.get('Controle', ''))), set(rpNC.get(t, []))
+        if rpC and rpT and not (rpC & rpT):
             prob(t, 'RP divergente', 'alta', ' · '.join(f'{k}: {v}' for k, v in rps.items()), 'controle, NC do Tesouro (pelo PTRES)',
-                 'vale o RP da NC do Tesouro; corrigir no controle')
+                 'o RP da planilha não aparece em nenhuma NC: vale o da NC do Tesouro; corrigir no controle')
         # 4. ação divergente
         acs = {'Controle': (c.get('Ação') or '').strip(), 'NC': ' / '.join(sorted(acNC.get(t, [])))}
         acs = {k: v for k, v in acs.items() if v}
         norm_ = lambda v: frozenset(re.findall(r'[0-9A-Z]{4}', v.upper()))
         decl = frozenset().union(*[norm_(v) for k, v in acs.items() if k != 'NC']) if any(k != 'NC' for k in acs) else frozenset()
-        if 'NC' in acs and decl and not (norm_(acs['NC']) & decl):
-            prob(t, 'Ação divergente', 'alta',
-                 ' · '.join(f'{k}: {v}' for k, v in acs.items()), 'controle, NC do Tesouro', 'a NC é de outra ação: conferir se a NC é deste TED')
-        elif len({norm_(v) for v in acs.values()}) > 1:
-            prob(t, 'Ação divergente', 'baixa', ' · '.join(f'{k}: {v}' for k, v in acs.items()), 'controle, NC do Tesouro', 'vale a ação da NC; corrigir no controle')
+        # a NC pode sair de outra ação por remanejamento (ex.: 20ZV executada pela 420013): não é erro, é atenção
+        if 'NC' in acs and decl and not (norm_(acs['NC']) <= decl):
+            prob(t, 'Atenção · possível remanejamento', 'baixa',
+                 ' · '.join(f'{k}: {v}' for k, v in acs.items()), 'controle, NC do Tesouro',
+                 'confirmar se o crédito foi remanejado para esta ação e registrar no controle (se não foi, a NC pode ser de outro TED)')
         # 5. firmado divergente
         fr = {'Tesouro': num(ts.get('fir')), 'Controle': num(c.get('Firmado / total'))}
         fr = {k: v for k, v in fr.items() if v > 0}
