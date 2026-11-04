@@ -134,7 +134,7 @@ function render(){
     const LA = L.filter(o => o.acaoN===ac), porPO = agr(LA,'poN');
     [...porPO].sort((a,b) => a[0].localeCompare(b[0])).forEach(([po, y]) => {
       const ch = ac+'|'+po, ab = ABERTO.has(ch);
-      h += `<tr class="po ${ab?'aberto':''}" data-ab="${esc(ch)}"><td>${ab?'▾':'▸'} ${esc(po)}</td>${cols.map(c => cel(y,c[1])).join('')}<td>${pct(y.emp,y.atu)}</td></tr>`;
+      h += `<tr class="po ${ab?'aberto':''}" data-ab="${esc(ch)}"><td>${ab?'▾':'▸'} ${esc(po)}${linhaGR(LA.filter(o => o.poN===po))}</td>${cols.map(c => cel(y,c[1])).join('')}<td>${pct(y.emp,y.atu)}</td></tr>`;
       if(ab){ const porUG = agr(LA.filter(o => o.poN===po),'ugN');
         h += `<tr class="ug"><td><b>UG</b></td><td colspan="4" style="text-align:left"><b>provisão recebida · destaque concedido</b></td><td><b>Bloqueado</b></td><td></td><td><b>Empenhado</b></td><td><b>Liquidado</b></td><td><b>Pago</b></td><td><b>Disponível</b></td><td></td></tr>`;
         [...porUG].sort((a,b) => a[0].localeCompare(b[0])).forEach(([ug, z]) => {
