@@ -787,6 +787,7 @@ def ted(pasta):
         # valor firmado: Tesouro → planilha → API.
         # No SIAFI a supressão (ou o aditivo) não mexe em "valores firmados": zera/aumenta o "a repassar". O valor atual do TED é então
         # a repassar + repassado (a comprovar, comprovado, a aprovar, aprovado/concluído) + devolvido. Ex.: 991352, firmado 10,2 Mi, 7,2 Mi suprimidos.
+        o['firFonte'] = 'Tesouro'
         if pct_(t.get('fir')) and t['fir'] > 0:
             o['fir'] = t['fir']
             if t.get('aRep') is not None and t.get('rep') is not None:
@@ -794,25 +795,41 @@ def ted(pasta):
                 if atual > 0 and abs(atual - t['fir']) > 1:
                     o['firOrig'], o['ajValor'], o['fir'] = t['fir'], round(atual - t['fir'], 2), atual
         elif e.get('firm'):
-            o['fir'] = e['firm']
-        # descentralizado: NCs do Tesouro (sem repetição, devoluções negativas) → saldo do Tesouro → API
+            o['fir'], o['firFonte'] = e['firm'], 'controle da equipe'
+        elif str(o.get('ano')) == str(hoje.year) and o['fir']:
+            o['firFonte'] = 'API · em formalização'   # TED do ano ainda não lançado no SIAFI: o valor da API é o único registro
+        else:
+            o['fir'], o['firFonte'] = 0.0, 'sem registro no Tesouro'   # ano anterior e nada no SIAFI nem no controle: o valor da API não vale
+        # 04/11/2026: valores, NC, PF, PTRES, ação e RP SÓ do Tesouro (contábil). A API do Transferegov está desatualizada:
+        # fica só para o cadastro (unidade, objeto, plano de ação, cronograma, metas, pareceres); os números dela ficam em o['api'] só para consulta.
+        # descentralizado: NCs do Tesouro (sem repetição, devoluções negativas) → saldo do Tesouro → zero
         if nt:
             o['nc'] = round(sum(x[4] for x in nt), 2)
             o['ncs'] = nt[:40]
             acT = [x[11] for x in sorted(nt, key=lambda x: -x[4]) if x[11]]
             if acT:
                 o['acao'] = ' | '.join(dict.fromkeys(acT))
-        elif pct_(t.get('nc')) is not None:
-            o['nc'] = t['nc']
-        # repassado: o que já saiu para a unidade no Tesouro (a comprovar + comprovado + a aprovar + aprovado/concluído) → API
+        else:
+            o['ncs'] = [x for x in (o.get('ncs') or []) if len(x) > 9 and x[9] in ('Tesouro', 'Devolução')]
+            o['nc'] = t['nc'] if pct_(t.get('nc')) is not None else round(sum(x[4] for x in o['ncs']), 2)
+        o['ncT'] = len(o['ncs'])
+        # RP: só o das NCs do Tesouro; ação sem NC no Tesouro: a do controle da equipe, senão a do cadastro
+        rpT = sorted({str(x[8]) for x in o['ncs'] if re.fullmatch(r'RP \d', str(x[8] or ''))})
+        o['rp'] = ' | '.join(rpT) or (e.get('rp') or '')
+        if not o['ncs'] and e.get('acao'):
+            o['acao'] = e['acao']
+        if o['emd'] and not re.search(r'[678]', o['rp'] or ''):
+            o['emdApi'], o['emd'] = o['emd'], ''
+        # repassado: o que já saiu para a unidade no Tesouro (a comprovar + comprovado + a aprovar + aprovado/concluído) → zero
         # (a soma do relatório de PF ainda não é confiável: valores com dígito a mais e devoluções com sinal trocado; as PFs aparecem só na lista)
-        if pct_(t.get('rep')) is not None:
-            o['pf'] = t['rep']
-        if pt_:
-            o['pfs'] = pt_[:40]
-        if pct_(t.get('aRep')) is not None:
-            o['ar'] = t['aRep']
+        o['pfs'] = pt_[:40]
+        # sem o saldo do relatório de TED: soma das PFs do Tesouro → a comprovar + comprovado do controle da equipe → zero
+        o['pf'] = t['rep'] if pct_(t.get('rep')) is not None else (round(sum(x[4] for x in pt_), 2) if pt_ else round((e.get('aComp') or 0) + (e.get('comp') or 0), 2))
+        o['ar'] = t['aRep'] if pct_(t.get('aRep')) is not None else max(0.0, round(o['fir'] - o['pf'], 2))
         o['op'] = max(0.0, round(o['fir'] - o['nc'], 2))
+        o['dif'] = []
+        if o.get('org') == 'Tesouro e API · valores diferentes':
+            o['org'] = 'Tesouro e API'
         # datas: ajuste da equipe → planilha (controle interno) → Tesouro → API
         if t.get('ini'):
             o['ini'] = t['ini']

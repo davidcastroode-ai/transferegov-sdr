@@ -102,44 +102,38 @@ def main():
                  f"controle: {c.get('Aba do controle') or '—'} · API: {a.get('Situação do termo') or '—'} · painel: {f.get('fase') or '—'}",
                  'mover para Prestação de contas no controle ou registrar a prorrogação (termo aditivo)')
         # 2. fim da vigência divergente
-        fs = {k: v for k, v in fins.items() if v and k != 'Painel'}
+        # 04/11/2026: a API do Transferegov está desatualizada · as comparações ficam só entre Tesouro e controle da equipe
+        fs = {k: v for k, v in fins.items() if v and k not in ('Painel', 'API')}
         if fs and (max(fs.values()) - min(fs.values())).days > 1:   # 1 dia de diferença é só a contagem (Tesouro conta o dia seguinte)
-            prob(t, 'Fim da vigência divergente', 'média', ' · '.join(f'{k} {br(v)}' for k, v in fs.items()), 'API, controle, Tesouro',
+            prob(t, 'Fim da vigência divergente', 'média', ' · '.join(f'{k} {br(v)}' for k, v in fs.items()), 'controle, Tesouro',
                  'conferir o fim correto (último aditivo) e acertar a fonte errada')
         # 3. RP × emenda
-        rps = {'API': rp(a.get('Resultado primário')), 'Controle': rp(c.get('RP')), 'Tesouro (NC)': ' / '.join(sorted(rpNC.get(t, [])))}
+        rps = {'Controle': rp(c.get('RP')), 'Tesouro (NC)': ' / '.join(sorted(rpNC.get(t, [])))}
         rps = {k: v for k, v in rps.items() if v}
         if len(set(rps.values())) > 1:
-            prob(t, 'RP divergente', 'alta', ' · '.join(f'{k}: {v}' for k, v in rps.items()), 'API, controle, NC do Tesouro (pelo PTRES)',
-                 'vale o RP da NC do Tesouro; corrigir no controle ou desconsiderar o da API')
-        emenda = ' | '.join(e for e in re.split(r'\s*\|\s*', a.get('Emenda (autor)') or '') if e.strip('0 '))
-        rpReal = (rps.get('Tesouro (NC)') or rps.get('Controle') or rps.get('API') or '')
-        if emenda and rpReal and not re.search(r'RP [678]', rpReal):
-            prob(t, 'RP 2 com dado de emenda', 'alta', f'RP {rpReal.replace("RP ", "")} (sem emenda), mas a API traz autor de emenda {emenda[:60]}', 'API × Tesouro/controle',
-                 'a emenda é de outro plano/TED ou a API está errada: não mostrar emenda neste TED')
-        if not emenda and re.fullmatch(r'RP [678]', rpReal or ''):
-            prob(t, 'Emenda sem autor', 'baixa', f'{rpReal} (emenda), mas sem autor de emenda na API', 'API', 'preencher o autor da emenda no controle')
+            prob(t, 'RP divergente', 'alta', ' · '.join(f'{k}: {v}' for k, v in rps.items()), 'controle, NC do Tesouro (pelo PTRES)',
+                 'vale o RP da NC do Tesouro; corrigir no controle')
         # 4. ação divergente
-        acs = {'API': (a.get('Ação orçamentária') or '').strip(), 'Controle': (c.get('Ação') or '').strip(), 'NC': ' / '.join(sorted(acNC.get(t, [])))}
+        acs = {'Controle': (c.get('Ação') or '').strip(), 'NC': ' / '.join(sorted(acNC.get(t, [])))}
         acs = {k: v for k, v in acs.items() if v}
         norm_ = lambda v: frozenset(re.findall(r'[0-9A-Z]{4}', v.upper()))
         decl = frozenset().union(*[norm_(v) for k, v in acs.items() if k != 'NC']) if any(k != 'NC' for k in acs) else frozenset()
         if 'NC' in acs and decl and not (norm_(acs['NC']) & decl):
             prob(t, 'Ação divergente', 'alta',
-                 ' · '.join(f'{k}: {v}' for k, v in acs.items()), 'API, controle, NC', 'a NC é de outra ação: conferir se a NC é deste TED')
+                 ' · '.join(f'{k}: {v}' for k, v in acs.items()), 'controle, NC do Tesouro', 'a NC é de outra ação: conferir se a NC é deste TED')
         elif len({norm_(v) for v in acs.values()}) > 1:
-            prob(t, 'Ação divergente', 'baixa', ' · '.join(f'{k}: {v}' for k, v in acs.items()), 'API, controle, NC', 'vale a ação da NC; corrigir no controle')
+            prob(t, 'Ação divergente', 'baixa', ' · '.join(f'{k}: {v}' for k, v in acs.items()), 'controle, NC do Tesouro', 'vale a ação da NC; corrigir no controle')
         # 5. firmado divergente
-        fr = {'API': num(a.get('Valor firmado')), 'Tesouro': num(ts.get('fir')), 'Controle': num(c.get('Firmado / total'))}
+        fr = {'Tesouro': num(ts.get('fir')), 'Controle': num(c.get('Firmado / total'))}
         fr = {k: v for k, v in fr.items() if v > 0}
         if fr and max(fr.values()) - min(fr.values()) > 1:
             prob(t, 'Valor firmado divergente', 'média', ' · '.join(f'{k} R$ {v:,.2f}' for k, v in fr.items()).replace(',', 'X').replace('.', ',').replace('X', '.'),
-                 'API, Tesouro, controle', 'conferir aditivo de valor; vale o Tesouro')
+                 'Tesouro, controle', 'conferir aditivo de valor; vale o Tesouro')
         # 6. processo divergente
-        pr = {'API': proc(a.get('Processo SEI')), 'Controle': proc(c.get('Processo')), 'Tesouro': proc(ts.get('processo'))}
+        pr = {'Controle': proc(c.get('Processo')), 'Tesouro': proc(ts.get('processo'))}
         pr = {k: v for k, v in pr.items() if v}
         if len(set(pr.values())) > 1:
-            prob(t, 'Processo divergente', 'média', ' · '.join(f'{k} {v}' for k, v in pr.items()), 'API, controle, Tesouro', 'corrigir o processo no controle')
+            prob(t, 'Processo divergente', 'média', ' · '.join(f'{k} {v}' for k, v in pr.items()), 'controle, Tesouro', 'corrigir o processo no controle')
         # 7. documentos que citam outro TED / UG diferente
         ugr = (b.get('UG descentralizada') or '').strip()
         for tipo, lista, iu, iobs in (('NC', f.get('ncs') or [], 3, 12), ('PF', f.get('pfs') or [], 3, 6), ('NE', f.get('nes') or [], None, 10)):
