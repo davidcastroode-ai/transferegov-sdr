@@ -388,7 +388,7 @@ def interpretar_pf(linhas):
     out = []
     for l in linhas[ih + 1:]:
         doc = g(l, cDoc)
-        if not re.search(r'\d{4}[A-Z]{2}\d{6}$', doc):
+        if not re.search(r'\d{4}PF\d{6}$', doc):   # só programação financeira (NS/NL de ajuste contábil, sem TED certo, ficam fora)
             continue
         ted = chave_ted(g(l, cT))
         if not ted or ted in ('8', '-8'):
