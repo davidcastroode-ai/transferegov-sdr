@@ -87,8 +87,8 @@ def parcerias(saida):
         cs = [r for r in exe if data(r['clausula_suspensiva_ate']) and (data(r['clausula_suspensiva_ate']) - HOJE).days <= 60]
         out.append(alerta(menu, 'r', 'susp', 'Cláusula suspensiva vence em até 60 dias (ou já venceu)', 'Cobrar os documentos pendentes (projeto, licença, titularidade); vencida sem solução, o instrumento deve ser extinto.',
                           [I(r, 'suspensiva até ' + r['clausula_suspensiva_ate']) for r in cs]))
-        sd = [r for r in exe if f(r['valor_a_desembolsar']) > 0 and str(r.get('dias_sem_desembolso') or '').isdigit() and int(r['dias_sem_desembolso']) > 180]
-        out.append(alerta(menu, 'y', 'semdes', 'Sem desembolso há mais de 180 dias', 'Verificar com o convenente a licitação e a execução; pedir o cronograma atualizado.',
+        sd = [r for r in exe if f(r['valor_a_desembolsar']) > 0 and str(r.get('dias_sem_desembolso') or '').isdigit() and int(r['dias_sem_desembolso']) > 90]
+        out.append(alerta(menu, 'y', 'semdes', 'Sem desembolso há mais de 90 dias', 'Verificar com o convenente a licitação e a execução; pedir o cronograma atualizado.',
                           [I(r, f"{r['dias_sem_desembolso']} dias sem desembolso") for r in sorted(sd, key=lambda r: -int(r['dias_sem_desembolso']))]))
         aj = [r for r in L if (r.get('ajuste_pt_aberto') or '').strip()]
         out.append(alerta(menu, 'y', 'ajuste', 'Ajuste do plano de trabalho em aberto', 'Analisar a solicitação no Transferegov dentro do prazo.',

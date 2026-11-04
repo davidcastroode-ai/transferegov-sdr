@@ -172,7 +172,7 @@ function telaEmp(L){
   <div class="g2">${sec('Saldo de empenho por convenente','os 10 maiores · '+tesMsg(), tesOk() ? hbar(agrupar(L.filter(o => o.sE+o.sR>0),'prop',o => o.sE+o.sR).slice(0,10),'prop','#3a6f9f',fm) : '<p class="d">—</p>')}
    ${sec('Valor a desembolsar por convenente','os 10 maiores · clique para filtrar', hbar(agrupar(L.filter(o => o.aDes>0),'prop',o => o.aDes).slice(0,10),'prop','#c0392b',fm))}</div>
   ${sec('Previsão × desembolso em '+ANO,'cronograma de desembolso do concedente (Transferegov) × desembolsado em cada mês', graf)}
-  <div class="g2">${sec('Mapa','pontos: municípios · vermelho = instrumento em execução sem desembolso há mais de 180 dias', mapa(L, o => o.sit==='Em execução' && (o.dsd===null || o.dsd>180)))}
+  <div class="g2">${sec('Mapa','pontos: municípios · vermelho = instrumento em execução sem desembolso há mais de 90 dias', mapa(L, o => o.sit==='Em execução' && (o.dsd===null || o.dsd>90)))}
    ${sec('Desembolsos realizados em '+ANO, desL.length+' desembolsos · '+fm(desAno), desL.length ? `<table class="mini" style="font-size:12px"><tr><th>Data</th><th>Instrumento</th><th>Convenente</th><th class="n">Valor</th></tr>${desL.slice(0,18).map(x => `<tr><td>${esc(x.d)}</td><td>${esc(x.o.n)}</td><td>${esc(x.o.prop.slice(0,40))}</td><td class="n">${fm(x.v)}</td></tr>`).join('')}</table>${desL.length>18?`<p class="d">… e mais ${desL.length-18}</p>`:''}` : '<p class="d">nenhum desembolso no ano</p>')}</div>`;
 }
 // ------------------------------------------------------------- Programas / Emendas

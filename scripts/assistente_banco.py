@@ -39,7 +39,7 @@ TEMAS = [  # (código do tema no gabarito, jeitos de dizer)
     ('pc', ['em prestação de contas', 'com prestação de contas em andamento']),
     ('vencem30', ['que vencem nos próximos 30 dias', 'com vigência vencendo em 30 dias']),
     ('vencidos', ['com vigência vencida', 'que já venceram e continuam em execução']),
-    ('semdes', ['sem desembolso há mais de 180 dias', 'parados sem desembolso']),
+    ('semdes', ['sem desembolso há mais de 90 dias', 'parados sem desembolso']),
     ('suspensiva', ['em cláusula suspensiva']),
 ]
 NOMES = {'': ['instrumentos', 'parcerias', 'instrumentos (convênios, termos e contratos de repasse)'], 'CONVENIO': ['convênios'], 'FOMENTO': ['termos de fomento'], 'REPASSE': ['contratos de repasse']}
