@@ -460,14 +460,14 @@ def ted(pasta):
             dev_sem_ted.append(x)   # liga depois: pelo processo da descrição ou pela NC de envio (mesma unidade, PTRES, PI e ND)
             continue
         if x['ted']:
-            ncT[x['ted']].append([x['nc'], x['data'], x['ug_emit'], x['ug_fav'], f(x['valor']), x['ptres'], x['pi'], x['nd'], x['rp'], 'Tesouro', '', x['acao'], x['obs'][:200]])
+            ncT[x['ted']].append([x['nc'], x['data'], x['ug_emit'], x['ug_fav'], f(x['valor']), x['ptres'], x['pi'], x['nd'], x['rp'], 'Tesouro', x.get('evento') or '', x['acao'], x['obs'][:200]])
         elif x['ug_fav'] in UGS_SDR and x['ug_emit'] not in UGS_SDR:
             semTED.append(x)
         if x['ug_emit'] in UGS_SDR:
             acoesSDR.add(x['acao'])
         if not x['ted'] and x['ug_emit'] in UGS_SDR:   # NC da SDR sem nº de TED (dispensa de TED): liga pelo processo escrito na observação
             for pr in re.findall(r'\d{5}\.?\d{6}/?\d{4}-?\d{2}', x['obs'] or ''):
-                ncProc[re.sub(r'\D', '', pr)].append([x['nc'], x['data'], x['ug_emit'], x['ug_fav'], f(x['valor']), x['ptres'], x['pi'], x['nd'], x['rp'], 'Tesouro', '', x['acao'], x['obs'][:200]])
+                ncProc[re.sub(r'\D', '', pr)].append([x['nc'], x['data'], x['ug_emit'], x['ug_fav'], f(x['valor']), x['ptres'], x['pi'], x['nd'], x['rp'], 'Tesouro', x.get('evento') or '', x['acao'], x['obs'][:200]])
     # devoluções sem nº de TED: 1º processo citado na descrição · 2º a NC de envio da SDR para a mesma unidade com mesmo PTRES, PI e ND
     envio = collections.defaultdict(set)
     for x in nc_uni:
@@ -477,7 +477,7 @@ def ted(pasta):
                 envio[(x['ug_fav'], x['ptres'].strip(), x['pi'].strip(), x['nd'].strip())].add(dono)
     n_dev = [0, 0]
     for x in dev_sem_ted:
-        lin = [x['nc'], x['data'], x['ug_emit'], x['ug_fav'], f(x['valor']), x['ptres'], x['pi'], x['nd'], x['rp'], 'Devolução', '', x['acao'],
+        lin = [x['nc'], x['data'], x['ug_emit'], x['ug_fav'], f(x['valor']), x['ptres'], x['pi'], x['nd'], x['rp'], 'Devolução', x.get('evento') or '', x['acao'],
                ('devolução · evento ' + (x.get('evento') or '') + ' · ' + (x['obs'] or ''))[:200]]
         prs = [re.sub(r'\D', '', pr) for pr in re.findall(r'\d{5}\.?\d{6}/?\d{4}-?\d{2}', x['obs'] or '')]
         donos = {('proc', pr) for pr in prs} or envio.get((x['ug_emit'], x['ptres'].strip(), x['pi'].strip(), x['nd'].strip()), set())
@@ -496,7 +496,8 @@ def ted(pasta):
         vistos_pf.add((x['doc'], x['ted'], x['valor']))
         dev = x['ug_fav'] in UGS_SDR and x['ug_emit'] not in UGS_SDR and ted_tesouro.eh_devolucao(x.get('evento'), x.get('evento_nome'), x.get('obs'))
         rot = ('Devolução · ' if dev else 'Tesouro · ') + ((x.get('evento') or '') + ' ' + (x.get('evento_nome') or '')).strip() if x.get('evento') else ('Devolução' if dev else 'Tesouro · ' + (x['tipo'] or ''))
-        pfT[x['ted']].append([x['doc'], x['data'], x['ug_emit'], x['ug_fav'], -abs(f(x['valor'])) if dev else f(x['valor']), rot, x['obs'][:160]])
+        pfT[x['ted']].append([x['doc'], x['data'], x['ug_emit'], x['ug_fav'], -abs(f(x['valor'])) if dev else f(x['valor']), rot, x['obs'][:160],
+                              ((x.get('evento') or '') + ' · ' + (x.get('evento_nome') or '')).strip(' ·')])
     usados = set()
     for o in linhas:
         k = ted_tesouro.chave_ted(o['n'])
@@ -598,7 +599,7 @@ def ted(pasta):
         v = round(sum(f(x['valor']) for x in L), 2)
         if v < 1000:
             continue
-        ncs_ = [[x['nc'], x['data'], x['ug_emit'], x['ug_fav'], f(x['valor']), x['ptres'], x['pi'], x['nd'], x['rp'], 'Tesouro', '', x['acao'], x['obs'][:200]] for x in L]
+        ncs_ = [[x['nc'], x['data'], x['ug_emit'], x['ug_fav'], f(x['valor']), x['ptres'], x['pi'], x['nd'], x['rp'], 'Tesouro', x.get('evento') or '', x['acao'], x['obs'][:200]] for x in L]
         linhas.append(dict(id='R%d' % i, n='', ano=(L[0]['data'] or '')[-4:] or '(sem ano)', cod=', '.join(sorted({x['nc'] for x in L}))[:80], er='Recebido', ugd=ue, und=L[0].get('nome_emit', '') if isinstance(L[0], dict) else '',
                            ugr=uf, unr=UGN_PY.get(uf, uf), orr='(recebido sem nº de TED)', uge=uf, prog='', acao=ac, obj=(L[0]['obs'] or '')[:400], sp='(recebido sem TED)', st='(sem termo)',
                            fase='Recebido sem nº de TED', sei='', ass='', ini='', fim='', dias=None, fir=v, nc=v, op=0.0, pf=0.0, ar=0.0, rp=' | '.join(sorted({x['rp'] for x in L if x['rp']})),
