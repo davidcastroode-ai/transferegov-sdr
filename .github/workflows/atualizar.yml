@@ -71,10 +71,6 @@ jobs:
         continue-on-error: true
         run: python scripts/indicadores.py saida
 
-      - name: Rendimento de aplicação (estimativa de uso · arquivo novo painel_rendimento.csv)
-        continue-on-error: true
-        run: python scripts/rendimento.py saida
-
       - name: Relatório do instrumento (um arquivo por grupo de instrumentos + índice da busca)
         continue-on-error: true
         run: python scripts/relatorio.py saida
