@@ -5297,10 +5297,10 @@ function abrirFichaInst(num, origem){
         ${campo('Valor de repasse',v(d.repasse),'din')}${campo('Ingresso contrapartida',v(d.ingresso),'din')}
         ${campo('Valor desembolsado',v(d.desemb),'din')}${campo('Valor a desembolsar',v(d.aDes),'din')}
         ${campo('Saldo em conta',v(d.saldo),'din')}${campo('Rendimento de aplicação',v(d.rend),'din')}
+        <div id="lg-rend" style="display:contents"></div>
         ${campo('Último pagamento convenente',esc(d.ultPag))}${campo('Sem desembolso concedente',esc(d.semDes))}
         ${d.atualiz?campo('Última atualização',fmtData(d.atualiz)):''}${campo('Situação do instrumento',esc(d.situ))}
-      </div></section>
-      <section class="fi-sec" id="lg-rend"><h3>Rendimento de aplicação · estimativa de uso</h3><p class="lg-espera" style="padding:8px 14px">Lendo o rendimento no Transferegov…</p></section>
+      </div><div id="lg-rend-obs"></div></section>
       ${d.obs?`<section class="fi-sec"><h3>Observação</h3><p class="fi-obs">${esc(d.obs)}</p></section>`:''}
       <section class="fi-sec lg-sec" id="lg-origem"><h3>🔗 Veio da proposta</h3>${blocoOrigemInst(d)}</section>
       <section class="fi-sec lg-sec" id="lg-siafi"><h3>🔗 No SIAFI · notas de empenho deste instrumento</h3><p class="lg-espera">Procurando as notas de empenho no Tesouro Gerencial…</p></section>
@@ -5323,23 +5323,16 @@ function carregarRendimento(){
   })().catch(e => { _rendP = null; throw e; }));
 }
 async function preencherRendimento(d){
-  const alvo = () => document.getElementById('lg-rend');
   let m = null; try{ m = await carregarRendimento(); }catch(e){}
-  const el = alvo(); if(!el) return;
-  const corpo = h => { el.innerHTML = '<h3>Rendimento de aplicação · estimativa de uso</h3>'+h; };
-  if(!m){ corpo('<p class="fi-obs">O rendimento ainda não está disponível: entra depois da próxima atualização do robô.</p>'); return; }
-  const r = m.get(String(d.num).trim());
-  if(!r){ corpo('<p class="fi-obs">Sem rendimento de aplicação registrado no Transferegov para este instrumento.</p>'); return; }
-  const v = x => fmtBRL(+x || 0), campo = (rot, val, cls) => `<div class="fi-campo ${cls||''}"><span>${rot}</span><b>${val}</b></div>`;
-  const ta = (r.ta_rendimento || '').split(' | ').filter(Boolean);
-  corpo(`<div class="fi-grade">
-      ${campo('Rendimento gerado', v(r.rendimento), 'din')}${campo('Usado no objeto (estimado)', v(r.usado_est), 'din')}
-      ${campo('Saldo de rendimento (estimado)', v(r.saldo_rend_est), 'din')}${campo('Saldo em conta hoje', v(r.saldo_em_conta), 'din')}
-      ${campo('Devolvido ao Tesouro', v(r.devolvido_tesouro), 'din')}${campo('Aditivo que cita rendimento', ta.length ? '<span style="color:#1e7a3c">✓ '+esc(ta.join(' · '))+'</span>' : '<span style="color:#8a5a00">nenhum aditivo cita rendimento</span>', 'largo')}
-    </div>
-    ${r.confere === 'não' ? `<p class="fi-obs" style="background:#fff8e6;border-left:3px solid #e0a100">⚠ Conferir no extrato: os números do Transferegov não fecham para este instrumento (entradas − saídas = ${v(r.dif_conta)}). A estimativa de uso pode estar distorcida.</p>` : ''}
-    <p class="fi-obs" style="font-size:11.5px;color:#5f6f66">Como é calculado: usado (estimado) = pago aos fornecedores (${v(r.pago)}) − desembolsado (${v(r.desembolsado)}) − contrapartida depositada (${v(r.contrapartida)}), limitado ao rendimento gerado. Os dados abertos não dizem de qual recurso saiu cada pagamento: é uma estimativa.</p>`);
+  const el = document.getElementById('lg-rend'), ob = document.getElementById('lg-rend-obs'); if(!el || !m) return;   // sem o arquivo do robô: a ficha fica como era
+  const r = m.get(String(d.num).trim()); if(!r || !(+r.rendimento > 0)) return;
+  const v = x => fmtBRL(+x || 0), campo = (rot, val, cls, tit) => `<div class="fi-campo ${cls||''}"${tit ? ` title="${esc(tit)}"` : ''}><span>${rot}</span><b>${val}</b></div>`;
+  const ta = (r.ta_rendimento || '').split(' | ').filter(Boolean), como = 'Estimativa: pago aos fornecedores ('+v(r.pago)+') − desembolsado ('+v(r.desembolsado)+') − contrapartida depositada ('+v(r.contrapartida)+'), limitado ao rendimento gerado';
+  el.innerHTML = campo('Rendimento usado (estimado)', v(r.usado_est), 'din', como) + campo('Saldo de rendimento (estimado)', v(r.saldo_rend_est), 'din', 'rendimento gerado − usado (estimado)')
+    + campo('Aditivo que cita rendimento', ta.length ? '<span style="color:#1e7a3c">✓ '+esc(ta.join(' · '))+'</span>' : '<span style="color:#8a5a00">nenhum</span>');
+  if(ob) ob.innerHTML = `<p class="fi-obs" style="font-size:11.5px;color:#5f6f66;margin:0">${r.confere === 'não' ? `<b style="color:#8a5a00">⚠ Conferir no extrato:</b> os números do Transferegov não fecham para este instrumento (entradas − saídas = ${v(r.dif_conta)}); a estimativa de uso do rendimento pode estar distorcida. ` : ''}Rendimento usado = ${como.replace('Estimativa: ','')}. Os dados abertos não dizem de qual recurso saiu cada pagamento.</p>`;
 }
+
 // desembolsos do instrumento (Transferegov · painel_desembolsos.csv do robô): data, ordem bancária, UG, observação e valor
 let _tgDes = null;
 function carregarDesTG(){
