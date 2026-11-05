@@ -171,16 +171,94 @@ def ted(saida):
         out.append(alerta(menu, 'y', 'ncsemne', 'Crédito descentralizado sem empenho pela unidade', 'Cobrar da unidade descentralizada o empenho do crédito recebido.', [I(r, 'NC sem empenho') for r in ncsemne]))
         comp = [r for r in L if f(r.get('A comprovar (Tesouro)')) > 0 and d(r) is not None and d(r) < -60]
         out.append(alerta(menu, 'y', 'comprovar', 'Saldo a comprovar com a vigência encerrada há mais de 60 dias', 'Cobrar o relatório de cumprimento do objeto e a comprovação no SIAFI.', [I(r, 'a comprovar no Tesouro') for r in comp]))
-        div = [r for r in L if (r.get('Divergências API x Tesouro') or '').strip()]
-        out.append(alerta(menu, 'b', 'diverg', 'Diferença entre a API do TED e o Tesouro', 'Conferir qual registro está correto e ajustar (Transferegov ou SIAFI).', [I(r, r['Divergências API x Tesouro'][:300]) for r in div]))
+        # (04/11/2026) saiu o alerta "Diferença entre a API do TED e o Tesouro": os valores do TED vêm só do Tesouro e da planilha de controle
     for a in out:
         a['cols'] = COL_TED
     return out
 
 
+# ---------- departamento, controle, prazo e prioridade de cada item ----------
+# departamento pela UG (130141 e 135098 = CGPI · 130255 = PROMAQ · 130010 = CEPLAC); na 420013, pela ação
+DEP_UG = {'130141': 'CGPI', '135098': 'CGPI', '130255': 'PROMAQ', '130010': 'CEPLAC'}
+DEP_ACAO = {'8593': 'DEPROS', '214Z': 'DIAGRO', '00PN': 'DIAGRO', '215A': 'DECAP', '8622': 'DECAP', '21B6': 'DECAP', '8606': 'DECAP', '20ZY': 'CEPLAC', '2000': 'SDR'}
+UGS_SDR = ('130010', '130141', '130255', '135098', '420013')
+EQUIPE = {'130010', '420013'}   # o que a equipe controla (TED EQUIPE SDR, Convênio/TF 420013, contratos da CEPLAC)
+
+
+def departamento(ug, acao):
+    ug, acao = str(ug or '')[:6], str(acao or '').strip()[-4:].upper()
+    if acao == '20ZY':
+        return 'CEPLAC'
+    if ug == '420013':
+        return DEP_ACAO.get(acao, 'SDR')
+    return DEP_UG.get(ug) or DEP_ACAO.get(acao) or 'SDR'
+
+
+def dias_ate(s):
+    d = data(s)
+    return (d - HOJE).days if d else None
+
+
+def prioridade(sev, valor, dias):
+    """0 a 99: gravidade + valor (R$ 10 mil = 0 … R$ 10 milhões = 25) + prazo (vencido ou até 30 dias pesa mais)."""
+    import math
+    p = {'r': 55, 'y': 35, 'b': 15}.get(sev, 15)
+    if valor and valor > 0:
+        p += min(25, max(0, (math.log10(valor) - 4) * 8.3))
+    if dias is not None:
+        p += min(19, 8 + (-dias) / 30) if dias < 0 else 15 if dias <= 30 else 8 if dias <= 90 else 0
+    return int(min(99, round(p)))
+
+
+def faixa_dias(n, cortes):
+    for lim, rot in cortes:
+        if n <= lim:
+            return rot
+    return cortes[-1][1]
+
+
+def enriquecer(lista):
+    for a in lista:
+        for it in a['itens']:
+            if a['menu'] in ('ted', 'tedapi'):
+                ug = it.get('ugdor') if str(it.get('ugdor') or '')[:6] in UGS_SDR and it.get('sentido') != 'Recebido' else it.get('ugda') or it.get('ugdor')
+                valor = max(it.get('firmado') or 0, it.get('nc') or 0, it.get('acomprovar') or 0)
+            else:
+                ug = it.get('ug') or ''
+                valor = it.get('repasse') or it.get('valor') or it.get('indicado') or 0
+            ug = re.sub(r'\D', '', str(ug))[:6]
+            it['dep'] = it.get('area') if a['menu'] == 'captacao' and it.get('area') else departamento(ug, it.get('acao'))
+            it['ctrl'] = 'Equipe SDR' if ug in EQUIPE or a['menu'] in ('ted', 'conv') else 'Geral SDR'
+            dias = None
+            if a['id'] in ('vigvenc', 'vig30', 'vig90'):
+                dias = it.get('dias') if isinstance(it.get('dias'), int) else dias_ate(it.get('fim'))
+            elif a['id'] in ('pcvenc', 'pc30'):
+                dias = dias_ate(it.get('prazo_pc'))
+            elif a['id'] == 'susp':
+                m = re.search(r'(\d{2}/\d{2}/\d{4})', it.get('info') or '')
+                dias = dias_ate(m[1]) if m else None
+            elif a['id'] == 'comprovar':
+                dias = it.get('dias') if isinstance(it.get('dias'), int) else None
+            it['prazo_d'] = dias
+            it['prior'] = prioridade(a['sev'], valor, dias)
+            it['vprior'] = round(valor or 0, 2)
+            # faixas de tempo para as listas grandes
+            if a['id'] in ('semdes', 'saldo'):
+                m = re.match(r'(\d+)', str(it.get('info') or ''))
+                n = int(m[1]) if m else None
+                if a['id'] == 'semdes' and n is not None:
+                    it['faixa'] = faixa_dias(n, [(180, '90 a 180 dias'), (365, '180 dias a 1 ano'), (10 ** 9, 'mais de 1 ano')])
+            if a['id'] == 'pcanal':
+                d = dias_ate(it.get('prazo_pc'))
+                n = -d if d is not None else None
+                it['faixa'] = 'sem data' if n is None else faixa_dias(n, [(365, 'até 1 ano'), (730, '1 a 2 anos'), (10 ** 9, 'mais de 2 anos')])
+        a['itens'].sort(key=lambda x: -x.get('prior', 0))
+    return lista
+
+
 def main(saida):
     out = {'gerado_em': datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=-3))).strftime('%d/%m/%Y %H:%M'), 'hoje': HOJE.strftime('%d/%m/%Y'),
-           'parc': parcerias(saida), 'ted': ted(saida)}
+           'parc': enriquecer(parcerias(saida)), 'ted': enriquecer(ted(saida))}
     json.dump(out, open(os.path.join(saida, 'alertas.json'), 'w', encoding='utf-8'), ensure_ascii=False, separators=(',', ':'))
     for k in ('parc', 'ted'):
         print(k, ' · '.join(f"{a['menu']}/{a['id']}={len(a['itens'])}" for a in out[k] if a['itens']), flush=True)

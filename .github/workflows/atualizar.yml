@@ -94,6 +94,14 @@ jobs:
         continue-on-error: true
         run: python scripts/alertas.py saida
 
+      - name: Alertas · histórico (novos, resolvidos e como saíram · compara com a última foto do dia anterior)
+        continue-on-error: true
+        run: |
+          curl -sfL "https://raw.githubusercontent.com/${{ github.repository }}/dados/alertas_hist.json" -o /tmp/alertas_hist.json || echo "sem histórico anterior"
+          python scripts/alertas_hist.py saida
+        env:
+          HIST_ALERTAS: /tmp/alertas_hist.json
+
       - name: Data de atualização de cada base (só muda quando o conteúdo muda)
         continue-on-error: true
         run: python scripts/datas_bases.py saida
